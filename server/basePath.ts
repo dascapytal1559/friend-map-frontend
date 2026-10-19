@@ -1,5 +1,5 @@
 // friend-map's own path, so it can share one host with other apps: Tailscale Serve mounts it at
-// https://<host>/friend-map (README's "From your phone"), while http://localhost:4600/ still opens it at the root.
+// https://<host>/friend-map (docs/running.md, "From your phone"), while http://localhost:4600/ still opens it at the root.
 // The server answers every address both ways, /friend-map/spider as /spider, so it works whether a proxy passes the
 // path on whole or takes /friend-map off first: the API sees its routes from /api on, and Vite, whose base this is
 // (vite.config.ts), sees everything under it, so the page's modules and its hot-reload websocket are always asked for

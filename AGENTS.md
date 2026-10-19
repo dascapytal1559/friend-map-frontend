@@ -1,7 +1,7 @@
 # friend-map
 
 A map of someone's friendships, drawn from a backend that keeps their people and messages: Orbits at `/orbits` is the main view (the app opens on the Spider web, at `/spider`), and the older views are frozen.
-README.md explains how the app runs and how it is wired.
+README.md is the project's front page; docs/ explains how the app runs and how it is wired.
 
 If an `AGENTS.local.md` exists beside this file, read it first: it is this checkout's own setup, and it wins where the two differ.
 

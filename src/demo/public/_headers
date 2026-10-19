@@ -1,5 +1,5 @@
-# Cloudflare Pages reads this beside the static demo's files (see README's
-# "Demo"). Every page: never framed by another site, no guessing at file
+# Cloudflare Pages reads this beside the static demo's files (see
+# docs/demo.md). Every page: never framed by another site, no guessing at file
 # types, nothing about where a visitor came from, and none of the browser's
 # devices. The page's own policy (index.html) keeps it to its own files and
 # off the network.

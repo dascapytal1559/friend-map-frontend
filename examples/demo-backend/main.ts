@@ -1,5 +1,5 @@
-// Starts the demo backend: a backend for friend-map of made-up people, to run beside it (README, "Run friend-map with
-// the demo backend").
+// Starts the demo backend: a backend for friend-map of made-up people, to run beside it (docs/running.md,
+// "Run friend-map with the demo backend").
 //
 //   npm run demo-backend                  http://127.0.0.1:4700, its database made on first start
 //   npm run demo-backend -- --fresh       the crowd made again, as of today, and every change you made gone

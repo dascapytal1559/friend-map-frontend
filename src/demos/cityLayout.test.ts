@@ -82,7 +82,7 @@ describe("the taper", () => {
     expect(taper(500, 3000)).toBeLessThan(0.7);
     expect(taper(1000, 3000)).toBeLessThan(0.15);
     expect(taper(2000, 3000)).toBeCloseTo(TAPER_DOT, 2);
-    // The formula, as the legend and README state it.
+    // The formula, as the legend and docs/views.md state it.
     expect(taper(700, 3000)).toBeCloseTo(TAPER_DOT + (1 - TAPER_DOT) / (1 + (700 / TAPER_KNEE) ** 5), 9);
   });
 

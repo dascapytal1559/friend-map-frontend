@@ -51,7 +51,7 @@ export function closenessSettings(settings: ClosenessSettings): ClosenessSetting
  * An hour of a catch-up, or of answered calls, counts as 50 direct messages (about one solid day of texting), a
  * day's calls under 5 minutes count nothing, direct messages count fully by their balance, half of a hangout or call
  * with several people is shared by all of them, and a trip's first 8 hours count whole, the rest by their square root:
- * README's "How closeness is scored" says why.
+ * docs/settings.md's "How closeness is scored" says why.
  */
 export const DEFAULT_SETTINGS: Settings = {
   trendMonths: 12,

@@ -1,11 +1,11 @@
 node_modules/
-# Friendship data: private, never committed. See README.
+# Friendship data: private, never committed. See docs/running.md, "The data folder".
 /data/
-# The static demo as built (npm run build:demo). See README's "Demo".
+# The static demo as built (npm run build:demo). See docs/demo.md.
 /dist-demo/
-# The demo backend's database, made on its first start. See README's "Run friend-map with the demo backend".
+# The demo backend's database, made on its first start. See docs/running.md, "Run friend-map with the demo backend".
 /examples/demo-backend/*.sqlite*
-# Local settings, such as FRIEND_MAP_ALLOWED_HOSTS. See README's "From your phone".
+# Local settings, such as FRIEND_MAP_ALLOWED_HOSTS. See docs/running.md, "From your phone".
 /.env.local
 # This checkout's own agent setup, read before AGENTS.md (CLAUDE.local.md may link to it). See AGENTS.md.
 /AGENTS.local.md

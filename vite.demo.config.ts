@@ -9,7 +9,7 @@ import { savedSettingsPlugin } from "./server/savedSettingsPlugin.ts";
 // with no server behind them, served from the site's root. Its mode,
 // "static-demo", is what tells the page it is the static demo (demoMode.ts), and
 // src/demo/public/ holds what Cloudflare Pages reads beside the files (_headers,
-// _redirects). See README's "Demo". The app itself is served by server/main.ts
+// _redirects). See docs/demo.md. The app itself is served by server/main.ts
 // (vite.config.ts). The one thing of yours it carries is your saved view
 // settings (the Spider web's, as numbers and choices), as its defaults: read
 // from your data folder, which a worktree of your copy finds through git config

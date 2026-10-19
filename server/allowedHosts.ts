@@ -2,7 +2,7 @@
 // list of exact names (the Mac's Tailscale name, so Tailscale Serve can reach it from the phone).
 // Vite reads the list (vite.config.ts) and server/main.ts gates every request and websocket upgrade with
 // it before anything handles them, which keeps DNS-rebinding pages off the page and the API alike
-// (see README's "From your phone").
+// (see docs/running.md, "From your phone").
 
 import type { IncomingMessage, Server, ServerResponse } from "node:http";
 import type { Duplex } from "node:stream";

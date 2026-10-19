@@ -1,0 +1,12 @@
+# Cloudflare Pages reads this beside the static demo's files (see README's
+# "Demo"). The demo's addresses in the app (/demo, /demo/spider) are its views
+# here, at the root. Any other address is the page itself, which shows the
+# view it names (Pages serves index.html for it, as there is no 404.html).
+# The Web is now the Spider web: /web, and the app's /demo/web, lead to /spider
+# (listed first, as Pages takes the first rule that matches).
+/web /spider 301
+/web/ /spider 301
+/demo/web /spider 301
+/demo/web/ /spider 301
+/demo /  301
+/demo/* /:splat 301

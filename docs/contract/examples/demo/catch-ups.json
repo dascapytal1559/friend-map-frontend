@@ -1,0 +1,76 @@
+{
+  "request": "GET /api/archive/catch-ups",
+  "response": [
+    {
+      "id": 6,
+      "day": "2026-09-22",
+      "time": "10:00",
+      "trip": null,
+      "hours": 5.5,
+      "byCall": true,
+      "note": "By video call",
+      "others": 0,
+      "people": [
+        {
+          "id": 12,
+          "name": "Clementine Colddale",
+          "aliases": []
+        },
+        {
+          "id": 28,
+          "name": "Gwendolen Thornfield",
+          "aliases": []
+        },
+        {
+          "id": 68,
+          "name": "Jocasta Thornbrook",
+          "aliases": []
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "day": "2026-09-05",
+      "time": "20:30",
+      "trip": null,
+      "hours": 5.5,
+      "byCall": false,
+      "note": "Walk along the river",
+      "others": 0,
+      "people": [
+        {
+          "id": 32,
+          "name": "Jethro Pinecombe",
+          "aliases": []
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "day": "2026-08-31",
+      "time": null,
+      "trip": null,
+      "hours": 1.5,
+      "byCall": false,
+      "note": "Climbing at the gym",
+      "others": 0,
+      "people": [
+        {
+          "id": 28,
+          "name": "Gwendolen Thornfield",
+          "aliases": []
+        },
+        {
+          "id": 75,
+          "name": "Morwenna Abernathy",
+          "aliases": []
+        },
+        {
+          "id": 5,
+          "name": "Tindra Thornbrook",
+          "aliases": []
+        }
+      ]
+    }
+  ]
+}

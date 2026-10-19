@@ -1,0 +1,15 @@
+<!-- friend-map's icon: the Spider web's Amber look on its night ground, eight amber spokes and teal rings sagging toward the hub, the spider at its centre. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+<defs><radialGradient id="g" cx="50%" cy="50%" r="60%"><stop offset="0" stop-color="#0b1a33"/><stop offset="1" stop-color="#030812"/></radialGradient>
+<clipPath id="c"><rect width="64" height="64" rx="14"/></clipPath></defs>
+<g clip-path="url(#c)">
+<rect width="64" height="64" fill="url(#g)"/>
+<path d="M36.97 19.99Q39.17 24.83 44.01 27.03Q42.14 32.00 44.01 36.97Q39.17 39.17 36.97 44.01Q32.00 42.14 27.03 44.01Q24.83 39.17 19.99 36.97Q21.86 32.00 19.99 27.03Q24.83 24.83 27.03 19.99Q32.00 21.86 36.97 19.99Z" fill="none" stroke="#39d8ff" stroke-width="2.4" stroke-opacity="1" stroke-linejoin="round"/>
+<path d="M40.80 10.75Q44.69 19.31 53.25 23.20Q49.94 32.00 53.25 40.80Q44.69 44.69 40.80 53.25Q32.00 49.94 23.20 53.25Q19.31 44.69 10.75 40.80Q14.06 32.00 10.75 23.20Q19.31 19.31 23.20 10.75Q32.00 14.06 40.80 10.75Z" fill="none" stroke="#39d8ff" stroke-width="2.4" stroke-opacity="0.8" stroke-linejoin="round"/>
+<path d="M45.01 0.59Q50.75 13.25 63.41 18.99Q58.52 32.00 63.41 45.01Q50.75 50.75 45.01 63.41Q32.00 58.52 18.99 63.41Q13.25 50.75 0.59 45.01Q5.48 32.00 0.59 18.99Q13.25 13.25 18.99 0.59Q32.00 5.48 45.01 0.59Z" fill="none" stroke="#39d8ff" stroke-width="2.4" stroke-opacity="0.6" stroke-linejoin="round"/>
+<path d="M32 32L47.31 -4.96M32 32L68.96 16.69M32 32L68.96 47.31M32 32L47.31 68.96M32 32L16.69 68.96M32 32L-4.96 47.31M32 32L-4.96 16.69M32 32L16.69 -4.96" stroke="#ffb347" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M30.5 29.0L25.0 22.0L23.0 17.0M29.5 31.0L23.0 28.0L19.0 25.0M29.5 33.0L23.0 35.0L19.0 39.0M30.5 35.0L25.0 41.0L23.0 46.0M33.5 29.0L39.0 22.0L41.0 17.0M34.5 31.0L41.0 28.0L45.0 25.0M34.5 33.0L41.0 35.0L45.0 39.0M33.5 35.0L39.0 41.0L41.0 46.0" fill="none" stroke="#030812" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M30.5 29.0L25.0 22.0L23.0 17.0M29.5 31.0L23.0 28.0L19.0 25.0M29.5 33.0L23.0 35.0L19.0 39.0M30.5 35.0L25.0 41.0L23.0 46.0M33.5 29.0L39.0 22.0L41.0 17.0M34.5 31.0L41.0 28.0L45.0 25.0M34.5 33.0L41.0 35.0L45.0 39.0M33.5 35.0L39.0 41.0L41.0 46.0" fill="none" stroke="#ffd9a3" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+<g stroke="#030812" stroke-width="1.6"><ellipse cx="32" cy="35" rx="5" ry="6" fill="#ffb347"/><circle cx="32" cy="27.6" r="3.4" fill="#ffd9a3"/></g>
+<circle cx="30.8" cy="27" r="0.9" fill="#39d8ff"/><circle cx="33.2" cy="27" r="0.9" fill="#39d8ff"/>
+</g></svg>

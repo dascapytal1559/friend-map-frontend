@@ -1,0 +1,103 @@
+{
+  "request": "GET /api/archive/relationships",
+  "response": {
+    "generatedAt": 1790820000000,
+    "people": [
+      {
+        "id": 101,
+        "name": "Ada Sample",
+        "months": [
+          {
+            "month": "2026-05",
+            "directFromMe": 40,
+            "directFromThem": 44,
+            "groupFromMe": 0,
+            "groupFromThem": 0
+          },
+          {
+            "month": "2026-06",
+            "directFromMe": 39,
+            "directFromThem": 42,
+            "groupFromMe": 0,
+            "groupFromThem": 0
+          },
+          {
+            "month": "2026-07",
+            "directFromMe": 38,
+            "directFromThem": 40,
+            "groupFromMe": 0,
+            "groupFromThem": 0
+          }
+        ]
+      },
+      {
+        "id": 102,
+        "name": "Bruno Placeholder",
+        "months": [
+          {
+            "month": "2026-05",
+            "directFromMe": 37,
+            "directFromThem": 41,
+            "groupFromMe": 0,
+            "groupFromThem": 0
+          },
+          {
+            "month": "2026-07",
+            "directFromMe": 35,
+            "directFromThem": 37,
+            "groupFromMe": 0,
+            "groupFromThem": 0
+          },
+          {
+            "month": "2026-09",
+            "directFromMe": 33,
+            "directFromThem": 33,
+            "groupFromMe": 0,
+            "groupFromThem": 0
+          }
+        ]
+      },
+      {
+        "id": 103,
+        "name": "Cleo Example",
+        "months": [
+          {
+            "month": "2026-05",
+            "directFromMe": 34,
+            "directFromThem": 38,
+            "groupFromMe": 0,
+            "groupFromThem": 0
+          },
+          {
+            "month": "2026-08",
+            "directFromMe": 31,
+            "directFromThem": 32,
+            "groupFromMe": 0,
+            "groupFromThem": 0
+          }
+        ]
+      }
+    ],
+    "groups": [
+      {
+        "id": 1,
+        "memberIds": [
+          101,
+          102,
+          103
+        ]
+      }
+    ],
+    "catchUps": [
+      {
+        "id": 1,
+        "day": "2026-10-02",
+        "hours": 3,
+        "personIds": [
+          101,
+          102
+        ]
+      }
+    ]
+  }
+}

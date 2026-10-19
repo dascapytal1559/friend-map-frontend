@@ -1,0 +1,23 @@
+/* The When cell of the Table's Hangouts and Calls (WhenCell.tsx): the date and time read as a link. */
+.people-table td.when-cell {
+  padding: 0 4px 0 10px;
+}
+
+.when-cell__open {
+  display: inline-block;
+  max-width: 100%;
+  vertical-align: top;
+  color: inherit;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, currentColor 35%, transparent);
+  text-underline-offset: 3px;
+}
+
+.when-cell__open:hover,
+.when-cell__open:focus-visible {
+  color: var(--accent);
+  text-decoration-color: currentColor;
+}

@@ -1,0 +1,39 @@
+{
+  "request": "GET /api/archive/groups/114",
+  "response": {
+    "id": 114,
+    "title": "Family",
+    "platform": "whatsapp",
+    "people": 5,
+    "members": [
+      {
+        "id": 49,
+        "name": "Kerensa Dunfield",
+        "aliases": [],
+        "messages": 372,
+        "untouched": false,
+        "archived": false
+      },
+      {
+        "id": 78,
+        "name": "Maelle Brightwater",
+        "aliases": [],
+        "messages": 357,
+        "untouched": false,
+        "archived": false
+      },
+      {
+        "id": 4,
+        "name": "Octavian Rookbrook",
+        "aliases": [],
+        "messages": 226,
+        "untouched": false,
+        "archived": false
+      }
+    ],
+    "fromMe": 166,
+    "messageCount": 1200,
+    "firstMessageAt": 1483213012841,
+    "lastMessageAt": 1483484244747
+  }
+}

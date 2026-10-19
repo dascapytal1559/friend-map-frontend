@@ -1,0 +1,524 @@
+/* The Table view (Table.tsx): a scrolling table below the page header, in
+   the map views' night colours (demos.css); TablePage sets its top edge. Rows are all one height (ROW in
+   Table.tsx), so nothing in a cell may wrap. */
+
+.people-table {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: auto;
+  /* Rows moved to by the arrow keys stay clear of the sticky header. */
+  scroll-padding-top: 34px;
+  padding: 0 22px 22px;
+  font-size: 13px;
+}
+
+.people-table table {
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.people-table th,
+.people-table td {
+  padding: 0 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+  border-bottom: 1px solid var(--faint);
+}
+
+.people-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  height: 34px;
+  background: #0b1122;
+  font-weight: 400;
+}
+
+.people-table th button {
+  display: inline-flex;
+  gap: 4px;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--dim);
+  font: inherit;
+  cursor: pointer;
+}
+
+.people-table th button:hover,
+.people-table th[aria-sort] button {
+  color: var(--star);
+}
+
+.people-table__arrow {
+  color: var(--me);
+}
+
+.people-table .people-table__numeric {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.people-table th.people-table__numeric button {
+  flex-direction: row-reverse;
+}
+
+.people-table tbody tr[tabindex] {
+  cursor: pointer;
+}
+
+/* Every other row a shade lighter, so a row is easy to follow across; hover and the open row draw over it. */
+.people-table tbody tr.people-table__odd {
+  background: rgba(141, 151, 173, 0.08);
+}
+
+.people-table tbody tr[tabindex]:hover {
+  background: rgba(141, 151, 173, 0.1);
+}
+
+.people-table tbody tr[tabindex]:focus-visible {
+  outline: 1px solid var(--me);
+  outline-offset: -1px;
+}
+
+.people-table tbody tr.people-table__open {
+  background: rgba(244, 184, 96, 0.14);
+}
+
+.people-table .tag-chips {
+  flex-wrap: nowrap;
+  vertical-align: middle;
+}
+
+/* Someone you have never changed (src/untouched.ts): their name dim, not the plain text of everyone you have. */
+.people-table__untouched {
+  color: var(--dim);
+}
+
+.people-table__secondary,
+.people-table__none,
+.people-table__rank {
+  color: var(--dim);
+}
+
+.people-table__none {
+  font-style: italic;
+}
+
+.people-table__empty {
+  color: var(--dim);
+  text-align: center;
+}
+
+/* Where people can be changed, the Location cell is a button filling it (LocationCell.tsx). */
+.people-table td.people-table__location {
+  padding: 0 4px;
+}
+
+.people-table__cell-button {
+  display: block;
+  width: 100%;
+  height: 26px;
+  padding: 0 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: text;
+}
+
+.people-table__cell-button:hover,
+.people-table__cell-button:focus-visible {
+  border-color: rgba(141, 151, 173, 0.35);
+  outline: none;
+}
+
+.people-table__cell-button:focus-visible {
+  border-color: var(--me);
+}
+
+/* "Add", in an empty Location cell: there only as a hint, plain once the row is pointed at or the cell focused. */
+.people-table__add {
+  color: var(--dim);
+  opacity: 0;
+}
+
+.people-table tr:hover .people-table__add,
+.people-table__cell-button:focus-visible .people-table__add {
+  opacity: 0.7;
+}
+
+.people-table__location-box {
+  box-sizing: border-box;
+  width: 100%;
+  height: 26px;
+  padding: 0 6px;
+  border: 1px solid var(--me);
+  border-radius: 5px;
+  background: #0b1122;
+  color: var(--star);
+  font: inherit;
+  outline: none;
+}
+
+.people-table__location-box::placeholder {
+  color: var(--dim);
+}
+
+/* The Location cell's list, drawn over the page under its box. */
+.location-choices {
+  position: fixed;
+  z-index: 30;
+  max-width: 220px;
+  max-height: 240px;
+  margin: 0;
+  padding: 4px;
+  overflow: auto;
+  list-style: none;
+  border: 1px solid rgba(141, 151, 173, 0.3);
+  border-radius: 8px;
+  background: #0b1122;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  color: var(--star);
+  font-size: 13px;
+}
+
+.location-choices li {
+  padding: 5px 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.location-choices li[aria-selected="true"] {
+  background: rgba(244, 184, 96, 0.18);
+}
+
+.location-choices__other {
+  color: var(--dim);
+  font-style: italic;
+}
+
+.location-choices__now {
+  color: var(--dim);
+  font-size: 11px;
+}
+
+@media (pointer: coarse) {
+  /* 16px, so a phone does not zoom in on the box. */
+  .people-table__location-box {
+    font-size: 16px;
+  }
+}
+
+/* The header's search box, beside the switches. */
+/* Each person's identicon, before their name (inline, though the stage draws its svg as blocks). */
+.people-table .people-table__identicon {
+  display: inline-block;
+  margin: -2px 8px 0 0;
+}
+
+/* A phone: the Table scrolls sideways under the names, which stay at the left
+   edge, on the night's colour with their row's shade over it. */
+@media (max-width: 560px) {
+  .people-table {
+    padding: 0 16px 16px;
+  }
+
+  .people-table th:first-child,
+  .people-table td:first-child {
+    position: sticky;
+    left: 0;
+    box-shadow: 1px 0 0 var(--faint);
+  }
+
+  .people-table th:first-child {
+    z-index: 2;
+  }
+
+  .people-table td:first-child {
+    z-index: 1;
+    background: #0a0f1e;
+  }
+
+  .people-table tbody tr.people-table__odd td:first-child {
+    background: linear-gradient(rgba(141, 151, 173, 0.08), rgba(141, 151, 173, 0.08)) #0a0f1e;
+  }
+
+  .people-table tbody tr.people-table__open td:first-child {
+    background: linear-gradient(rgba(244, 184, 96, 0.14), rgba(244, 184, 96, 0.14)) #0a0f1e;
+  }
+}
+
+/* The Table's tabs, just right of its title in the header: People, Hangouts or Calls (TablePage.tsx), the chosen one underlined. */
+/* The title keeps no room of its own, so the tabs sit just after it. */
+.demos__header > .view-switcher:has(+ .table-tabs) {
+  min-width: 0;
+}
+
+.table-tabs {
+  display: flex;
+  flex: none;
+  gap: 2px;
+  border-bottom: 1px solid var(--faint);
+}
+
+.table-tabs [role="tab"] {
+  height: 28px;
+  margin-bottom: -1px;
+  padding: 0 10px;
+  background: none;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  color: var(--dim);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.table-tabs [role="tab"]:hover {
+  color: inherit;
+}
+
+.table-tabs [role="tab"]:focus-visible {
+  outline: 1px solid var(--dim);
+  outline-offset: -1px;
+}
+
+.table-tabs [role="tab"][aria-selected="true"] {
+  color: var(--star);
+  border-bottom-color: var(--star);
+  cursor: default;
+}
+
+/* The Catch-ups table (CatchUpsTable.tsx): every row drawn, as tall as who was there needs, chips wrapping. */
+.catch-ups-table tbody td {
+  height: 34px;
+}
+
+.catch-ups-table td.catch-ups-table__who {
+  white-space: normal;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.catch-ups-table__who .tag-chip {
+  margin: 2px 4px 2px 0;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+/* A trip: over how many days, under its hours in all. */
+.catch-ups-table__days {
+  display: block;
+  font-size: 12px;
+}
+
+.catch-ups-table__actions {
+  display: inline-flex;
+  gap: 12px;
+  align-items: center;
+}
+
+/* A catch-up being changed: the panel's form, held at the left edge as the table scrolls sideways. */
+.catch-ups-table tbody tr.catch-ups-table__editing td {
+  position: static;
+  padding: 10px;
+  background: rgba(141, 151, 173, 0.06);
+}
+
+.catch-ups-table__editing .catch-up-form {
+  position: sticky;
+  left: 0;
+  max-width: min(520px, calc(100vw - 52px));
+}
+
+@media (pointer: coarse) {
+  .table-tabs [role="tab"] {
+    height: 36px;
+    padding: 0 12px;
+  }
+}
+
+/* The Calls table (CallsTable.tsx): one height per row, as the People table's, so who was on a call stays on one line. */
+.calls-table td.calls-table__who .tag-chip {
+  margin: 0 4px 0 0;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+/* "Add length", in the Length cell of a call whose source does not say: a hint, plainer once the row is pointed at. */
+.calls-table__add-length {
+  color: var(--dim);
+  font-style: italic;
+}
+
+.people-table tr:hover .calls-table__add-length,
+.people-table__cell-button:focus-visible .calls-table__add-length {
+  color: var(--me);
+}
+
+/* The pencil after a length you entered yourself (CallsTable.tsx's ByHand). */
+.calls-table__by-hand {
+  display: inline-flex;
+  margin-left: 6px;
+  vertical-align: -1px;
+  color: var(--muted);
+}
+
+.people-table tr:hover .calls-table__by-hand,
+.people-table__cell-button:focus-visible .calls-table__by-hand {
+  color: var(--me);
+}
+
+/* A touch screen points at nothing, so the hints in the cells that change a call always show, faintly. */
+@media (pointer: coarse) {
+  .calls-table .people-table__add {
+    opacity: 0.5;
+  }
+
+  .calls-table .people-table__cell-button {
+    height: 30px;
+  }
+}
+
+/* A phone: the Calls' When, held at the left as the People table's names are, takes little room, its date over
+   its time, so the rest of the row has the screen; the columns after it share what it gives up. */
+@media (max-width: 560px) {
+  .calls-table col:first-child {
+    width: 104px !important;
+  }
+
+  .calls-table td:first-child {
+    white-space: normal;
+    font-size: 12px;
+    line-height: 1.2;
+  }
+
+  .calls-table td:first-child .people-table__secondary {
+    display: block;
+  }
+}
+
+/* ✕ in the last column on a call you logged, deleting it: always shown, so a phone has it too. */
+.people-table .calls-table__delete-cell {
+  padding-left: 0;
+  padding-right: 0;
+  text-align: center;
+}
+
+.calls-table .calls-table__delete {
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--danger);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+/* "Add hangout" and "Add call" (AddEvent.tsx): Add event's form, opened under the button in the Table's header. */
+.add-event {
+  position: relative;
+}
+
+/* Over the Query bar's boxes (z-index 6), as the header's other panels are. */
+.add-event__panel {
+  position: absolute;
+  z-index: 7;
+  top: calc(100% + 6px);
+  right: 0;
+  width: min(440px, calc(100vw - 32px));
+  border-radius: 10px;
+  background: #0c1224;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  white-space: normal;
+}
+
+/* Its date, time and length boxes fill their columns, so none sticks out of a narrow panel. */
+.add-event__panel .catch-up-form__when input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+}
+
+/* Answered: every word (the header's, a plain cell's, a select's) ends at one edge, and a select's arrow sits in a gutter
+   right of it that plain cells and the header leave empty, so the words line up and the arrows line up. */
+.people-table .calls-table__answered {
+  --answer-gutter: 18px;
+  padding-right: calc(10px + var(--answer-gutter));
+  text-align: right;
+}
+
+.people-table td.calls-table__answered:has(> select) {
+  padding-right: 10px;
+}
+
+/* Its sort arrow goes before the word, as a numeric column's does, so the word keeps the edge. */
+.people-table th.calls-table__answered button {
+  flex-direction: row-reverse;
+}
+
+/* Answered, on an imported call (CallsTable.tsx): a select as quiet as the cell's word, until pointed at; your
+   own answer is marked, as a length that is yours says "yours". It fills the cell, its word right-aligned and its own
+   arrow drawn in the gutter. */
+.calls-table__answer {
+  width: 100%;
+  height: 26px;
+  padding: 0 var(--answer-gutter) 0 4px;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%238d97ad' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 4px center;
+  text-align: right;
+  text-align-last: right;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background-color: transparent;
+  color: var(--star);
+  font: inherit;
+  cursor: pointer;
+}
+
+.calls-table__answer--quiet {
+  color: var(--dim);
+}
+
+.calls-table__answer--set {
+  font-style: italic;
+}
+
+.calls-table__answer:hover,
+.calls-table__answer:focus-visible {
+  border-color: rgba(141, 151, 173, 0.4);
+}
+
+.calls-table__answer option {
+  background: #0c1224;
+  color: var(--star);
+  font-style: normal;
+}
+
+/* A touch screen points at nothing, so the select always shows its edge. */
+@media (pointer: coarse) {
+  .calls-table__answer {
+    height: 30px;
+    border-color: rgba(141, 151, 173, 0.28);
+  }
+}

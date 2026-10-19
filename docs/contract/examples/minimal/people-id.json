@@ -1,0 +1,7 @@
+{
+  "request": "GET /api/archive/people/101",
+  "response": {
+    "id": 101,
+    "name": "Ada Sample"
+  }
+}

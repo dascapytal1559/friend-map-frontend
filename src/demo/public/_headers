@@ -1,0 +1,15 @@
+# Cloudflare Pages reads this beside the static demo's files (see README's
+# "Demo"). Every page: never framed by another site, no guessing at file
+# types, nothing about where a visitor came from, and none of the browser's
+# devices. The page's own policy (index.html) keeps it to its own files and
+# off the network.
+/*
+  Content-Security-Policy: frame-ancestors 'none'
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), usb=(), payment=()
+
+# The built scripts and styles carry their content's hash in their names, so
+# they never change: kept for a year.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable

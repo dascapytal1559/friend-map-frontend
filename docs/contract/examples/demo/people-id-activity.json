@@ -1,0 +1,72 @@
+{
+  "request": "GET /api/archive/people/3/activity",
+  "response": {
+    "months": [
+      {
+        "month": "2021-12",
+        "directFromMe": 0,
+        "directFromThem": 0,
+        "directFromMeSelfOnly": 0,
+        "groupFromMe": 16,
+        "groupFromThem": 2
+      },
+      {
+        "month": "2022-01",
+        "directFromMe": 0,
+        "directFromThem": 0,
+        "directFromMeSelfOnly": 0,
+        "groupFromMe": 9,
+        "groupFromThem": 2
+      },
+      {
+        "month": "2022-02",
+        "directFromMe": 0,
+        "directFromThem": 0,
+        "directFromMeSelfOnly": 0,
+        "groupFromMe": 7,
+        "groupFromThem": 1
+      }
+    ],
+    "points": [
+      {
+        "month": "2021-12",
+        "directThem": 0,
+        "directThemAssumed": 0,
+        "directYou": 0,
+        "groupThem": 0.09876543209876543,
+        "groupThemAssumed": 0,
+        "groupYou": 0.09876543209876543,
+        "calls": 0,
+        "hangouts": 0,
+        "callSeconds": 0,
+        "hangoutCount": 0
+      },
+      {
+        "month": "2022-01",
+        "directThem": 0,
+        "directThemAssumed": 0,
+        "directYou": 0,
+        "groupThem": 0.09157509157509158,
+        "groupThemAssumed": 0,
+        "groupYou": 0.06593406593406594,
+        "calls": 0,
+        "hangouts": 0,
+        "callSeconds": 0,
+        "hangoutCount": 0
+      },
+      {
+        "month": "2022-02",
+        "directThem": 0,
+        "directThemAssumed": 0,
+        "directYou": 0,
+        "groupThem": 0.04336043360433605,
+        "groupThemAssumed": 0,
+        "groupYou": 0.04742547425474255,
+        "calls": 0,
+        "hangouts": 0,
+        "callSeconds": 0,
+        "hangoutCount": 0
+      }
+    ]
+  }
+}

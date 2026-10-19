@@ -1,0 +1,65 @@
+{
+  "request": "GET /api/archive/people/3",
+  "response": {
+    "id": 3,
+    "name": "Teodor Larkbrook",
+    "aliases": [
+      "Teo"
+    ],
+    "tags": [
+      "book-club",
+      "live-together"
+    ],
+    "note": "",
+    "noteFromContacts": false,
+    "shouldReachOut": false,
+    "identiconSeed": "a4fb6f84850fb4d0",
+    "identiconHue": null,
+    "location": null,
+    "edited": true,
+    "untouched": false,
+    "archived": null,
+    "archiveRule": null,
+    "accounts": [
+      {
+        "id": 10,
+        "platform": "messenger",
+        "displayName": "Teodor Larkbrook",
+        "handle": null,
+        "link": "import",
+        "messageCount": 47,
+        "directMessageCount": 30,
+        "groupMessageCount": 17,
+        "lastMessageAt": 1790683012526
+      },
+      {
+        "id": 140,
+        "platform": "imessage",
+        "displayName": "Teodor Larkbrook",
+        "handle": null,
+        "link": "import",
+        "messageCount": 16,
+        "directMessageCount": 0,
+        "groupMessageCount": 16,
+        "lastMessageAt": 1659356300726
+      }
+    ],
+    "messageCount": 63,
+    "directMessageCount": 30,
+    "groupMessageCount": 33,
+    "marketplaceMessageCount": 0,
+    "lastMessageAt": 1790683012526,
+    "unknown": false,
+    "lastByPlatform": [
+      {
+        "platform": "messenger",
+        "at": 1790683012526
+      },
+      {
+        "platform": "imessage",
+        "at": 1659356300726
+      }
+    ],
+    "joined": null
+  }
+}

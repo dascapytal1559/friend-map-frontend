@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Plain files and nothing else: the page reaches no server (connect-src 'none'), runs only its own scripts, and loads nothing from anywhere else. -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'"
+    />
+    <meta name="description" content="A demo of friend-map, a private map of everyone you talk to, on a made-up crowd: nobody in it is real." />
+    <meta name="referrer" content="no-referrer" />
+    <!-- The icon: the Spider web on its night ground (src/icon/), the SVG wherever a browser takes one, a PNG elsewhere, and the home screen's on a phone. -->
+    <link rel="icon" href="../icon/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="../icon/favicon-32.png" type="image/png" sizes="32x32" />
+    <link rel="apple-touch-icon" href="../icon/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="Friend map" />
+    <meta name="theme-color" content="#030812" />
+    <title>Friend map · demo</title>
+    <style>
+      .demo-loading {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        margin: 0;
+        color: #59636e;
+        font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"><p class="demo-loading">Making up a crowd of people…</p></div>
+    <script type="module" src="./main.tsx"></script>
+  </body>
+</html>

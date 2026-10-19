@@ -1,0 +1,241 @@
+{
+  "request": "GET /api/archive/people",
+  "response": {
+    "people": [
+      {
+        "id": 3,
+        "name": "Teodor Larkbrook",
+        "aliases": [
+          "Teo"
+        ],
+        "tags": [
+          "book-club",
+          "live-together"
+        ],
+        "note": "",
+        "noteFromContacts": false,
+        "shouldReachOut": false,
+        "identiconSeed": "a4fb6f84850fb4d0",
+        "identiconHue": null,
+        "location": null,
+        "edited": true,
+        "untouched": false,
+        "archived": null,
+        "archiveRule": null,
+        "accounts": [
+          {
+            "id": 10,
+            "platform": "messenger",
+            "displayName": "Teodor Larkbrook",
+            "handle": null,
+            "link": "import",
+            "messageCount": 47,
+            "directMessageCount": 30,
+            "groupMessageCount": 17,
+            "lastMessageAt": 1790683012526
+          },
+          {
+            "id": 140,
+            "platform": "imessage",
+            "displayName": "Teodor Larkbrook",
+            "handle": null,
+            "link": "import",
+            "messageCount": 16,
+            "directMessageCount": 0,
+            "groupMessageCount": 16,
+            "lastMessageAt": 1659356300726
+          }
+        ],
+        "messageCount": 63,
+        "directMessageCount": 30,
+        "groupMessageCount": 33,
+        "marketplaceMessageCount": 0,
+        "lastMessageAt": 1790683012526,
+        "unknown": false,
+        "lastByPlatform": [
+          {
+            "platform": "messenger",
+            "at": 1790683012526
+          },
+          {
+            "platform": "imessage",
+            "at": 1659356300726
+          }
+        ],
+        "joined": null
+      },
+      {
+        "id": 471,
+        "name": "Jethro Jarvie",
+        "aliases": [],
+        "tags": [],
+        "note": "",
+        "noteFromContacts": false,
+        "shouldReachOut": false,
+        "identiconSeed": "d97e31a0eb91f042",
+        "identiconHue": null,
+        "location": null,
+        "edited": false,
+        "untouched": true,
+        "archived": "groups-wrote",
+        "archiveRule": "groups-wrote",
+        "accounts": [
+          {
+            "id": 540,
+            "platform": "messenger",
+            "displayName": "Jethro Jarvie",
+            "handle": null,
+            "link": "import",
+            "messageCount": 179,
+            "directMessageCount": 0,
+            "groupMessageCount": 179,
+            "lastMessageAt": 1790653801035
+          }
+        ],
+        "messageCount": 179,
+        "directMessageCount": 0,
+        "groupMessageCount": 179,
+        "marketplaceMessageCount": 0,
+        "lastMessageAt": 1790653801035,
+        "unknown": false,
+        "lastByPlatform": [
+          {
+            "platform": "messenger",
+            "at": 1790653801035
+          }
+        ],
+        "joined": null
+      },
+      {
+        "id": 10,
+        "name": "Kasimir Ivyford",
+        "aliases": [],
+        "tags": [
+          "family"
+        ],
+        "note": "",
+        "noteFromContacts": false,
+        "shouldReachOut": false,
+        "identiconSeed": "247414e37b6dc870",
+        "identiconHue": null,
+        "location": "Melbourne",
+        "edited": true,
+        "untouched": false,
+        "archived": null,
+        "archiveRule": null,
+        "accounts": [
+          {
+            "id": 19,
+            "platform": "imessage",
+            "displayName": "Kasimir Ivyford",
+            "handle": null,
+            "link": "import",
+            "messageCount": 82,
+            "directMessageCount": 70,
+            "groupMessageCount": 12,
+            "lastMessageAt": 1790629448801
+          }
+        ],
+        "messageCount": 82,
+        "directMessageCount": 70,
+        "groupMessageCount": 12,
+        "marketplaceMessageCount": 0,
+        "lastMessageAt": 1790629448801,
+        "unknown": false,
+        "lastByPlatform": [
+          {
+            "platform": "imessage",
+            "at": 1790629448801
+          }
+        ],
+        "joined": null
+      }
+    ],
+    "me": {
+      "id": 1,
+      "name": "Jem Ashgrove",
+      "aliases": [],
+      "tags": [],
+      "note": "",
+      "noteFromContacts": false,
+      "shouldReachOut": false,
+      "identiconSeed": "b1c6866ae7fdccc8",
+      "identiconHue": null,
+      "location": null,
+      "edited": false,
+      "untouched": false,
+      "archived": null,
+      "archiveRule": null,
+      "accounts": [
+        {
+          "id": 4,
+          "platform": "messenger",
+          "displayName": "Jem Ashgrove",
+          "handle": null,
+          "link": "import",
+          "messageCount": 1552,
+          "directMessageCount": 0,
+          "groupMessageCount": 1552,
+          "lastMessageAt": 1788987938530
+        },
+        {
+          "id": 2,
+          "platform": "imessage",
+          "displayName": "Jem Ashgrove",
+          "handle": null,
+          "link": "import",
+          "messageCount": 837,
+          "directMessageCount": 0,
+          "groupMessageCount": 837,
+          "lastMessageAt": 1786274263840
+        },
+        {
+          "id": 3,
+          "platform": "instagram",
+          "displayName": "Jem Ashgrove",
+          "handle": null,
+          "link": "import",
+          "messageCount": 271,
+          "directMessageCount": 0,
+          "groupMessageCount": 271,
+          "lastMessageAt": 1772035851800
+        }
+      ],
+      "messageCount": 3282,
+      "directMessageCount": 0,
+      "groupMessageCount": 3282,
+      "marketplaceMessageCount": 0,
+      "lastMessageAt": 1788987938530,
+      "unknown": false,
+      "lastByPlatform": [
+        {
+          "platform": "messenger",
+          "at": 1788987938530
+        },
+        {
+          "platform": "imessage",
+          "at": 1786274263840
+        },
+        {
+          "platform": "instagram",
+          "at": 1772035851800
+        }
+      ],
+      "joined": null
+    },
+    "tags": [
+      {
+        "tag": "climbing",
+        "count": 4
+      },
+      {
+        "tag": "uni",
+        "count": 3
+      },
+      {
+        "tag": "work",
+        "count": 1
+      }
+    ]
+  }
+}

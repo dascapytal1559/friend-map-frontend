@@ -1,0 +1,38 @@
+{
+  "request": "GET /api/archive/people/3/groups",
+  "response": [
+    {
+      "id": 111,
+      "title": "Tuesday climbing",
+      "platform": "messenger",
+      "people": 9,
+      "fromThem": 0,
+      "fromMe": 97,
+      "lastMessageAt": 1778729166469,
+      "namedBy": [],
+      "unlinked": false
+    },
+    {
+      "id": 112,
+      "title": "Uni mates",
+      "platform": "messenger",
+      "people": 13,
+      "fromThem": 3,
+      "fromMe": 261,
+      "lastMessageAt": 1761733980609,
+      "namedBy": [],
+      "unlinked": false
+    },
+    {
+      "id": 117,
+      "title": "Footy tips",
+      "platform": "messenger",
+      "people": 10,
+      "fromThem": 0,
+      "fromMe": 2,
+      "lastMessageAt": 1759749055372,
+      "namedBy": [],
+      "unlinked": false
+    }
+  ]
+}

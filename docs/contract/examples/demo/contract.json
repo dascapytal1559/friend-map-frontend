@@ -1,0 +1,12 @@
+{
+  "request": "GET /api/archive/contract",
+  "response": {
+    "version": "1.0.0",
+    "capabilities": [
+      "map",
+      "query",
+      "panel"
+    ],
+    "timeZone": "Australia/Melbourne"
+  }
+}

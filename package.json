@@ -1,0 +1,44 @@
+{
+  "name": "friend-map",
+  "private": true,
+  "version": "0.0.0",
+  "license": "MIT",
+  "type": "module",
+  "devEngines": {
+    "runtime": {
+      "name": "node",
+      "version": "24.21.0",
+      "onFail": "ignore"
+    }
+  },
+  "scripts": {
+    "start": "node server/main.ts",
+    "demo-backend": "node --no-warnings examples/demo-backend/main.ts",
+    "check-settings": "node server/check-settings.ts",
+    "demo-shape": "node --no-warnings server/demo-shape.ts",
+    "build:demo": "vite build -c vite.demo.config.ts",
+    "preview:demo": "vite preview -c vite.demo.config.ts",
+    "check-demo": "node --no-warnings server/check-demo.ts",
+    "contract-check": "node --no-warnings server/contract-check.ts",
+    "contract-examples": "node --no-warnings server/contract-examples.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "usage": "node --no-warnings server/usage-report.ts"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "^6.1.1",
+    "d3": "^7.9.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "vite": "^8.3.1"
+  },
+  "devDependencies": {
+    "@types/d3": "^7.4.3",
+    "@types/node": "^24.19.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "happy-dom": "^20.14.5",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.2"
+  }
+}

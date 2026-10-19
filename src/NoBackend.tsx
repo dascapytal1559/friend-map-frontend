@@ -1,0 +1,40 @@
+// What the page shows in place of the app when no backend answers its handshake (src/contract/handshake.ts, `down`):
+// a clone run with none yet, or a backend stopped or starting again. It points at the demo and the demo backend, and
+// opens the app by itself once a backend answers.
+
+import { useEffect } from "react";
+import "./app.css";
+import { archiveApi, ArchiveDown } from "./archiveApi.ts";
+import { address } from "./mount.ts";
+
+/** How often the page asks again whether a backend answers, in milliseconds. */
+export const ASK_AGAIN_MS = 5000;
+
+export function NoBackend({ why }: { why: string }) {
+  useEffect(() => {
+    const timer = setInterval(() => {
+      archiveApi.contract().then(
+        () => window.location.reload(),
+        (error: unknown) => {
+          if (!(error instanceof ArchiveDown)) window.location.reload();
+        },
+      );
+    }, ASK_AGAIN_MS);
+    return () => clearInterval(timer);
+  }, []);
+  return (
+    <main className="backend-refused">
+      <h1>friend-map has no backend running</h1>
+      <p>friend-map draws your people and messages from a backend, and none answers yet.</p>
+      <p>
+        <a href={address("/demo")}>Open the demo</a> to look around a made-up crowd now.
+      </p>
+      <p>
+        To run friend-map on made-up people, start the demo backend in another terminal with <code>npm run demo-backend</code>,
+        then start friend-map in front of it with <code>FRIEND_MAP_ARCHIVE_URL=http://127.0.0.1:4700 npm start</code>. To
+        bring your own backend, <code>docs/contract.md</code> says what it serves.
+      </p>
+      <p className="backend-refused__why">This page opens the map by itself once a backend answers. friend-map's server says: {why}.</p>
+    </main>
+  );
+}

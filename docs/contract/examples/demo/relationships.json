@@ -1,0 +1,427 @@
+{
+  "request": "GET /api/archive/relationships",
+  "response": {
+    "generatedAt": 1790820000000,
+    "gapDays": 14,
+    "archivedCount": 2101,
+    "people": [
+      {
+        "id": 3,
+        "totals": {
+          "directFromMe": 7,
+          "directFromThem": 6,
+          "directFromMeSelfOnly": 0,
+          "groupFromMe": 439,
+          "groupFromThem": 33
+        },
+        "firstMessageAt": 1640094556610,
+        "lastMessageAt": 1790683012526,
+        "months": [
+          {
+            "month": "2021-12",
+            "directFromMe": 0,
+            "directFromThem": 0,
+            "directFromMeSelfOnly": 0,
+            "groupFromMe": 16,
+            "groupFromThem": 2
+          },
+          {
+            "month": "2022-01",
+            "directFromMe": 0,
+            "directFromThem": 0,
+            "directFromMeSelfOnly": 0,
+            "groupFromMe": 9,
+            "groupFromThem": 2
+          },
+          {
+            "month": "2022-02",
+            "directFromMe": 0,
+            "directFromThem": 0,
+            "directFromMeSelfOnly": 0,
+            "groupFromMe": 7,
+            "groupFromThem": 1
+          }
+        ],
+        "reactions": {
+          "fromMe": 0,
+          "fromThem": 0
+        },
+        "openings": {
+          "byMe": 0,
+          "byThem": 1
+        },
+        "name": "Teodor Larkbrook",
+        "aliases": [
+          "Teo"
+        ],
+        "tags": [
+          "book-club",
+          "live-together"
+        ],
+        "note": "",
+        "shouldReachOut": false,
+        "identiconSeed": "a4fb6f84850fb4d0",
+        "identiconHue": null,
+        "location": null,
+        "unknown": false,
+        "platforms": [
+          "messenger",
+          "imessage"
+        ]
+      },
+      {
+        "id": 10,
+        "totals": {
+          "directFromMe": 17,
+          "directFromThem": 10,
+          "directFromMeSelfOnly": 0,
+          "groupFromMe": 7,
+          "groupFromThem": 12
+        },
+        "firstMessageAt": 1511356044299,
+        "lastMessageAt": 1790629448801,
+        "months": [
+          {
+            "month": "2017-10",
+            "directFromMe": 0,
+            "directFromThem": 0,
+            "directFromMeSelfOnly": 0,
+            "groupFromMe": 1,
+            "groupFromThem": 0
+          },
+          {
+            "month": "2017-11",
+            "directFromMe": 0,
+            "directFromThem": 0,
+            "directFromMeSelfOnly": 0,
+            "groupFromMe": 0,
+            "groupFromThem": 3
+          },
+          {
+            "month": "2017-12",
+            "directFromMe": 0,
+            "directFromThem": 0,
+            "directFromMeSelfOnly": 0,
+            "groupFromMe": 2,
+            "groupFromThem": 2
+          }
+        ],
+        "reactions": {
+          "fromMe": 0,
+          "fromThem": 0
+        },
+        "openings": {
+          "byMe": 1,
+          "byThem": 0
+        },
+        "name": "Kasimir Ivyford",
+        "aliases": [],
+        "tags": [
+          "family"
+        ],
+        "note": "",
+        "shouldReachOut": false,
+        "identiconSeed": "247414e37b6dc870",
+        "identiconHue": null,
+        "location": "Melbourne",
+        "unknown": false,
+        "platforms": [
+          "imessage"
+        ]
+      },
+      {
+        "id": 2,
+        "totals": {
+          "directFromMe": 1,
+          "directFromThem": 5,
+          "directFromMeSelfOnly": 0,
+          "groupFromMe": 247,
+          "groupFromThem": 78
+        },
+        "firstMessageAt": 1338364435708,
+        "lastMessageAt": 1790359901791,
+        "months": [
+          {
+            "month": "2012-05",
+            "directFromMe": 1,
+            "directFromThem": 4,
+            "directFromMeSelfOnly": 0,
+            "groupFromMe": 0,
+            "groupFromThem": 0
+          },
+          {
+            "month": "2017-09",
+            "directFromMe": 0,
+            "directFromThem": 0,
+            "directFromMeSelfOnly": 0,
+            "groupFromMe": 0,
+            "groupFromThem": 4
+          },
+          {
+            "month": "2017-10",
+            "directFromMe": 0,
+            "directFromThem": 0,
+            "directFromMeSelfOnly": 0,
+            "groupFromMe": 1,
+            "groupFromThem": 5
+          }
+        ],
+        "reactions": {
+          "fromMe": 1,
+          "fromThem": 1
+        },
+        "openings": {
+          "byMe": 0,
+          "byThem": 1
+        },
+        "name": "Linnea Netherdale",
+        "aliases": [],
+        "tags": [],
+        "note": "",
+        "shouldReachOut": false,
+        "identiconSeed": "d415b0872ba826c4",
+        "identiconHue": null,
+        "location": "Singapore",
+        "unknown": false,
+        "platforms": [
+          "imessage",
+          "whatsapp",
+          "messenger"
+        ]
+      }
+    ],
+    "groups": [
+      {
+        "id": 114,
+        "memberIds": [
+          4,
+          46,
+          49
+        ],
+        "selfOnly": false,
+        "messageCount": 1200,
+        "lastMessageAt": 1483484244747,
+        "months": [
+          {
+            "month": "2017-01",
+            "messages": 1200,
+            "fromMe": 166,
+            "fromMembers": [
+              {
+                "id": 4,
+                "count": 226
+              },
+              {
+                "id": 46,
+                "count": 79
+              },
+              {
+                "id": 49,
+                "count": 372
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 137,
+        "memberIds": [
+          10,
+          40,
+          44
+        ],
+        "selfOnly": false,
+        "messageCount": 1200,
+        "lastMessageAt": 1557808623421,
+        "months": [
+          {
+            "month": "2018-06",
+            "messages": 158,
+            "fromMe": 0,
+            "fromMembers": [
+              {
+                "id": 40,
+                "count": 2
+              },
+              {
+                "id": 44,
+                "count": 1
+              },
+              {
+                "id": 185,
+                "count": 2
+              }
+            ]
+          },
+          {
+            "month": "2018-07",
+            "messages": 198,
+            "fromMe": 0,
+            "fromMembers": [
+              {
+                "id": 40,
+                "count": 1
+              },
+              {
+                "id": 183,
+                "count": 1
+              },
+              {
+                "id": 185,
+                "count": 1
+              }
+            ]
+          },
+          {
+            "month": "2018-08",
+            "messages": 129,
+            "fromMe": 0,
+            "fromMembers": [
+              {
+                "id": 10,
+                "count": 1
+              },
+              {
+                "id": 44,
+                "count": 1
+              },
+              {
+                "id": 189,
+                "count": 3
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 156,
+        "memberIds": [
+          2,
+          4,
+          6
+        ],
+        "selfOnly": false,
+        "messageCount": 1200,
+        "lastMessageAt": 1729423272115,
+        "months": [
+          {
+            "month": "2020-12",
+            "messages": 31,
+            "fromMe": 3,
+            "fromMembers": [
+              {
+                "id": 6,
+                "count": 1
+              },
+              {
+                "id": 24,
+                "count": 1
+              },
+              {
+                "id": 35,
+                "count": 2
+              }
+            ]
+          },
+          {
+            "month": "2021-01",
+            "messages": 24,
+            "fromMe": 4,
+            "fromMembers": [
+              {
+                "id": 2,
+                "count": 1
+              },
+              {
+                "id": 15,
+                "count": 1
+              },
+              {
+                "id": 31,
+                "count": 1
+              }
+            ]
+          },
+          {
+            "month": "2021-02",
+            "messages": 33,
+            "fromMe": 4,
+            "fromMembers": [
+              {
+                "id": 4,
+                "count": 1
+              },
+              {
+                "id": 6,
+                "count": 1
+              },
+              {
+                "id": 56,
+                "count": 1
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "unlinks": [],
+    "catchUps": [
+      {
+        "id": 1,
+        "day": "2026-08-04",
+        "time": "16:00",
+        "trip": null,
+        "hours": 5,
+        "byCall": false,
+        "others": 0,
+        "personIds": [
+          32,
+          68
+        ]
+      },
+      {
+        "id": 2,
+        "day": "2026-08-12",
+        "time": null,
+        "trip": null,
+        "hours": 3,
+        "byCall": false,
+        "others": 0,
+        "personIds": [
+          5,
+          10,
+          12
+        ]
+      },
+      {
+        "id": 3,
+        "day": "2026-08-20",
+        "time": "17:30",
+        "trip": null,
+        "hours": 9,
+        "byCall": false,
+        "others": 0,
+        "personIds": [
+          28
+        ]
+      }
+    ],
+    "callDays": [
+      {
+        "personId": 18,
+        "day": "2018-03-29",
+        "seconds": 550
+      },
+      {
+        "personId": 28,
+        "day": "2018-05-02",
+        "seconds": 3
+      },
+      {
+        "personId": 19,
+        "day": "2018-06-30",
+        "seconds": 69
+      }
+    ]
+  }
+}

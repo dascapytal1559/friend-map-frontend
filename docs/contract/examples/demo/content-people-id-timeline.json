@@ -1,0 +1,71 @@
+{
+  "request": "GET /api/archive/content/people/3/timeline?limit=20",
+  "response": {
+    "messages": [
+      {
+        "id": 36,
+        "platform": "messenger",
+        "conversation": {
+          "id": 2,
+          "type": "direct",
+          "title": "Teodor Larkbrook",
+          "marketplace": false
+        },
+        "sentAt": 1790683012526,
+        "fromSelf": true,
+        "sender": "Jem Ashgrove",
+        "type": "call",
+        "text": null,
+        "unsent": false,
+        "callSeconds": 546,
+        "callLengthGiven": false,
+        "callNote": "",
+        "attachments": [],
+        "reactions": []
+      },
+      {
+        "id": 35,
+        "platform": "messenger",
+        "conversation": {
+          "id": 2,
+          "type": "direct",
+          "title": "Teodor Larkbrook",
+          "marketplace": false
+        },
+        "sentAt": 1790683012526,
+        "fromSelf": false,
+        "sender": "Teodor Larkbrook",
+        "type": "text",
+        "text": "guess who I bumped into today",
+        "unsent": false,
+        "callSeconds": null,
+        "callLengthGiven": false,
+        "callNote": "",
+        "attachments": [],
+        "reactions": []
+      },
+      {
+        "id": 34,
+        "platform": "messenger",
+        "conversation": {
+          "id": 2,
+          "type": "direct",
+          "title": "Teodor Larkbrook",
+          "marketplace": false
+        },
+        "sentAt": 1784704479728,
+        "fromSelf": true,
+        "sender": "Jem Ashgrove",
+        "type": "call",
+        "text": null,
+        "unsent": false,
+        "callSeconds": 0,
+        "callLengthGiven": false,
+        "callNote": "",
+        "attachments": [],
+        "reactions": []
+      }
+    ],
+    "nextBefore": "1648476784095:17"
+  }
+}

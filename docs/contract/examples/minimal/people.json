@@ -1,0 +1,19 @@
+{
+  "request": "GET /api/archive/people",
+  "response": {
+    "people": [
+      {
+        "id": 101,
+        "name": "Ada Sample"
+      },
+      {
+        "id": 102,
+        "name": "Bruno Placeholder"
+      },
+      {
+        "id": 103,
+        "name": "Cleo Example"
+      }
+    ]
+  }
+}

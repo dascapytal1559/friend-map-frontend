@@ -1,0 +1,53 @@
+{
+  "request": "GET /api/archive/people/3/calls",
+  "response": [
+    {
+      "id": 36,
+      "platform": "messenger",
+      "messageId": 36,
+      "manual": false,
+      "accountId": 10,
+      "at": 1790683012526,
+      "durationSeconds": 546,
+      "direction": "outgoing",
+      "answered": true,
+      "service": null,
+      "group": null,
+      "people": 1,
+      "others": 0,
+      "note": ""
+    },
+    {
+      "id": 34,
+      "platform": "messenger",
+      "messageId": 34,
+      "manual": false,
+      "accountId": 10,
+      "at": 1784704479728,
+      "durationSeconds": 0,
+      "direction": "outgoing",
+      "answered": false,
+      "service": null,
+      "group": null,
+      "people": 1,
+      "others": 0,
+      "note": ""
+    },
+    {
+      "id": 33,
+      "platform": "messenger",
+      "messageId": 33,
+      "manual": false,
+      "accountId": 10,
+      "at": 1782290173095,
+      "durationSeconds": 484,
+      "direction": "outgoing",
+      "answered": true,
+      "service": null,
+      "group": null,
+      "people": 1,
+      "others": 0,
+      "note": ""
+    }
+  ]
+}

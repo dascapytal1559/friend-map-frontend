@@ -216,6 +216,22 @@ describe("changing a hangout or a logged call from the chat", () => {
     expect(api.undoChange).toHaveBeenCalledWith(76);
   });
 
+  it("shows a No answer from the chat at once, a length you gave it taken away with it; Undo and Remove put it back", async () => {
+    const given: CallRef = { kind: "record", id: 42 };
+    await saveCallAnswered(given, "3 Oct 2026", "missed", { callSeconds: 25 * 60, callLengthGiven: true, callAnswer: null });
+    expect(callRecords.get(42)).toEqual({ callAnswer: "missed", callSeconds: null, callLengthGiven: false });
+    await changeChip.undo();
+    expect(callRecords.get(42)).toEqual({ callAnswer: null, callSeconds: 25 * 60, callLengthGiven: true });
+    // Of no known length: only its answer changes, and saying what its app says (not known) takes yours away.
+    const unknown: CallRef = { kind: "record", id: 43 };
+    await saveCallAnswered(unknown, "3 Oct 2026", "missed", { callSeconds: null, callLengthGiven: false, callAnswer: null });
+    expect(callRecords.get(43)).toEqual({ callAnswer: "missed" });
+    api.setCallAnswered.mockResolvedValueOnce({ call: unknown, answered: null, answeredSet: false, changeset: 79 });
+    await saveCallAnswered(unknown, "3 Oct 2026", "unknown", { callSeconds: null, callLengthGiven: false, callAnswer: "missed" });
+    expect(callRecords.get(43)).toEqual({ callAnswer: null });
+    expect(changeChip.get()).toMatchObject({ what: { kind: "call-answered", set: false, record: { messageId: 43, before: { callAnswer: "missed" } } }, changeset: 79 });
+  });
+
   it("says it did not save when the archive refuses", async () => {
     api.changeCatchUp.mockRejectedValueOnce(new Error("no"));
     const reported = vi.spyOn(console, "error").mockImplementation(() => {});

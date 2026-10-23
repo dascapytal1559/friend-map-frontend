@@ -69,7 +69,7 @@ function timelineMessage(row: MessageRow): TimelineMessage {
   return {
     id: row.id, platform: row.platform, conversation: { id: row.chat_id, type: row.type, title: row.title, marketplace: false },
     sentAt: row.sent_at, fromSelf: row.from_you === 1, sender: row.sender, type: call ? "call" : "text", text: row.text, unsent: false,
-    callSeconds: row.call_seconds, callLengthGiven: false, callNote: "", attachments: [], reactions: [],
+    callSeconds: row.call_seconds, callLengthGiven: false, callNote: "", callAnswer: null, attachments: [], reactions: [],
   };
 }
 

@@ -645,6 +645,7 @@ export class DemoArchive {
       callSeconds: call ?? null,
       callLengthGiven: false,
       callNote: "",
+      callAnswer: null,
       attachments: [],
       reactions: (messages.reactions.get(index) ?? []).map((r) => ({ emoji: r.emoji, actor: this.account(r.actorAccountId).displayName })),
     };

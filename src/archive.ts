@@ -24,7 +24,7 @@
  * The contract's version, semver: a minor version adds an optional route, field or capability; a major one removes,
  * renames or changes the meaning of anything. The page refuses a backend of another major version.
  */
-export const CONTRACT_VERSION = "1.0.0";
+export const CONTRACT_VERSION = "1.1.0";
 
 /** What a backend serves, and what each part lights up in the app. Only `map` is required. */
 export const CAPABILITIES = {
@@ -541,6 +541,13 @@ export interface TimelineMessage {
   callLengthGiven: boolean;
   /** A call record's note, your own (call_record_note); empty for none and for anything not a call. */
   callNote: string;
+  /**
+   * Whether a call record was answered, as you said it (PUT /call-answered: the chat's No answer, the Table's Calls),
+   * over what its app says; null when you said nothing, and for anything not a call. A call you said was missed has
+   * no length of yours (callSeconds is its app's own). Since contract 1.1.0: a backend before it leaves it out, read
+   * as null.
+   */
+  callAnswer?: CallAnswer | null;
   attachments: AttachmentInfo[];
   reactions: Array<{ emoji: string; actor: string }>;
 }
@@ -942,7 +949,7 @@ export interface ListedCall {
   note: string;
 }
 
-/** Whether an imported call was answered, as you set it in the Table's Calls (null in `answered`: not known). */
+/** Whether an imported call was answered, as you set it (the Table's Calls, the chat's No answer; null in `answered`: not known). */
 export type CallAnswer = "answered" | "missed" | "unknown";
 
 /**

@@ -12,7 +12,7 @@ import { machineTimeZone, setTimeZone } from "../time.ts";
 import { checkBackend, reportLines } from "./check.ts";
 import { contract, KNOWN_CAPABILITIES, majorOf, offers, preContract, refusal, takeContract, takesEdits } from "./handshake.ts";
 import { servedBy, type Backend } from "./routes.ts";
-import { ANSWERS, peopleListing, personSummary, relationshipsReport, strict } from "./schema.ts";
+import { ANSWERS, peopleListing, personSummary, relationshipsReport, strict, timelineMessage } from "./schema.ts";
 import { problemsOf } from "./shape.ts";
 
 const NOW = Date.parse("2026-10-01T12:00:00+10:00");
@@ -56,6 +56,15 @@ describe("the shapes", () => {
     ]);
     expect(JSON.stringify(problems)).not.toContain("Quill");
     expect(problemsOf(personSummary, [])).toEqual([{ path: "(the answer)", problem: "should be PersonSummary, an object, not an array" }]);
+  });
+
+  it("take a call record's answer of yours (1.1.0), and one from a backend before it that sends none", () => {
+    const record = {
+      id: 2, platform: "messenger", conversation: { id: 9, type: "direct", title: null, marketplace: false }, sentAt: 0, fromSelf: false, sender: "Ada",
+      type: "call", text: null, unsent: false, callSeconds: null, callLengthGiven: false, callNote: "", attachments: [], reactions: [],
+    };
+    for (const callAnswer of [undefined, null, "missed", "answered", "unknown"]) expect(problemsOf(strict(timelineMessage), { ...record, callAnswer })).toEqual([]);
+    expect(problemsOf(timelineMessage, { ...record, callAnswer: "no" })).toEqual([{ path: "callAnswer", problem: expect.any(String) }]);
   });
 
   it("hold every answer but the map's to every field (strict), and know every answer ROUTES names", () => {

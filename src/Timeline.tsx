@@ -47,7 +47,7 @@
 // is made up for by scrolling by the difference once the day is measured.
 
 import { createContext, memo, useContext, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState, useSyncExternalStore, type ReactNode, type RefObject } from "react";
-import type { AttachmentInfo, CatchUp, GroupPerson, PersonCall, TimelineMessage, TimelinePage } from "./archive.ts";
+import type { AttachmentInfo, CallAnswer, CatchUp, GroupPerson, PersonCall, TimelineMessage, TimelinePage } from "./archive.ts";
 import { archiveApi } from "./archiveApi.ts";
 import { reportError } from "./errors.ts";
 import { useNames } from "./names.ts";
@@ -56,7 +56,8 @@ import { callRecords, type CallRecordState } from "./callRecords.ts";
 import { CALL_LENGTH_MOST_MINUTES, callLabel, callPlatformName, messageCallLabel } from "./calls.ts";
 import { catchUpWhen } from "./catchUps.ts";
 import { CallNoteLine, ChatCatchUp, ChatLoggedCall, NewChatEvent } from "./CatchUps.tsx";
-import { saveCallLength } from "./changeChip.ts";
+import { saveCallAnswered, saveCallLength } from "./changeChip.ts";
+import { offers } from "./contract/handshake.ts";
 import { useReadOnly } from "./readOnly.ts";
 import {
   aimAt, chatDays, type ChatMoment, dayWindow, loadingAllLabel, momentCursor, sameDay, withEvents, withNewest, type CallEntry, type CatchUpEntry,
@@ -572,13 +573,16 @@ export function Message({ message }: { message: TimelineMessage }) {
     ? (named ? "You" : null)
     : message.sender === null || (!named && names.hidden) ? null : shown(message.sender);
   // A call record reads as the phone's calls do ("Call · 12 min"), in place of the words its app wrote for it, with
-  // the length and note you gave it on this page since it loaded (callRecords.ts).
+  // the length, note and answer you gave it on this page since it loaded (callRecords.ts).
   const call = message.type === "call";
   const savedRecord = () => callRecords.get(message.id);
   const saved = useSyncExternalStore(callRecords.subscribe, savedRecord, savedRecord);
-  const record: CallRecordState = { callSeconds: message.callSeconds, callLengthGiven: message.callLengthGiven, callNote: message.callNote, ...saved };
+  const record: CallRecordState = {
+    callSeconds: message.callSeconds, callLengthGiven: message.callLengthGiven, callNote: message.callNote, callAnswer: message.callAnswer ?? null, ...saved,
+  };
+  const missed = record.callAnswer === "missed" || record.callSeconds === 0;
   return (
-    <div className={`message${message.fromSelf ? " message--self" : ""}${message.type === "system" ? " message--system" : ""}${call ? ` message--call${record.callSeconds === 0 ? " message--missed" : ""}` : ""}`}>
+    <div className={`message${message.fromSelf ? " message--self" : ""}${message.type === "system" ? " message--system" : ""}${call ? ` message--call${missed ? " message--missed" : ""}` : ""}`}>
       <div className="message__meta">
         {who !== null && <span className="message__who"><Name text={who} /></span>}
         {where !== null && (
@@ -617,8 +621,9 @@ export function Message({ message }: { message: TimelineMessage }) {
 /**
  * Another app's call record: what it was ("Call · 25 min"), and the first line of your note on it (hidden with
  * the names). One in a one-to-one chat whose app does not say how long it was may be given its length in whole
- * minutes ("Add length"), which then counts as a call that long; your own length may be changed or taken
- * away again. An app's own length is never changed.
+ * minutes ("Add length"), which then counts as a call that long, or said to have had no answer ("No answer"), which
+ * then reads and counts as a missed call; your own length may be changed or taken away again, and your No answer
+ * taken away (as may a No set in the Table's Calls). An app's own length is never changed.
  */
 function CallRecord({ message, record }: { message: TimelineMessage; record: CallRecordState }) {
   const readOnly = useReadOnly();
@@ -626,14 +631,18 @@ function CallRecord({ message, record }: { message: TimelineMessage; record: Cal
   const [minutes, setMinutes] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const length = { callSeconds: record.callSeconds, callLengthGiven: record.callLengthGiven };
-  const label = messageCallLabel({ ...length, fromSelf: message.fromSelf });
+  // Missed as you said: no length of yours, whatever its app's own.
+  const missedByYou = record.callAnswer === "missed";
+  const label = messageCallLabel({ callSeconds: missedByYou ? 0 : length.callSeconds, fromSelf: message.fromSelf });
   const note = <CallNoteLine note={record.callNote} hidden={names.hidden} />;
-  const editable = !readOnly && message.conversation.type === "direct" && (length.callSeconds === null || length.callLengthGiven);
+  const editable = !readOnly && offers("edit.calls") && message.conversation.type === "direct"
+    && (missedByYou || length.callSeconds === null || length.callLengthGiven);
   if (!editable) return <><p>{label}</p>{note}</>;
-  const save = async (value: number | null) => {
+  const day = catchUpWhen(dayKey(message.sentAt));
+  const run = async (change: () => Promise<unknown>) => {
     setSaving(true);
     try {
-      await saveCallLength(message.id, catchUpWhen(dayKey(message.sentAt)), length, value);
+      await change();
       setMinutes(null);
     } catch (error) {
       reportError(error);
@@ -641,6 +650,24 @@ function CallRecord({ message, record }: { message: TimelineMessage; record: Cal
       setSaving(false);
     }
   };
+  const save = (value: number | null) => run(() => saveCallLength(message.id, day, length, value));
+  const answer = (value: CallAnswer) => run(() => saveCallAnswered({ kind: "record", id: message.id }, day, value, { ...length, callAnswer: record.callAnswer }));
+  if (missedByYou) {
+    // Taking yours away is saying what its app says (its own length, as a missed call keeps none of yours).
+    const itsApps: CallAnswer = length.callSeconds === null ? "unknown" : length.callSeconds > 0 ? "answered" : "missed";
+    return (
+      <>
+        <p>
+          {label}
+          <span className="muted" title="You said it had no answer"> (yours)</span>{" "}
+          <button type="button" className="link-button message__call-length" disabled={saving} title="Take your No answer away" onClick={() => void answer(itsApps)}>
+            Remove
+          </button>
+        </p>
+        {note}
+      </>
+    );
+  }
   if (minutes === null) {
     return (
       <>
@@ -651,6 +678,14 @@ function CallRecord({ message, record }: { message: TimelineMessage; record: Cal
             onClick={() => setMinutes(length.callSeconds === null ? "" : String(Math.round(length.callSeconds / 60)))}>
             {length.callSeconds === null ? "Add length" : "Edit"}
           </button>
+          {length.callSeconds === null && (
+            <>
+              {" ·"}
+              <button type="button" className="link-button message__call-length" disabled={saving} title="Say it was not answered" onClick={() => void answer("missed")}>
+                No answer
+              </button>
+            </>
+          )}
         </p>
         {note}
       </>

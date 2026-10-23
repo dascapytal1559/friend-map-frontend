@@ -16,7 +16,7 @@ import {
   type PersonRelationship, type PersonSummary, type PlatformCounts, type QueryResult, type RelationshipsReport, type ScoredCatchUp,
   type ScoreReport, type SendTarget, type TableRow, type TablePerson, type TagInfo, type TimelineMessage, type TimelinePage, type Trip,
   type DayMessagesPage, type ClosenessSettings, type LinkSource, type GeneratedQuery, type PersonAdded, type PersonSaved, type TagsSaved,
-  type TagsChanged, type CatchUpSaved, type ManualCallSaved, type CallLengthSaved, type CallNoteSaved, type CallAnsweredSaved,
+  type TagsChanged, type CatchUpSaved, type ManualCallSaved, type CallLengthSaved, type CallNoteSaved, type CallAnsweredSaved, type CallAnswer,
   type GroupUnlinkSaved, type ArchivedUntouched, type SendResult, type SameNamed,
 } from "../archive.ts";
 import { identiconSeedOf } from "../identicon.ts";
@@ -34,6 +34,7 @@ const ids = array(number);
 
 const archiveRule: Shape<ArchiveRule> = literal("unknown", "no-name", "marketplace", "they-only", "you-only", "groups-wrote", "groups-silent", "no-messages");
 const archiveReason: Shape<ArchiveReason> = literal("you", "unknown", "no-name", "marketplace", "they-only", "you-only", "groups-wrote", "groups-silent", "no-messages");
+const callAnswer: Shape<CallAnswer> = literal("answered", "missed", "unknown");
 const linkSource = pattern<LinkSource>('"import" | "captain" | "rule:<name>"', /^(import|captain|rule:.+)$/);
 
 const sum = <T>(items: readonly T[], of: (item: T) => number) => items.reduce((total, item) => total + of(item), 0);
@@ -339,6 +340,7 @@ export const timelineMessage = object<TimelineMessage>("TimelineMessage", {
   callSeconds: nullable(number),
   callLengthGiven: boolean,
   callNote: string,
+  callAnswer: absent(nullable(callAnswer)),
   attachments: array(attachmentInfo),
   reactions: array(object<{ emoji: string; actor: string }>("{ emoji, actor }", { emoji: string, actor: string })),
 });

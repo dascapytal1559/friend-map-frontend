@@ -69,7 +69,7 @@ describe("the demo backend", () => {
   it("names what it serves in its handshake, in the crowd's time zone, and friend-map adds its scores", async () => {
     expect(await shakeHands(httpArchive)).toBeNull();
     expect(contract()).toEqual({
-      version: "1.0.0", timeZone: DEMO_TIME_ZONE,
+      version: "1.1.0", timeZone: DEMO_TIME_ZONE,
       capabilities: ["map", "panel", "content", "table", "calendar", "river", "edit.people", "events", "scores"],
     });
     expect(takesEdits()).toBe(true);

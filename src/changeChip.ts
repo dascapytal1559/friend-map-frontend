@@ -43,7 +43,7 @@ import {
   type TagsChanged,
 } from "./archive.ts";
 import { ArchiveError, archiveApi } from "./archiveApi.ts";
-import { callRecords, type CallLength } from "./callRecords.ts";
+import { callRecords, type CallAnswerState, type CallLength, type CallRecordState } from "./callRecords.ts";
 import { callDuration, callPlatformName } from "./calls.ts";
 import { catchUpDayCount, catchUpTitle, catchUpWhen, timeLabel } from "./catchUps.ts";
 import { HANGOUT } from "./eventWords.ts";
@@ -92,8 +92,11 @@ export type ChipSubject =
   | { kind: "call-length"; messageId: number; day: string; before: CallLength; after: CallLength }
   /** A call given a note, or its note changed or taken away: the call, its day as the chip names it, and the note before and after. */
   | { kind: "call-note"; call: CallRef; day: string; before: string; after: string }
-  /** An imported call said to be answered, missed or not known (null), or set back to what its source says (`set` false). */
-  | { kind: "call-answered"; day: string; answered: boolean | null; set: boolean };
+  /**
+   * An imported call said to be answered, missed or not known (null), or set back to what its source says (`set` false);
+   * for a call record, what Undo puts back in the chat (`record`: its answer, and the length yours that missed took away).
+   */
+  | { kind: "call-answered"; day: string; answered: boolean | null; set: boolean; record?: { messageId: number; before: Partial<CallRecordState> } };
 
 export interface Chip {
   what: ChipSubject;
@@ -207,6 +210,7 @@ export const changeChip = {
       await archiveApi.undoChange(shown.changeset);
       if (shown.what.kind === "call-length") callRecords.set(shown.what.messageId, shown.what.before);
       if (shown.what.kind === "call-note" && shown.what.call.kind === "record") callRecords.set(shown.what.call.id, { callNote: shown.what.before });
+      if (shown.what.kind === "call-answered" && shown.what.record) callRecords.set(shown.what.record.messageId, shown.what.record.before);
       archiveChanged();
       if (still()) put({ ...shown, phase: "undone" }, UNDONE_MS);
     } catch (error) {
@@ -387,13 +391,21 @@ export async function saveCallLength(messageId: number, day: string, before: Cal
 }
 
 /**
- * Says whether imported call `call` was answered (the same as its source says takes your away); the closeness
- * score follows it, and the chip names the call's day and offers to undo it. Returns the call's answer as it now is.
+ * Says whether imported call `call` was answered (the same as its source says takes yours away); the closeness
+ * score follows it, and the chip names the call's day and offers to undo it. A call record's chat shows it at once
+ * (callRecords.ts), from `before`, its answer and length as they were: missed takes a length you gave it away.
+ * Returns the call's answer as it now is.
  */
-export async function saveCallAnswered(call: CallRef, day: string, answer: CallAnswer): Promise<Omit<CallAnsweredSaved, "changeset">> {
+export async function saveCallAnswered(call: CallRef, day: string, answer: CallAnswer, before?: CallAnswerState): Promise<Omit<CallAnsweredSaved, "changeset">> {
   const { changeset, ...now } = await archiveApi.setCallAnswered(call, answer);
+  let record: { messageId: number; before: Partial<CallRecordState> } | undefined;
+  if (call.kind === "record" && before) {
+    const lengthGone = answer === "missed" && before.callLengthGiven;
+    callRecords.set(call.id, { callAnswer: now.answeredSet ? answer : null, ...(lengthGone && { callSeconds: null, callLengthGiven: false }) });
+    record = { messageId: call.id, before: { callAnswer: before.callAnswer, ...(lengthGone && { callSeconds: before.callSeconds, callLengthGiven: true }) } };
+  }
   if (changeset !== null) {
-    changeChip.show({ kind: "call-answered", day, answered: now.answered, set: now.answeredSet }, changeset);
+    changeChip.show({ kind: "call-answered", day, answered: now.answered, set: now.answeredSet, ...(record && { record }) }, changeset);
     archiveChanged();
   }
   return now;

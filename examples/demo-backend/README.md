@@ -5,7 +5,7 @@ A backend for friend-map, of made-up people: the public demo's crowd, written in
 ```sh
 npm run demo-backend                                     # http://127.0.0.1:4700
 FRIEND_MAP_ARCHIVE_URL=http://127.0.0.1:4700 npm start   # friend-map in front of it
-npm run contract-check -- http://127.0.0.1:4700          # every route it serves fits contract 1.0.0
+npm run contract-check -- http://127.0.0.1:4700          # every route it serves fits contract 1.1.0
 ```
 
 It needs nothing installed beyond friend-map's own Node: the database is Node's built-in `node:sqlite`, the server `node:http`. It imports the contract's types and a few of its helpers from `src/archive.ts`, and the crowd's generator from `src/demo/` to seed itself; friend-map's code does not import it.

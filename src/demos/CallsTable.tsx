@@ -262,7 +262,11 @@ function AnsweredCell({ call, day, editable, onEdit }: { call: ListedCall; day: 
   const save = (answer: CallAnswer) => {
     if (answer === callAnswer(shown.answered)) return;
     onEdit();
-    setPending(answer === "unknown" ? null : answer === "answered", async () => (await change(() => saveCallAnswered(call.ref, day, answer))) !== undefined);
+    // A call record's chat follows it at once, from how the row loaded.
+    const before = call.ref.kind === "record"
+      ? { callSeconds: call.durationSeconds, callLengthGiven: call.length === "given", callAnswer: call.answeredSet ? callAnswer(call.answered) : null }
+      : undefined;
+    setPending(answer === "unknown" ? null : answer === "answered", async () => (await change(() => saveCallAnswered(call.ref, day, answer, before))) !== undefined);
   };
   return (
     // Its keys are the select's (the arrows pick), not the row's.

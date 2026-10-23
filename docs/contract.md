@@ -1,6 +1,6 @@
 # The data contract: building a backend for friend-map
 
-friend-map is a front end. It draws the map, scores closeness and lets you change people, but it keeps none of their data. The people, their accounts and their messages live in a **backend**: another program, in any language, that answers a set of HTTP routes under `/api/archive`. This page is that set of routes, **contract 1.0.0**: what a backend holds, what it must serve, what it may serve, and how to build one, starting with four routes.
+friend-map is a front end. It draws the map, scores closeness and lets you change people, but it keeps none of their data. The people, their accounts and their messages live in a **backend**: another program, in any language, that answers a set of HTTP routes under `/api/archive`. This page is that set of routes, **contract 1.1.0**: what a backend holds, what it must serve, what it may serve, and how to build one, starting with four routes.
 
 The contract in code is `src/archive.ts`: every answer's type, the version (`CONTRACT_VERSION`), the capabilities (`CAPABILITIES`) and every route (`ROUTES`). Beside this page:
 
@@ -188,6 +188,10 @@ Some payloads, as a write sends them:
 
 - A **minor** version adds something optional: a route, a field or a capability.
 - A **major** version removes, renames or changes the meaning of anything.
+
+What each minor version added:
+
+- **1.1.0**: `callAnswer` on a call record in the chat (TimelineMessage), whether you said it was answered (`PUT /call-answered`), so the chat can show a call you said had no answer, and take it back. A backend before it leaves it out, and the chat reads that as no answer of yours.
 
 friend-map reads any 1.x backend. A capability name it does not know is passed over. A backend with **no handshake at all** (`GET /contract` answers 404) is taken to be one from before contract 1.0: it is assumed to serve every capability, in friend-map's own time zone. That covers the author's backend until it serves a handshake; contract 2.0 drops it, and `contract-check` already fails such a backend.
 

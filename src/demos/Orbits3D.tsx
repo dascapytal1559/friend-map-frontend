@@ -10,7 +10,9 @@
 // so the disc opens into a system with depth, the rings become ellipses, and
 // the names move into the scene (orbits3dNames.ts): each in its person's
 // place, facing the camera, hidden by whatever is nearer. The compass in the bottom-left corner glides the camera back to
-// straight above, where it is Orbits again. Everything else is Orbits':
+// straight above, where it is Orbits again; `?tour=` in the address plays a
+// scripted camera move from straight above, for recording a clip
+// (orbits3dTour.ts). Everything else is Orbits':
 // hovering shows the card, a click opens the panel, whoever's panel is open
 // stays picked out with their group-chat lines, the find box, the Query bar,
 // Hide, the settings and demo mode apply, and it zooms and pans the same way
@@ -38,6 +40,7 @@ import {
 import { drawnAt, heightOf, HOME_VIEW, inclinationOf, lightOn, nearness, paintOrder, ringAxes, sceneExtent, shadeAt } from "./orbits3dScene.ts";
 import { COLOUR_GLOW, HOLLOW, NAME, PHOTO, rgb, SkyGl, SPHERE, SUN_CORE, SUN_GLOW, type Sprite } from "./orbits3dGl.ts";
 import { NameAtlas, nameKey, namesInScene, type NameLook, type NameSlot } from "./orbits3dNames.ts";
+import { tourAt, tourOf } from "./orbits3dTour.ts";
 import { arrivedShare, nameOf, onPage, stageOf, useMedia, useOrbitBodies, useOrbitNames, useSettled, useTween, type XY } from "./orbitsSky.ts";
 import { useTopNames } from "./topNames.ts";
 import { clampZoom, HOME, panBy, pinchZoom, wheelFactor, ZOOM_STEP, zoomAt, zoomBetween, zoomToShow, type Fingers, type Zoom } from "./orbitsZoom.ts";
@@ -420,6 +423,28 @@ export function Orbits3DMap({ model, width, height, inset: top, hover, open, hel
   };
   const keys = useRef({ zoomBy, goHome });
   keys.current = { zoomBy, goHome };
+
+  // A tour (?tour=, orbits3dTour.ts) plays from when the map opens, on the glide's frames, so any turn, zoom or pan
+  // stops it as it stops a glide; under reduced motion the view goes straight to where its lean ends.
+  useEffect(() => {
+    const tour = tourOf(window.location.search);
+    if (!tour) return;
+    const end = tour.hold + Math.max(tour.move, tour.push);
+    const show = (t: number) => {
+      const { camera, k } = tourAt(tour, t);
+      setCamera(camera);
+      setAsked({ k, x: 0, y: 0 });
+    };
+    if (reduced) return show(end);
+    const start = performance.now();
+    const tick = (now: number) => {
+      show(now - start);
+      // A tour that drifts on plays until stopped; one that does not is done once it lands.
+      if (tour.drift !== 0 || now - start < end) motion.current.glide = requestAnimationFrame(tick);
+    };
+    motion.current.glide = requestAnimationFrame(tick);
+    return stopGlide;
+  }, []);
 
   // Someone picked in the find box is brought into view, zoomed in far enough to read their identicon, unless
   // they are in view at that already, and kept in view as the map changes size until you zoom or pan.

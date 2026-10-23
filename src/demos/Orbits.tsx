@@ -42,6 +42,7 @@ import { trendSummary, windowLabel } from "./trend.ts";
 import { basicRows, fieldRows, number, tipAt, type Demo, type ViewProps } from "./view.tsx";
 import { webBoot, type WebMotion } from "./webChoreography.ts";
 import { presetOf, useWebColour } from "./webColour.ts";
+import { glowLook, SWELL, useReachGlow } from "./reachGlow.ts";
 import { useWebStrength } from "./webStrength.ts";
 import { useWebCurve, useWebSpokes } from "./webStyle.ts";
 import { ringTop, webShape } from "./webGeometry.ts";
@@ -170,13 +171,26 @@ export function focusLinksOf(
 /**
  * How strongly someone's marker, name, trail and glow are drawn: by their tier
  * (TIERS; `place`, their place by closeness), someone to reach out to at least
- * as the last tier; while someone is picked out (`focusId`), they at full
+ * as the last tier, lifted toward full by the Reach-out glow (`lift`, glowLook's); while someone is picked out (`focusId`), they at full
  * strength, those linked to them at 70%, and everyone else at one flat
  * BACKGROUND.
  */
-export function strengthOf(id: number, place: number | null, reachOut: boolean, focusId: number | null, linked: ReadonlySet<number>): number {
-  if (focusId === null) return personOpacity(place, reachOut);
+export function strengthOf(id: number, place: number | null, reachOut: boolean, focusId: number | null, linked: ReadonlySet<number>, lift = 0): number {
+  if (focusId === null) return personOpacity(place, reachOut, { lift });
   return id === focusId ? 1 : linked.has(id) ? 0.7 : BACKGROUND;
+}
+
+/**
+ * How a name is styled: filled in its person's `colour`, with their glow's
+ * halo (nameGlow, `shine` of the way in) as strong as the Reach-out glow
+ * `boost` says; past its halfway (`pulse`, glowLook's) it breathes between that
+ * and a swell more (orbits.css), and `pulsing` says to add the class that does.
+ */
+export function nameStyle(colour: string, shine: number, boost: number, pulse: number): { style: CSSProperties; pulsing: boolean } {
+  const rest = nameGlow(colour, shine, boost);
+  if (rest === undefined || pulse <= 0) return { style: { fill: colour, filter: rest }, pulsing: false };
+  const peak = nameGlow(colour, shine, boost * (1 + SWELL.halo * pulse));
+  return { style: { fill: colour, filter: rest, "--glow-rest": rest, "--glow-peak": peak } as CSSProperties, pulsing: true };
 }
 
 /**
@@ -222,6 +236,9 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
   // by rank between them, so the rings stay true.
   const colour = useWebColour();
   const webStrength = useWebStrength();
+  // How strongly everyone to reach out to glows (reachGlow.ts), the same on every view that glows.
+  const reachGlow = useReachGlow();
+  const glow = useMemo(() => glowLook(reachGlow), [reachGlow]);
   // The web's own sliders (webStyle.ts): how deep its cross threads sag, and how many spokes it has.
   const webCurve = useWebCurve();
   const webSpokes = useWebSpokes();
@@ -641,7 +658,7 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
   // Everyone glows in their own identicon colour (glowColour), and their name is drawn in it, so both are plainly theirs.
   const glowColours = useMemo(() => new Map(model.people.map((p) => [p.id, glowColour(p.identiconSeed, p.identiconHue)])), [model.people]);
   // How strongly someone's marker, name, trail and glow are drawn (strengthOf).
-  const strength = useCallback((id: number) => strengthOf(id, closest.get(id) ?? null, reachOut.has(id), focusId, linked), [closest, reachOut, focusId, linked]);
+  const strength = useCallback((id: number) => strengthOf(id, closest.get(id) ?? null, reachOut.has(id), focusId, linked, glow.lift), [closest, reachOut, focusId, linked, glow]);
   // 1 once someone is within a few pixels of where they are headed, fading to 0 by ARRIVED pixels away:
   // names and trails belong to where people settle, so they wait while people rise out of the sun or move.
   const arrived = useCallback((id: number) => arrivedShare(frames.get(id)!, targets.placed.get(id)!), [frames, targets]);
@@ -751,7 +768,10 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
           })}
         </g>
 
-        {/* The glow round everyone you should reach out to, in their own identicon colour: a gradient each, only for those glowing. */}
+        {/*
+          The glow round everyone you should reach out to, in their own identicon colour: a gradient each, only for those
+          glowing, as far and as bright as the Reach-out glow says, breathing past its halfway (orbits.css).
+        */}
         <g>
           {drawn.map((person) => {
             const f = frames.get(person.id)!;
@@ -762,17 +782,18 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
             return (
               <g key={person.id}>
                 <radialGradient id={glowId(person.id)}>
-                  <stop offset="0.25" stopColor={colour} stopOpacity="0.75" />
-                  <stop offset="0.6" stopColor={colour} stopOpacity="0.22" />
+                  <stop offset="0.25" stopColor={colour} stopOpacity={glow.core} />
+                  <stop offset="0.6" stopColor={colour} stopOpacity={glow.mid} />
                   <stop offset="1" stopColor={colour} stopOpacity="0" />
                 </radialGradient>
                 <circle
                   cx={x}
                   cy={y}
-                  r={sized(f) + 5 + 13 * f.glow}
+                  r={sized(f) + (5 + 13 * f.glow) * glow.reach}
                   fill={`url(#${glowId(person.id)})`}
                   opacity={f.opacity * f.glow * strength(person.id)}
-                  className="orbits__glow"
+                  className={glow.pulse > 0 ? "orbits__glow orbits__glow--pulse" : "orbits__glow"}
+                  style={glow.pulse > 0 ? ({ "--swell": 1 + SWELL.reach * glow.pulse } as CSSProperties) : undefined}
                 />
               </g>
             );
@@ -814,28 +835,29 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
 
       </>
     );
-  }, [frames, k, cullX, cullY, width, height, beyond, focusId, focusLinks, linked, labels, targets, trailFrom, model, guides, radius, together, inner, outer, shape, drawn, closest, reachOut, glowColours, circleArcs, me.photo, palette, sunColour, strength, arrived, labelOpacity, nameOnly]);
+  }, [frames, k, cullX, cullY, width, height, beyond, focusId, focusLinks, linked, labels, targets, trailFrom, model, guides, radius, together, inner, outer, shape, drawn, closest, reachOut, glowColours, circleArcs, me.photo, palette, sunColour, strength, arrived, labelOpacity, nameOnly, glow]);
   // The names, over everything in the sky. They are an SVG of their own over the sky's (nameLayer below), so the sky
   // redrawn (a hover, the Spider web's flowing links) never repaints hundreds of names, nor the names the sky's markers.
-  // Each name in its person's own colour, with the outline every name has and nothing behind it, its glow on the letters.
+  // Each name in its person's own colour, with the outline every name has and nothing behind it, its glow on the letters,
+  // as strong as the Reach-out glow says, breathing past its halfway (orbits.css) between that and a swell more.
   const nameMarks = useMemo(() => labels.map((label) => {
     const at = place(label.id);
     const opacity = labelOpacity(label);
-    const colour = glowColours.get(label.id)!;
+    const { style, pulsing } = nameStyle(glowColours.get(label.id)!, frames.get(label.id)!.glow, reachGlow, glow.pulse);
     return (
       <text
         key={label.id}
-        className={`orbits__name${label.scale < 1 ? " orbits__name--minor" : ""}${label.id === focusId ? " orbits__name--focus" : ""}`}
+        className={`orbits__name${label.scale < 1 ? " orbits__name--minor" : ""}${label.id === focusId ? " orbits__name--focus" : ""}${pulsing ? " orbits__name--pulse" : ""}`}
         x={at.x + label.dx}
         y={at.y + label.dy}
         textAnchor={label.anchor}
-        style={{ fill: colour, filter: nameGlow(colour, frames.get(label.id)!.glow) }}
+        style={style}
         opacity={opacity}
       >
         {nameOf(model.people, label.id, names.mapLabel)}
       </text>
     );
-  }), [labels, frames, k, focusId, model.people, names.mapLabel, glowColours, labelOpacity]);
+  }), [labels, frames, k, focusId, model.people, names.mapLabel, glowColours, labelOpacity, reachGlow, glow]);
   // What the web layer draws from this render (WebScene), while a spider-web look is on.
   const webPeople = useMemo(() => drawn.map((p) => ({ id: p.id, colour: glowColours.get(p.id)! })), [drawn, glowColours]);
   // Whoever is surely named unzoomed: the closest `named` (with All, SURELY_NAMED), and everyone to reach out to.
@@ -843,7 +865,7 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
   // Each name drawn in place of its icon, as wide and tall as it was placed: the web fits round it.
   const webNames = useMemo(() => new Map(labels.map((label) => [label.id, { wide: label.right - label.left, tall: label.bottom - label.top }])), [labels]);
   const scene: WebScene | null = web && shape ? {
-    colour, webStrength, width, height, top, sun, k, inner, outer, shape, frames, people: webPeople, strength, arrived, lockIn, focusId, linked,
+    colour, webStrength, reachGlow, width, height, top, sun, k, inner, outer, shape, frames, people: webPeople, strength, arrived, lockIn, focusId, linked,
     hoverId, heldId: held !== null && targets.frames.has(held) ? held : null, reduced, names: webNames,
   } : null;
   // Everyone's identicon, as a pattern their marker is filled with; drawn again only when who is on the map changes.

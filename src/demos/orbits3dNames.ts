@@ -17,7 +17,7 @@
 // document and is only made in the browser.
 
 import type { Camera } from "./cityCamera.ts";
-import { NAME_GLOW } from "./orbitsLayout.ts";
+import { alphaHex, NAME_GLOW, NAME_HALO } from "./orbitsLayout.ts";
 
 /**
  * Over what tilt the names move from Orbits' flat overlay into the scene:
@@ -43,11 +43,13 @@ export interface NameLook {
   bold: boolean;
   /** The glow's colour (glowColour), or none. */
   glow: string | null;
+  /** How strong the Reach-out glow is, 0 (the usual) to 1 (reachGlow.ts): its wider halo, as nameGlow's. */
+  boost: number;
 }
 
 /** One key per distinct drawing of a name, so the atlas draws each once. */
 export function nameKey(look: NameLook): string {
-  return [look.text, look.colour, look.scale, look.bold ? 1 : 0, look.glow ?? ""].join("\u0001");
+  return [look.text, look.colour, look.scale, look.bold ? 1 : 0, look.glow ?? "", look.glow ? look.boost : 0].join("\u0001");
 }
 
 /** Where a name is in the atlas (its uv box) and how big it is drawn, in CSS pixels from its middle. */
@@ -61,6 +63,11 @@ export interface NameSlot {
 export const NAME_TYPE = { size: 12.5, stroke: 3.5, outline: "rgba(7, 11, 22, 0.9)" };
 /** Room round a name in the atlas for its outline and glow, in CSS pixels. */
 const PAD = Math.ceil(NAME_TYPE.stroke / 2 + NAME_GLOW.blur) + 1;
+
+/** Room round a name for its glow's wider halo at `boost` (nameGlow's NAME_HALO), past PAD, in CSS pixels: a blur fades out within about one and a half times itself. */
+function haloPad(look: NameLook): number {
+  return look.glow && look.boost > 0 ? Math.ceil(1.5 * (NAME_HALO.blur + NAME_HALO.more * look.boost)) : 0;
+}
 /** The widest the atlas grows, in device pixels: a row's width, and the most rows. */
 const ATLAS_MAX = 4096;
 
@@ -148,8 +155,9 @@ export class NameAtlas {
     const ascent = m.actualBoundingBoxAscent || size * dpr * 0.8;
     const descent = m.actualBoundingBoxDescent || size * dpr * 0.25;
     const even = (n: number) => 2 * Math.ceil(n / 2);
-    const width = even(Math.ceil(m.width) + 2 * PAD * dpr);
-    const height = even(Math.ceil(ascent + descent) + 2 * PAD * dpr);
+    const pad = PAD + haloPad(look);
+    const width = even(Math.ceil(m.width) + 2 * pad * dpr);
+    const height = even(Math.ceil(ascent + descent) + 2 * pad * dpr);
     const canvas = document.createElement("canvas");
     canvas.width = width;
     canvas.height = height;
@@ -161,9 +169,16 @@ export class NameAtlas {
     ctx.strokeStyle = NAME_TYPE.outline;
     ctx.fillStyle = look.colour;
     const [x, y] = [(width - m.width) / 2, (height - (ascent + descent)) / 2 + ascent];
+    if (look.glow && look.boost > 0) {
+      // nameGlow's wider halo at full glow, under the near one: NAME_HALO's blur and strength at the boost.
+      ctx.shadowColor = look.glow + alphaHex(NAME_HALO.alpha * look.boost);
+      ctx.shadowBlur = (NAME_HALO.blur + NAME_HALO.more * look.boost) * dpr;
+      ctx.strokeText(look.text, x, y);
+    }
     if (look.glow) {
-      // nameGlow's drop-shadow at full glow: a blur of NAME_GLOW.blur, NAME_GLOW.alpha strong, cast by the outline, which covers the fill.
-      ctx.shadowColor = look.glow + Math.round(255 * NAME_GLOW.alpha).toString(16).padStart(2, "0");
+      // nameGlow's drop-shadow at full glow: a blur of NAME_GLOW.blur, NAME_GLOW.alpha strong (NAME_GLOW.boosted more at
+      // the boost), cast by the outline, which covers the fill.
+      ctx.shadowColor = look.glow + alphaHex(NAME_GLOW.alpha * (1 + NAME_GLOW.boosted * look.boost));
       ctx.shadowBlur = NAME_GLOW.blur * dpr;
     }
     ctx.strokeText(look.text, x, y);

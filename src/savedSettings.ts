@@ -1,6 +1,7 @@
-// What friend-map's server keeps of your view settings: the Spider
-// web's, in data/view-settings.json (server/viewSettings.ts), so every browser
-// and the phone share one set (savedStore.ts keeps the page's stores on it).
+// What friend-map's server keeps of your view settings: the Spider web's,
+// and the Reach-out glow every glowing view shares (reachGlow.ts), in
+// data/view-settings.json (server/viewSettings.ts), so every browser and the
+// phone share one set (savedStore.ts keeps the page's stores on it).
 // The names choice (Name format), which the Spider web's settings offer with
 // its own, is among them, as it is one choice for every page. Each is
 // kept as the page keeps it in localStorage, as text, under its key without
@@ -10,7 +11,7 @@
 // No browser code here: the server reads it too.
 
 /** The settings saved on the server, as named in the file: each is its localStorage key without "friend-map.". */
-export const SAVED_SETTINGS = ["names", "web.colour", "web.curve", "web.spokes", "web.strength", "web.top-names", "web.name-padding"] as const;
+export const SAVED_SETTINGS = ["names", "web.colour", "web.curve", "web.spokes", "web.strength", "web.top-names", "web.name-padding", "reach-glow"] as const;
 
 export type SavedName = (typeof SAVED_SETTINGS)[number];
 
@@ -29,6 +30,7 @@ const allowed: Record<SavedName, (value: string) => boolean> = {
   "web.strength": (value) => NUMBER.test(value),
   "web.top-names": (value) => value === "all" || NUMBER.test(value),
   "web.name-padding": (value) => NUMBER.test(value),
+  "reach-glow": (value) => NUMBER.test(value),
 };
 
 /** The saved setting a page's key is (friend-map.web.spokes is web.spokes), or null for one not saved. */

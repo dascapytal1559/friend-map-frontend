@@ -1,5 +1,5 @@
 // What is saved of the view settings (savedSettings.ts): only the Spider web's
-// settings, with the names choice, each as the page keeps
+// settings, with the names choice and the Reach-out glow, each as the page keeps
 // it, and only one of its own values; and how the page is served the set.
 
 import { describe, expect, it } from "vitest";
@@ -7,10 +7,10 @@ import { NAME_STYLES } from "./names.ts";
 import { cleanSaved, NAME_STYLE_VALUES, SAVED_SETTINGS, SAVED_SETTINGS_ID, savedName, savedSettingsIn, savedSettingsJson } from "./savedSettings.ts";
 
 describe("the saved settings", () => {
-  it("are the Spider web's, with the names choice, named by their keys without friend-map.", () => {
-    expect(SAVED_SETTINGS).toEqual(["names", "web.colour", "web.curve", "web.spokes", "web.strength", "web.top-names", "web.name-padding"]);
-    expect([savedName("friend-map.web.spokes"), savedName("friend-map.names"), savedName("friend-map.web.spokes@demo"), savedName("friend-map.orbits.top-names"), savedName("web.spokes")]).toEqual([
-      "web.spokes", "names", null, null, null,
+  it("are the Spider web's, with the names choice and the Reach-out glow, named by their keys without friend-map.", () => {
+    expect(SAVED_SETTINGS).toEqual(["names", "web.colour", "web.curve", "web.spokes", "web.strength", "web.top-names", "web.name-padding", "reach-glow"]);
+    expect([savedName("friend-map.web.spokes"), savedName("friend-map.names"), savedName("friend-map.reach-glow"), savedName("friend-map.web.spokes@demo"), savedName("friend-map.orbits.top-names"), savedName("web.spokes")]).toEqual([
+      "web.spokes", "names", "reach-glow", null, null, null,
     ]);
   });
 
@@ -21,9 +21,10 @@ describe("the saved settings", () => {
   it("keep only those saved, each one of its own values: a choice, a colour, or a number; Name placement, no longer kept, is left out", () => {
     const input = {
       names: "initial", "name-placement": "name-only", "web.colour": "#65a5e2", "web.curve": "0.1", "web.spokes": "14", "web.strength": "-1", "web.top-names": "all", "web.name-padding": 5,
-      "orbits.top-names": "25", "query": "tag:x",
+      "reach-glow": "0.6", "orbits.top-names": "25", "query": "tag:x",
     };
-    expect(cleanSaved(input)).toEqual({ names: "initial", "web.colour": "#65a5e2", "web.curve": "0.1", "web.spokes": "14", "web.top-names": "all" });
+    expect(cleanSaved(input)).toEqual({ names: "initial", "web.colour": "#65a5e2", "web.curve": "0.1", "web.spokes": "14", "web.top-names": "all", "reach-glow": "0.6" });
+    expect(cleanSaved({ "reach-glow": "lots" })).toEqual({});
     expect(cleanSaved({ "web.colour": "Ada Sample", names: "Bruno" })).toEqual({});
     for (const junk of [null, "names", ["names"], 7]) expect(cleanSaved(junk)).toEqual({});
   });

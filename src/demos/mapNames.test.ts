@@ -41,11 +41,11 @@ describe("in the menu", () => {
   const labels = (html: string) => [...html.matchAll(/class="view-switcher__label"[^>]*>([^<]+)</g)].map((m) => m[1]);
 
   it("offers no choice of where names go: Name format, then each view's own, Show top names among them", () => {
-    expect(labels(settings("orbits"))).toEqual(["Name format", "Theme", "Show top names", "Name padding"]);
-    expect(labels(settings("web"))).toEqual(["Name format", "Show top names", "Name padding", "Colour", "Strand curve", "Spokes", "Web strength"]);
-    expect(labels(settings("orbits-3d"))).toEqual(["Name format", "Show top names"]);
-    expect(labels(settings("circles"))).toEqual(["Name format"]);
-    expect(labels(settings("city"))).toEqual(["Name format", "Show top names"]);
+    expect(labels(settings("orbits"))).toEqual(["Name format", "Theme", "Show top names", "Name padding", "Reach-out glow"]);
+    expect(labels(settings("web"))).toEqual(["Name format", "Show top names", "Name padding", "Colour", "Strand curve", "Spokes", "Web strength", "Reach-out glow"]);
+    expect(labels(settings("orbits-3d"))).toEqual(["Name format", "Show top names", "Reach-out glow"]);
+    expect(labels(settings("circles"))).toEqual(["Name format", "Reach-out glow"]);
+    expect(labels(settings("city"))).toEqual(["Name format", "Show top names", "Reach-out glow"]);
     for (const view of ["orbits", "orbits-3d", "circles", "web", "city"]) expect(settings(view), view).not.toMatch(/Name placement|Next to|On icon|Name only/);
   });
 });

@@ -97,3 +97,11 @@ describe("the passes", () => {
     expect(passesOf([])).toEqual([]);
   });
 });
+
+describe("a name's key in the atlas", () => {
+  it("is new for a glowing name as the Reach-out glow changes, so it is drawn again, and the same for a name without a glow", () => {
+    const look = { text: "Ada Sample", colour: "#3a7bd5", scale: 1, bold: false, glow: "#3a7bd5", boost: 0 };
+    expect(nameKey({ ...look, boost: 1 })).not.toBe(nameKey(look));
+    expect(nameKey({ ...look, glow: null, boost: 1 })).toBe(nameKey({ ...look, glow: null }));
+  });
+});

@@ -51,6 +51,7 @@
 import { easeCubicOut } from "d3";
 import { mix } from "../identicon.ts";
 import type { Frame } from "./orbitsSky.ts";
+import { glowLook, pulseAt, SWELL } from "./reachGlow.ts";
 import { appearAt, BOOT_MS, easeOutBack, easeOutExpo, SCAN, travelEase, type WebMotion } from "./webChoreography.ts";
 import type { WebColour } from "./webColour.ts";
 import { webTheme, type Ink } from "./webTheme.ts";
@@ -74,6 +75,8 @@ export interface WebScene {
   colour: WebColour;
   /** How strongly the web is drawn, 0 to 1 (webStrength.ts). */
   webStrength: number;
+  /** How strongly everyone to reach out to glows, 0 (the usual) to 1 (reachGlow.ts). */
+  reachGlow: number;
   width: number;
   height: number;
   /** The header's height: the web fades under it. */
@@ -585,7 +588,10 @@ export function drawWeb(ctx: Ctx, scene: WebScene, motion: WebMotion, now: numbe
   const gone = stepHold(state.hold, now, { ...looks, reduced: scene.reduced });
   const looked = lookedAt(looks);
   const focus = looked === null ? null : spot(scene, looked);
-  // Halos under everyone drawn strongly; while the Spider web boots, everyone it names locks in with a bracket as the scan
+  const reach = glowLook(scene.reachGlow);
+  const swell = scene.reduced ? 1 : 1 + SWELL.reach * reach.pulse * pulseAt(now);
+  // Halos under everyone drawn strongly, someone to reach out to's in their colour, as far and as bright as the Reach-out
+  // glow says, breathing past its halfway; while the Spider web boots, everyone it names locks in with a bracket as the scan
   // reaches them, gone again within LOCK_FLASH_MS, well before the boot ends. No bracket stays on anyone: the only
   // lasting one is the hover's (hoverReticle).
   for (const person of scene.people) {
@@ -608,7 +614,8 @@ export function drawWeb(ctx: Ctx, scene: WebScene, motion: WebMotion, now: numbe
     if (mark.name) continue;
     if (strength < 0.35 && f.glow < 0.05 && person.id !== scene.focusId) continue;
     const a = f.opacity * scene.arrived(person.id);
-    drawHalo(ctx, p.x, p.y, r * 2.2 + 3 + 9 * f.glow, f.glow > 0.5 ? person.colour : ink.beam, (0.22 + 0.3 * f.glow) * strength * a);
+    const glowing = f.glow * reach.reach * (f.glow > 0.5 ? swell : 1);
+    drawHalo(ctx, p.x, p.y, r * 2.2 + 3 + 9 * glowing, f.glow > 0.5 ? person.colour : ink.beam, (0.22 + 0.3 * f.glow * reach.bright) * strength * a);
   }
   // The spider at the hub, fading in as the Spider web boots: a small body on legs standing wide, a little past the closest orbit, unzoomed,
   // and growing with the zoom, slower than the people spread, so it can be looked at closely and never reaches them.

@@ -50,6 +50,7 @@ import { focusLinksOf, focusOf, PHONE } from "./Orbits.tsx";
 import { BACKGROUND, nameColour, personOpacity, TIER_FLOOR, TIERS } from "./orbitsLayout.ts";
 import { clampZoom, HOME, MAX_ZOOM, panBy, pinchZoom, wheelFactor, ZOOM_STEP, zoomAt, zoomBetween, zoomToShow, type Fingers, type Zoom } from "./orbitsZoom.ts";
 import { COLORS } from "./palette.ts";
+import { glowLook, useReachGlow } from "./reachGlow.ts";
 import { ringColours, ringShare } from "./ringColours.ts";
 import { trendSummary, windowLabel } from "./trend.ts";
 import { ALL, amongTop, useTopNames } from "./topNames.ts";
@@ -139,6 +140,9 @@ export function CityMap({ model, width, height, inset: top, hover, open, held = 
   const neon = useMemo(() => new Map(model.people.map((p) => [p.id, neonOf(p.identiconSeed, p.identiconHue)])), [model.people]);
   const signColours = useMemo(() => new Map(model.people.map((p) => [p.id, nameColour(p.identiconSeed, p.identiconHue)])), [model.people]);
   const reachOut = useMemo(() => new Set(model.people.filter((p) => p.shouldReachOut).map((p) => p.id)), [model.people]);
+  // How strongly their beacons shine (reachGlow.ts), as the other views' glows: their light and ring wider and brighter.
+  const reachGlow = useReachGlow();
+  const glow = useMemo(() => glowLook(reachGlow), [reachGlow]);
   const streams = useMemo(
     () => traffic(model.people.map((p) => ({ id: p.id, daysSince: standings.get(p.id)!.daysSince })), TRAFFIC_DAYS)
       .sort((a, b) => (standings.get(a.id)!.daysSince ?? 0) - (standings.get(b.id)!.daysSince ?? 0) || a.id - b.id)
@@ -163,7 +167,7 @@ export function CityMap({ model, width, height, inset: top, hover, open, held = 
   const focusLinks = useMemo(() => focusLinksOf(model, focusId, held, heldGroup), [model, focusId, held, heldGroup]);
   const linked = useMemo(() => new Set(focusLinks.map((l) => (l.source === focusId ? l.target : l.source))), [focusLinks, focusId]);
   const strength = (id: number, rank: number) =>
-    focusId === null ? personOpacity(rank > 0 ? rank : null, reachOut.has(id)) : id === focusId ? 1 : linked.has(id) ? 0.7 : BACKGROUND;
+    focusId === null ? personOpacity(rank > 0 ? rank : null, reachOut.has(id), { lift: glow.lift }) : id === focusId ? 1 : linked.has(id) ? 0.7 : BACKGROUND;
 
   // The zoom (orbitsZoom.ts): asked for, kept within the city's reach.
   const [asked, setAsked] = useState(() => keptZoom.current);
@@ -555,6 +559,7 @@ export function CityMap({ model, width, height, inset: top, hover, open, held = 
   };
 
   // The sky: a beacon on the roof of everyone you should reach out to, pulsing in their colour; a floor of the tower pulses whole.
+  // The Reach-out glow (glow) widens the light and the ring and brightens all three.
   const drawSky = (now: number) => {
     const ctx = begin({ canvas: skyRef.current });
     if (!ctx) return;
@@ -572,24 +577,25 @@ export function CityMap({ model, width, height, inset: top, hover, open, held = 
         if (!onPage(roof, 30)) continue;
         // The mast's light, and a ring spreading from it.
         ctx.beginPath();
-        ctx.arc(roof.x, roof.y, 5, 0, 2 * Math.PI);
-        ctx.fillStyle = tint(colour, 0.25 * str);
+        ctx.arc(roof.x, roof.y, 5 * glow.bright, 0, 2 * Math.PI);
+        ctx.fillStyle = tint(colour, 0.25 * glow.bright * str);
         ctx.fill();
         ctx.beginPath();
         ctx.arc(roof.x, roof.y, 2, 0, 2 * Math.PI);
         ctx.fillStyle = tint("#ffffff", 0.95 * str);
         ctx.fill();
         ctx.beginPath();
-        ctx.ellipse(roof.x, roof.y, 3 + 16 * p, (3 + 16 * p) * sq, 0, 0, 2 * Math.PI);
-        ctx.lineWidth = 1.2;
-        ctx.strokeStyle = tint(colour, (1 - p) * 0.8 * str);
+        const ring = 3 + 16 * glow.reach * p;
+        ctx.ellipse(roof.x, roof.y, ring, ring * sq, 0, 0, 2 * Math.PI);
+        ctx.lineWidth = 1.2 * glow.bright;
+        ctx.strokeStyle = tint(colour, Math.min(1, (1 - p) * 0.8 * glow.bright) * str);
         ctx.stroke();
       } else {
         const floor = floorOf(id);
         if (!floor) continue;
         const str = strength(id, byId.get(id)?.rank[at] ?? 1);
         const band = floorBands(floor);
-        ctx.fillStyle = tint(colour, 0.22 * str * (0.5 + 0.5 * Math.sin(p * 2 * Math.PI)));
+        ctx.fillStyle = tint(colour, 0.22 * glow.bright * str * (0.5 + 0.5 * Math.sin(p * 2 * Math.PI)));
         poly(ctx, band.left);
         ctx.fill();
         poly(ctx, band.right);
@@ -606,7 +612,7 @@ export function CityMap({ model, width, height, inset: top, hover, open, held = 
   useEffect(() => {
     if (riseStart.current === 0) riseStart.current = performance.now();
     draw.current.town(performance.now());
-  }, [scene, zoom.k, zoom.x, zoom.y, width, height, dpr, focusId, linked, names, named, phone, reachOut, neon, signColours, held]);
+  }, [scene, zoom.k, zoom.x, zoom.y, width, height, dpr, focusId, linked, names, named, phone, reachOut, neon, signColours, held, glow]);
   useEffect(() => {
     let raf = 0;
     const tick = (now: number) => {
@@ -635,7 +641,7 @@ export function CityMap({ model, width, height, inset: top, hover, open, held = 
       cancelAnimationFrame(raf);
       clearTimeout(fallback);
     };
-  }, [moving, scene, zoom.k, zoom.x, zoom.y, width, height, dpr, focusId, focusLinks, streams, reachOut, neon]);
+  }, [moving, scene, zoom.k, zoom.x, zoom.y, width, height, dpr, focusId, focusLinks, streams, reachOut, neon, glow]);
 
   // Picking: the building under the pointer, the front one where they overlap, or a floor of the tower; else the
   // nearest building's foot within `reach` pixels, so the smallest are easy to catch.

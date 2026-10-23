@@ -1,6 +1,7 @@
 // Your saved view settings, data/view-settings.json (see
-// src/savedSettings.ts for what they are): the Spider web's settings as last
-// chosen on any browser or the phone, each as the page keeps it.
+// src/savedSettings.ts for what they are): the Spider web's settings and the
+// Reach-out glow, as last chosen on any browser or the phone, each as the page
+// keeps it.
 //
 //   { "names": "initial", "web.spokes": "14" }
 //

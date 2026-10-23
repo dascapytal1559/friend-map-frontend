@@ -88,6 +88,42 @@
   font-weight: 600;
 }
 
+/*
+  A strong Reach-out glow breathes (reachGlow.ts): a marker's glow swells to --swell its size, a name's halo from
+  --glow-rest to --glow-peak, both set where they are drawn (Orbits.tsx). Still with reduced motion.
+*/
+.orbits__glow--pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: orbits-reach-swell 1.2s ease-in-out infinite alternate;
+}
+
+.orbits__name--pulse {
+  animation: orbits-reach-halo 1.2s ease-in-out infinite alternate;
+}
+
+@keyframes orbits-reach-swell {
+  to {
+    transform: scale(var(--swell));
+  }
+}
+
+@keyframes orbits-reach-halo {
+  from {
+    filter: var(--glow-rest);
+  }
+  to {
+    filter: var(--glow-peak);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .orbits__glow--pulse,
+  .orbits__name--pulse {
+    animation: none;
+  }
+}
+
 /* Friend circles, while chosen: a faint arc round the outside of each, and its name; whoever's is picked out, brighter. */
 .orbits__circles {
   pointer-events: none;

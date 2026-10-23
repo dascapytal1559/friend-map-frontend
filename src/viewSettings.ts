@@ -6,7 +6,8 @@
 // over a store the view itself reads, so the menu and the view stay one
 // (ViewSettings.tsx draws them). A view's settings come in groups, set apart
 // by a line: most views have one; the Spider web has two, its name settings
-// first and then the web's own look. The name choice (Name format,
+// first and then the web's own look. Every view that glows round everyone to
+// reach out to ends with one more, the Reach-out glow, one setting they share. The name choice (Name format,
 // NamesMenu.tsx), on every page that shows names, is put first in the first
 // group by ViewSettings.tsx rather than listed here, as it is the page's, not
 // one view's. Where names go is not a setting: every map view draws each
@@ -14,6 +15,7 @@
 // the stores' hooks.
 
 import { includeGroupsStore } from "./demos/calendar.ts";
+import { reachGlowLabel, reachGlowStore } from "./demos/reachGlow.ts";
 import { ORBITS_PRESETS, orbitsCustomStore, orbitsThemeStore } from "./demos/orbitsTheme.ts";
 import type { Hex } from "./demos/themeColour.ts";
 import { COLOURS, webColourStore, webCustomStore, type WebColour } from "./demos/webColour.ts";
@@ -84,6 +86,11 @@ function namePadding(slug: MapView): SliderSetting {
   return { kind: "slider", label: "Name padding", ...NAME_PADDING, store: namePaddingStores[slug], format: (px) => `${px} px` };
 }
 
+/** The Reach-out glow (reachGlow.ts): how strongly everyone you should reach out to glows, on every view that glows. */
+const REACH_GLOW: SettingGroup = [
+  { kind: "slider", label: "Reach-out glow", min: 0, max: 1, step: 0.05, store: reachGlowStore, format: reachGlowLabel },
+];
+
 export const VIEW_SETTINGS: Readonly<Record<string, readonly SettingGroup[]>> = {
   orbits: [[
     {
@@ -95,8 +102,9 @@ export const VIEW_SETTINGS: Readonly<Record<string, readonly SettingGroup[]>> = 
     } satisfies ColourSetting<Hex>,
     topNames("orbits"),
     namePadding("orbits"),
-  ]],
-  "orbits-3d": [[topNames("orbits-3d")]],
+  ], REACH_GLOW],
+  "orbits-3d": [[topNames("orbits-3d")], REACH_GLOW],
+  circles: [REACH_GLOW],
   // Its name settings together (with Name format, first), then the web's own look.
   web: [
     [topNames("web"), namePadding("web")],
@@ -112,8 +120,9 @@ export const VIEW_SETTINGS: Readonly<Record<string, readonly SettingGroup[]>> = 
       { kind: "slider", label: "Spokes", ...SPOKES, store: webSpokesStore, format: String },
       { kind: "slider", label: "Web strength", min: 0, max: 1, step: 0.05, store: webStrengthStore },
     ],
+    REACH_GLOW,
   ],
-  city: [[topNames("city")]],
+  city: [[topNames("city")], REACH_GLOW],
   calendar: [[
     {
       kind: "toggle",

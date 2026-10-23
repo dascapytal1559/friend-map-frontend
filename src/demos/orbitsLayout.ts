@@ -549,11 +549,14 @@ export function tierOpacity(place: number | null, tiers = TIERS): number {
 /**
  * How strongly someone is drawn, their marker, name, trail and glow alike:
  * by their tier, and someone you should reach out to never fainter
- * than the last tier, the faintest of the named, wherever they are.
+ * than the last tier, the faintest of the named, wherever they are; a
+ * stronger Reach-out glow lifts that least strength `lift` of the way from the
+ * last tier's to full (glowLook in reachGlow.ts).
  */
-export function personOpacity(place: number | null, reachOut: boolean, tiers = TIERS): number {
+export function personOpacity(place: number | null, reachOut: boolean, { tiers = TIERS, lift = 0 }: { tiers?: typeof TIERS; lift?: number } = {}): number {
   const own = tierOpacity(place, tiers);
-  return reachOut ? Math.max(own, tiers[tiers.length - 1].opacity) : own;
+  const last = tiers[tiers.length - 1].opacity;
+  return reachOut ? Math.max(own, last + (1 - last) * lift) : own;
 }
 
 /** How far a name's colour goes from its person's identicon colour toward the plain light text (nameColour). */
@@ -574,18 +577,38 @@ export function glowColour(seed: string, hue: number | null): string {
   return identicon(seed, hue).main;
 }
 
-/** How far, in pixels, a glowing name's halo reaches, and how strong it is, at full glow. */
-export const NAME_GLOW = { blur: 3, alpha: 0.8 };
+/**
+ * How far, in pixels, a glowing name's halo reaches, and how strong it is, at
+ * full glow; and how much stronger, as a share, at the strongest Reach-out glow
+ * (reachGlow.ts).
+ */
+export const NAME_GLOW = { blur: 3, alpha: 0.8, boosted: 0.25 };
+
+/**
+ * The wider halo a stronger Reach-out glow (reachGlow.ts) adds round a glowing
+ * name, past NAME_GLOW's: its blur, `blur` pixels plus `more` times the
+ * setting, and its strength, `alpha` times the setting; none at the usual look.
+ */
+export const NAME_HALO = { blur: 4, more: 6, alpha: 0.6 };
+
+/** A share, 0 to 1, as the two hex digits of a colour's alpha. */
+export function alphaHex(share: number): string {
+  return Math.round(255 * Math.max(0, Math.min(1, share))).toString(16).padStart(2, "0");
+}
 
 /**
  * The CSS filter that gives someone's name a soft halo in their glow colour,
  * `glow` (0 to 1, as glowOf, tweened) of the way in; none without a glow. The
- * halo sits outside the name's dark outline, so the letters stay sharp.
+ * halo sits outside the name's dark outline, so the letters stay sharp. A
+ * stronger Reach-out glow, `boost` (0, the usual, to 1; a pulse's swell may
+ * pass 1), makes the near halo stronger and adds NAME_HALO round it.
  */
-export function nameGlow(colour: string, glow: number): string | undefined {
+export function nameGlow(colour: string, glow: number, boost = 0): string | undefined {
   if (glow < 0.02) return undefined;
-  const alpha = Math.round(255 * NAME_GLOW.alpha * Math.min(glow, 1)).toString(16).padStart(2, "0");
-  return `drop-shadow(0 0 ${(NAME_GLOW.blur * Math.min(glow, 1)).toFixed(2)}px ${colour}${alpha})`;
+  const g = Math.min(glow, 1);
+  const near = `drop-shadow(0 0 ${(NAME_GLOW.blur * g).toFixed(2)}px ${colour}${alphaHex(NAME_GLOW.alpha * g * (1 + NAME_GLOW.boosted * boost))})`;
+  if (boost <= 0) return near;
+  return `${near} drop-shadow(0 0 ${((NAME_HALO.blur + NAME_HALO.more * boost) * g).toFixed(2)}px ${colour}${alphaHex(NAME_HALO.alpha * boost * g)})`;
 }
 
 /** The smallest radius, in pixels, at which a marker's identicon reads: two and a bit pixels a cell. */

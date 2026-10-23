@@ -73,7 +73,7 @@ friend-map keeps a few files of its own in its data folder: `data/` in this repo
 data/                       # gitignored: the data folder (FRIEND_MAP_DATA, else data/)
   usage.jsonl               # which views you opened, when, and for how long (npm run usage)
   settings.json             # optional settings, such as how far back trends look (see "Settings")
-  view-settings.json        # the Spider web's settings, shared by every browser (see "Saved view settings")
+  view-settings.json        # the Spider web's settings and the Reach-out glow, shared by every browser (see "Saved view settings")
   me/photo.<jpg|png|webp>   # your photo, drawn in place of the sun on Orbits (see "Orbits" under "The views")
 ```
 

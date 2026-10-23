@@ -3,9 +3,10 @@
 // has any: Name format first on a page that shows names (NamesMenu.tsx), then
 // the Spider web's Colour, Strand curve, Spokes and Web strength, Orbits'
 // Theme, the Calendar's Messages, each main view's Show top names
-// (topNames.ts), and Orbits' and the Spider web's Name padding; on the Spider
-// web its name settings together in a group of their own, then its look in
-// another.
+// (topNames.ts), Orbits' and the Spider web's Name padding, and the
+// Reach-out glow every view that glows shares, in a group of its own last; on
+// the Spider web its name settings together in a group of their own, then its
+// look in another.
 
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -54,13 +55,15 @@ const setting = (html: string, label: string) => {
 const pressed = (html: string) => [...html.matchAll(/<button type="button" aria-pressed="(true|false)"[^>]*>(?:<span[^>]*><\/span>)?([^<]+)<\/button>/g)].map((m) => [m[2], m[1]]);
 
 describe("the views' settings", () => {
-  it("are the Spider web's colour, strand curve, spokes and strength, Orbits' theme, the Calendar's messages, each main view's Show top names and Orbits' and the web's Name padding, and nothing for any other view", () => {
-    expect(settingsOf("web").map((s) => [s.kind, s.label])).toEqual([["toggle", "Show top names"], ["slider", "Name padding"], ["colour", "Colour"], ["slider", "Strand curve"], ["slider", "Spokes"], ["slider", "Web strength"]]);
-    expect(settingsOf("orbits").map((s) => [s.kind, s.label])).toEqual([["colour", "Theme"], ["toggle", "Show top names"], ["slider", "Name padding"]]);
-    expect(settingsOf("orbits-3d").map((s) => [s.kind, s.label])).toEqual([["toggle", "Show top names"]]);
-    expect(settingsOf("city").map((s) => [s.kind, s.label])).toEqual([["toggle", "Show top names"]]);
+  it("are the Spider web's colour, strand curve, spokes and strength, Orbits' theme, the Calendar's messages, each main view's Show top names, Orbits' and the web's Name padding and every glowing view's Reach-out glow, and nothing for any other view", () => {
+    const glow = ["slider", "Reach-out glow"];
+    expect(settingsOf("web").map((s) => [s.kind, s.label])).toEqual([["toggle", "Show top names"], ["slider", "Name padding"], ["colour", "Colour"], ["slider", "Strand curve"], ["slider", "Spokes"], ["slider", "Web strength"], glow]);
+    expect(settingsOf("orbits").map((s) => [s.kind, s.label])).toEqual([["colour", "Theme"], ["toggle", "Show top names"], ["slider", "Name padding"], glow]);
+    expect(settingsOf("orbits-3d").map((s) => [s.kind, s.label])).toEqual([["toggle", "Show top names"], glow]);
+    expect(settingsOf("circles").map((s) => [s.kind, s.label])).toEqual([glow]);
+    expect(settingsOf("city").map((s) => [s.kind, s.label])).toEqual([["toggle", "Show top names"], glow]);
     expect(settingsOf("calendar").map((s) => [s.kind, s.label])).toEqual([["toggle", "Messages"]]);
-    for (const view of VIEWS.filter((v) => !["web", "orbits", "orbits-3d", "city", "calendar"].includes(v.slug))) expect(settingsOf(view.slug)).toEqual([]);
+    for (const view of VIEWS.filter((v) => !["web", "orbits", "orbits-3d", "circles", "city", "calendar"].includes(v.slug))) expect(settingsOf(view.slug)).toEqual([]);
     for (const slug of Object.keys(VIEW_SETTINGS)) expect(VIEWS.some((v) => v.slug === slug)).toBe(true);
   });
 
@@ -101,15 +104,16 @@ describe("the settings section in the menu", () => {
     expect(kept.items.has(SETTINGS_OPEN_KEY)).toBe(false);
   });
 
-  it("group the Spider web's name settings together, Name format first, apart from its look; every other view's are one group", () => {
-    expect(groupsOf("web").map((group) => group.map((s) => s.label))).toEqual([["Show top names", "Name padding"], ["Colour", "Strand curve", "Spokes", "Web strength"]]);
-    for (const slug of Object.keys(VIEW_SETTINGS).filter((slug) => slug !== "web")) expect(groupsOf(slug), slug).toHaveLength(1);
+  it("group the Spider web's name settings together, Name format first, apart from its look; the Reach-out glow is a group of its own, last; every other view's are one group", () => {
+    expect(groupsOf("web").map((group) => group.map((s) => s.label))).toEqual([["Show top names", "Name padding"], ["Colour", "Strand curve", "Spokes", "Web strength"], ["Reach-out glow"]]);
+    for (const slug of ["orbits", "orbits-3d", "city"]) expect(groupsOf(slug).map((group) => group.map((s) => s.label)).at(-1), slug).toEqual(["Reach-out glow"]);
+    for (const slug of Object.keys(VIEW_SETTINGS).filter((slug) => !["web", "orbits", "orbits-3d", "city"].includes(slug))) expect(groupsOf(slug), slug).toHaveLength(1);
     /** Each group the menu draws, as its settings' labels. */
     const drawn = (slug: string) =>
       section(menu(slug))!.split('<div class="view-switcher__setting-group">').slice(1).map((group) => [...group.matchAll(/class="view-switcher__label"[^>]*>([^<]+)</g)].map((m) => m[1]));
-    expect(drawn("web")).toEqual([["Name format", "Show top names", "Name padding"], ["Colour", "Strand curve", "Spokes", "Web strength"]]);
-    expect(drawn("orbits")).toEqual([["Name format", "Theme", "Show top names", "Name padding"]]);
-    expect(drawn("circles")).toEqual([["Name format"]]);
+    expect(drawn("web")).toEqual([["Name format", "Show top names", "Name padding"], ["Colour", "Strand curve", "Spokes", "Web strength"], ["Reach-out glow"]]);
+    expect(drawn("orbits")).toEqual([["Name format", "Theme", "Show top names", "Name padding"], ["Reach-out glow"]]);
+    expect(drawn("circles")).toEqual([["Name format", "Reach-out glow"]]);
     expect(drawn("table")).toEqual([["Name format"]]);
   });
 
@@ -117,8 +121,8 @@ describe("the settings section in the menu", () => {
     for (const slug of ["table", "time-river", "river", "reciprocity"]) expect(section(menu(slug, false, false))).toBeNull();
   });
 
-  it("is on every page that shows names, if only for Name format: the Table, the Time river's and Circles' hold Name format alone", () => {
-    for (const slug of ["table", "time-river", "circles"]) {
+  it("is on every page that shows names, if only for Name format: the Table's and the Time river's hold Name format alone", () => {
+    for (const slug of ["table", "time-river"]) {
       const html = section(menu(slug))!;
       expect(html).toContain(">Name format</span>");
       expect(html.match(/class="view-switcher__label"/g)).toHaveLength(1);

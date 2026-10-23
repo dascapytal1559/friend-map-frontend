@@ -33,9 +33,9 @@ import { cameraBetween, squash, turnCamera, twistCamera, type Camera, type Finge
 import { scoreLabel } from "./closeness.ts";
 import { Compass } from "./Compass.tsx";
 import type { DemoPerson } from "./model.ts";
-import { drawnBox, focusLinksOf, focusOf, nameAt, PHONE } from "./Orbits.tsx";
+import { drawnBox, focusLinksOf, focusOf, nameAt, nameStyle, PHONE } from "./Orbits.tsx";
 import {
-  BACKGROUND, displacementTrail, drawnSize, glowColour, hearthGlowRadius, LINKED_FLOOR, nameGlow, orbitRadius, personOpacity, READABLE, rings,
+  BACKGROUND, displacementTrail, drawnSize, glowColour, hearthGlowRadius, LINKED_FLOOR, orbitRadius, personOpacity, READABLE, rings,
 } from "./orbitsLayout.ts";
 import { drawnAt, heightOf, HOME_VIEW, inclinationOf, lightOn, nearness, paintOrder, ringAxes, sceneExtent, shadeAt } from "./orbits3dScene.ts";
 import { COLOUR_GLOW, HOLLOW, NAME, PHOTO, rgb, SkyGl, SPHERE, SUN_CORE, SUN_GLOW, type Sprite } from "./orbits3dGl.ts";
@@ -47,6 +47,7 @@ import { clampZoom, HOME, panBy, pinchZoom, wheelFactor, ZOOM_STEP, zoomAt, zoom
 import "./orbits.css";
 import "./orbits3d.css";
 import { COLORS } from "./palette.ts";
+import { glowLook, useReachGlow } from "./reachGlow.ts";
 import { ringColours } from "./ringColours.ts";
 import { PHOTO_SHARE, SUN_SHARE, SunControls, useMePhoto } from "./SunPhoto.tsx";
 import { trendSummary, windowLabel } from "./trend.ts";
@@ -123,10 +124,13 @@ export function Orbits3DMap({ model, width, height, inset: top, hover, open, hel
   const focusLinks = useMemo(() => focusLinksOf(model, focusId, held, heldGroup), [model, focusId, held, heldGroup]);
   const linked = useMemo(() => new Set(focusLinks.map((l) => (l.source === focusId ? l.target : l.source))), [focusLinks, focusId]);
   const reachOut = useMemo(() => new Set(model.people.filter((p) => p.shouldReachOut).map((p) => p.id)), [model.people]);
+  // How strongly they glow (reachGlow.ts), as on Orbits; the scene's glows are drawn as things move, so only the flat names breathe.
+  const reachGlow = useReachGlow();
+  const glow = useMemo(() => glowLook(reachGlow), [reachGlow]);
   // How strongly someone is drawn: by their tier, someone to reach out to at least as the last tier; while someone is
   // picked out, they at full strength, those linked to them at 70%, and everyone else at one flat BACKGROUND.
   const strength = (id: number) =>
-    focusId === null ? personOpacity(closest.get(id) ?? null, reachOut.has(id)) : focusId === id ? 1 : linked.has(id) ? 0.7 : BACKGROUND;
+    focusId === null ? personOpacity(closest.get(id) ?? null, reachOut.has(id), { lift: glow.lift }) : focusId === id ? 1 : linked.has(id) ? 0.7 : BACKGROUND;
 
   // The camera (cityCamera.ts): turned and tilted by a drag, back to straight above by the compass.
   const [camera, setCamera] = useState(() => keptCamera.current);
@@ -210,8 +214,9 @@ export function Orbits3DMap({ model, width, height, inset: top, hover, open, hel
       scale: label.scale,
       bold: label.id === focusId,
       glow: targets.frames.get(label.id)!.glow >= 0.02 ? glowColours.get(label.id)! : null,
+      boost: reachGlow,
     }])),
-    [labels, model.people, names.mapLabel, glowColours, focusId, targets],
+    [labels, model.people, names.mapLabel, glowColours, focusId, targets, reachGlow],
   );
   const lookKeys = useMemo(() => [...looks.values()].map(nameKey).sort().join("\n"), [looks]);
   const atlas = useRef(new NameAtlas());
@@ -259,7 +264,7 @@ export function Orbits3DMap({ model, width, height, inset: top, hover, open, hel
         hearthGlows.push({ x: p.x, y: p.y, r: hearthGlowRadius(size, inner), alpha: f.opacity * str, mode: SUN_GLOW });
       } else if (f.glow >= 0.02) {
         const [r, g, b] = glowRgb.get(person.id)!;
-        reachGlows.push({ x: p.x, y: p.y, r: size + 5 + 13 * f.glow, alpha: f.opacity * f.glow * str, mode: COLOUR_GLOW, colour: [r, g, b, 1] });
+        reachGlows.push({ x: p.x, y: p.y, r: size + (5 + 13 * f.glow) * glow.reach, alpha: f.opacity * f.glow * str * glow.gain, mode: COLOUR_GLOW, colour: [r, g, b, 1] });
       }
       if (!alone) bodies.push({
         x: p.x, y: p.y, r: size, alpha: f.opacity * str,
@@ -322,7 +327,7 @@ export function Orbits3DMap({ model, width, height, inset: top, hover, open, hel
   }, [me.photo]);
   useEffect(() => {
     drawRef.current();
-  }, [frames, zoom.k, zoom.x, zoom.y, camera, focusId, linked, width, height, dpr, reachOut, home, closest, photoLoaded, drawn, labels, looks]);
+  }, [frames, zoom.k, zoom.x, zoom.y, camera, focusId, linked, width, height, dpr, reachOut, home, closest, photoLoaded, drawn, labels, looks, glow]);
 
   // Picking: the nearest person within reach of the pointer, found through a triangulation of where everyone is
   // drawn, built when the pointer first needs it for each drawing.
@@ -643,14 +648,15 @@ export function Orbits3DMap({ model, width, height, inset: top, hover, open, hel
         <g>
           {labels.map((label) => {
             const { x, y } = place(label.id);
+            const { style, pulsing } = nameStyle(glowColours.get(label.id)!, frames.get(label.id)!.glow, reachGlow, glow.pulse);
             return (
               <text
                 key={label.id}
-                className={`orbits__name${label.scale < 1 ? " orbits__name--minor" : ""}${label.id === focusId ? " orbits__name--focus" : ""}`}
+                className={`orbits__name${label.scale < 1 ? " orbits__name--minor" : ""}${label.id === focusId ? " orbits__name--focus" : ""}${pulsing ? " orbits__name--pulse" : ""}`}
                 x={x + label.dx}
                 y={y + label.dy}
                 textAnchor={label.anchor}
-                style={{ fill: glowColours.get(label.id), filter: nameGlow(glowColours.get(label.id)!, frames.get(label.id)!.glow) }}
+                style={style}
                 opacity={labelOpacity(label) * (1 - inScene)}
               >
                 {nameOf(model.people, label.id, names.mapLabel)}

@@ -475,9 +475,9 @@ describe("tiers", () => {
 
   it("takes the reach-out floor from the tier table, so changing the table moves it", () => {
     const tiers = [{ closest: 10, opacity: 1 }, { closest: 50, opacity: 0.7 }];
-    expect(personOpacity(300, true, tiers)).toBe(0.7);
-    expect(personOpacity(5, true, tiers)).toBe(1);
-    expect(personOpacity(300, false, tiers)).toBe(0.2);
+    expect(personOpacity(300, true, { tiers })).toBe(0.7);
+    expect(personOpacity(5, true, { tiers })).toBe(1);
+    expect(personOpacity(300, false, { tiers })).toBe(0.2);
   });
 });
 

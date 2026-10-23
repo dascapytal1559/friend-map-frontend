@@ -144,10 +144,13 @@ export function displacementTrail(
  * between the last person inside it and the first outside.
  */
 export function rings(count: number, scale: RankScale = "log"): Array<{ rank: number; label: string }> {
-  return [10, 25, 50, 100, 250, 500, 1000, 2500, 5000]
+  return RING_STOPS
     .filter((n) => n <= count * 0.8 && (scale === "log" || n <= EVEN_LAST))
     .map((n) => ({ rank: n + 0.5, label: `top ${n.toLocaleString("en-AU")}` }));
 }
+
+/** Where the guide rings can be: the closest 10, 25, 50 and so on. */
+export const RING_STOPS: readonly number[] = [10, 25, 50, 100, 250, 500, 1000, 2500, 5000];
 
 /** The outermost guide ring on the even scale: the closest 250, everyone further spread in the band beyond it. */
 export const EVEN_LAST = 250;
@@ -538,12 +541,25 @@ export const LINKED_FLOOR = 0.4;
 export const BACKGROUND = 0.2;
 
 /**
+ * Tiers like TIERS for a fade from full strength for the closest `top` down
+ * to `floor` past the closest `bottom`: a step at every guide ring between
+ * (RING_STOPS) and at `bottom`, each the same step fainter, so the closest
+ * 10 to the closest 100 down to 20% are TIERS. With `bottom` no further out
+ * than `top`, the closest `top` are at full strength and everyone else at
+ * `floor` at once.
+ */
+export function fadeTiers(top: number, bottom: number, floor: number): Array<{ closest: number; opacity: number }> {
+  const steps = [top, ...RING_STOPS.filter((n) => n > top && n < bottom), ...(bottom > top ? [bottom] : [])];
+  return steps.map((closest, i) => ({ closest, opacity: Math.round((1 - (i * (1 - floor)) / steps.length) * 1000) / 1000 }));
+}
+
+/**
  * How strongly the person `place`th closest (1 for the closest) is drawn;
  * anyone beyond the last tier, and anyone with no closeness yet (null, the
- * belt), at TIER_FLOOR.
+ * belt), at `floor`.
  */
-export function tierOpacity(place: number | null, tiers = TIERS): number {
-  return tiers.find((tier) => place !== null && place <= tier.closest)?.opacity ?? TIER_FLOOR;
+export function tierOpacity(place: number | null, tiers = TIERS, floor = TIER_FLOOR): number {
+  return tiers.find((tier) => place !== null && place <= tier.closest)?.opacity ?? floor;
 }
 
 /**
@@ -551,10 +567,15 @@ export function tierOpacity(place: number | null, tiers = TIERS): number {
  * by their tier, and someone you should reach out to never fainter
  * than the last tier, the faintest of the named, wherever they are; a
  * stronger Reach-out glow lifts that least strength `lift` of the way from the
- * last tier's to full (glowLook in reachGlow.ts).
+ * last tier's to full (glowLook in reachGlow.ts). Everyone past the last
+ * tier is at `floor` (the Names settings' faintest, for names; nameFade.ts).
  */
-export function personOpacity(place: number | null, reachOut: boolean, { tiers = TIERS, lift = 0 }: { tiers?: typeof TIERS; lift?: number } = {}): number {
-  const own = tierOpacity(place, tiers);
+export function personOpacity(
+  place: number | null,
+  reachOut: boolean,
+  { tiers = TIERS, lift = 0, floor = TIER_FLOOR }: { tiers?: typeof TIERS; lift?: number; floor?: number } = {},
+): number {
+  const own = tierOpacity(place, tiers, floor);
   const last = tiers[tiers.length - 1].opacity;
   return reachOut ? Math.max(own, last + (1 - last) * lift) : own;
 }

@@ -5,9 +5,11 @@
 // a theme colour (a toggle of presets and a custom colour) or a slider, each
 // over a store the view itself reads, so the menu and the view stay one
 // (ViewSettings.tsx draws them). A view's settings come in groups, set apart
-// by a line: most views have one; the Spider web has two, its name settings
-// first and then the web's own look. Every view that glows round everyone to
-// reach out to ends with one more, the Reach-out glow, one setting they share. The name choice (Name format,
+// by a line: most views have one; the map views have their Names group
+// (how names fade, one set for every view) after their first; the Spider web
+// has its name settings first, then the Names group, then the web's own look.
+// Every view that glows round everyone to reach out to ends with one more, the
+// Reach-out glow, one setting they share. The name choice (Name format,
 // NamesMenu.tsx), on every page that shows names, is put first in the first
 // group by ViewSettings.tsx rather than listed here, as it is the page's, not
 // one view's. Where names go is not a setting: every map view draws each
@@ -22,6 +24,7 @@ import { COLOURS, webColourStore, webCustomStore, type WebColour } from "./demos
 import { webStrengthStore } from "./demos/webStrength.ts";
 import { SPOKES, webCurveStore, webSpokesStore } from "./demos/webStyle.ts";
 import { NAME_PADDING, namePaddingStores, type MapView } from "./demos/namePadding.ts";
+import { FADE_STOPS, nameFadeStores } from "./demos/nameFade.ts";
 import { ALL, TOP_NAMES, topNamesStores, type MainView } from "./demos/topNames.ts";
 import type { Store } from "./keptSetting.ts";
 
@@ -91,6 +94,35 @@ const REACH_GLOW: SettingGroup = [
   { kind: "slider", label: "Reach-out glow", min: 0, max: 1, step: 0.05, store: reachGlowStore, format: reachGlowLabel },
 ];
 
+/** A share, as a percentage, none being Hidden. */
+const shareOrHidden = (share: number) => (share === 0 ? "Hidden" : `${Math.round(share * 100)}%`);
+
+/**
+ * The map views' Names group (nameFade.ts), one set for every view: where
+ * names start to fade and where they are at their faintest, both at the guide
+ * rings, how faint that is, and whether people to reach out to fade too; and,
+ * where held people's links are named (`linked`; not the City), how strong
+ * those names are.
+ */
+function nameFade({ linked = true } = {}): SettingGroup {
+  const ranks = (about: (n: number) => string) => FADE_STOPS.map((n) => ({ value: n, title: String(n), about: about(n) }));
+  return [
+    { kind: "toggle", label: "Name fade from", choices: ranks((n) => `The closest ${n} named at full strength, names fainter ring by ring after them`), store: nameFadeStores.top } satisfies ToggleSetting<number>,
+    { kind: "toggle", label: "Name fade to", choices: ranks((n) => `Names at their faintest past the closest ${n}`), store: nameFadeStores.bottom } satisfies ToggleSetting<number>,
+    { kind: "slider", label: "Faintest name", min: 0, max: 1, step: 0.05, store: nameFadeStores.faintest, format: shareOrHidden },
+    {
+      kind: "toggle",
+      label: "Reach-out names",
+      choices: [
+        { value: true, title: "Stay bright", about: "Someone to reach out to is named at least as strongly as the last step before the faintest" },
+        { value: false, title: "Fade too", about: "Someone to reach out to fades by their place, as everyone does" },
+      ],
+      store: nameFadeStores.reachOut,
+    } satisfies ToggleSetting<boolean>,
+    ...(linked ? [{ kind: "slider", label: "Linked names", min: 0, max: 1, step: 0.05, store: nameFadeStores.linked, format: shareOrHidden } satisfies SliderSetting] : []),
+  ];
+}
+
 export const VIEW_SETTINGS: Readonly<Record<string, readonly SettingGroup[]>> = {
   orbits: [[
     {
@@ -102,12 +134,13 @@ export const VIEW_SETTINGS: Readonly<Record<string, readonly SettingGroup[]>> = 
     } satisfies ColourSetting<Hex>,
     topNames("orbits"),
     namePadding("orbits"),
-  ], REACH_GLOW],
-  "orbits-3d": [[topNames("orbits-3d")], REACH_GLOW],
-  circles: [REACH_GLOW],
-  // Its name settings together (with Name format, first), then the web's own look.
+  ], nameFade(), REACH_GLOW],
+  "orbits-3d": [[topNames("orbits-3d")], nameFade(), REACH_GLOW],
+  circles: [nameFade(), REACH_GLOW],
+  // Its name settings together (with Name format, first), how names fade, the web's own look, then the glow.
   web: [
     [topNames("web"), namePadding("web")],
+    nameFade(),
     [
       {
         kind: "colour",
@@ -122,7 +155,7 @@ export const VIEW_SETTINGS: Readonly<Record<string, readonly SettingGroup[]>> = 
     ],
     REACH_GLOW,
   ],
-  city: [[topNames("city")], REACH_GLOW],
+  city: [[topNames("city")], nameFade({ linked: false }), REACH_GLOW],
   calendar: [[
     {
       kind: "toggle",

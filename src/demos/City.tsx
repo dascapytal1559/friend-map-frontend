@@ -48,6 +48,7 @@ import { Curve } from "./Curve.tsx";
 import { standing, trendAt, type DemoPerson } from "./model.ts";
 import { focusLinksOf, focusOf, PHONE } from "./Orbits.tsx";
 import { BACKGROUND, nameColour, personOpacity, TIER_FLOOR, TIERS } from "./orbitsLayout.ts";
+import { nameStrengthOf, useNameFade } from "./nameFade.ts";
 import { clampZoom, HOME, MAX_ZOOM, panBy, pinchZoom, wheelFactor, ZOOM_STEP, zoomAt, zoomBetween, zoomToShow, type Fingers, type Zoom } from "./orbitsZoom.ts";
 import { COLORS } from "./palette.ts";
 import { glowLook, useReachGlow } from "./reachGlow.ts";
@@ -168,6 +169,9 @@ export function CityMap({ model, width, height, inset: top, hover, open, held = 
   const linked = useMemo(() => new Set(focusLinks.map((l) => (l.source === focusId ? l.target : l.source))), [focusLinks, focusId]);
   const strength = (id: number, rank: number) =>
     focusId === null ? personOpacity(rank > 0 ? rank : null, reachOut.has(id), { lift: glow.lift }) : id === focusId ? 1 : linked.has(id) ? 0.7 : BACKGROUND;
+  // How strongly a name on a roof is drawn: by how names fade (nameFade.ts), as its building until the Names settings are moved.
+  const fade = useNameFade();
+  const nameStrength = (id: number, rank: number) => nameStrengthOf(id, rank > 0 ? rank : null, reachOut.has(id), focusId, linked, fade, glow.lift);
 
   // The zoom (orbitsZoom.ts): asked for, kept within the city's reach.
   const [asked, setAsked] = useState(() => keptZoom.current);
@@ -401,9 +405,10 @@ export function CityMap({ model, width, height, inset: top, hover, open, held = 
      * the roof cannot carry it NAME_FOCUS_PX tall; on a phone only they are named at all. Returns whether anything
      * was painted.
      */
-    const roofName = (id: number, plot: Plot, centre: XY, str: number, picked: boolean): boolean => {
+    const roofName = (id: number, plot: Plot, centre: XY, picked: boolean): boolean => {
       const s = label(id);
-      if (!s || (phone && !picked) || (!picked && !roofNamed(id, plot.rank, { named, reachOut, heldLinks }))) return false;
+      const str = nameStrength(id, plot.rank);
+      if (!s || (phone && !picked) || (!picked && (str <= 0 || !roofNamed(id, plot.rank, { named, reachOut, heldLinks })))) return false;
       const fit = roofFit(s, plot);
       const standing = fit.size * k * sq;
       if (picked && standing < NAME_FOCUS_PX) {
@@ -544,7 +549,7 @@ export function CityMap({ model, width, height, inset: top, hover, open, held = 
       ctx.lineWidth = lit ? 1.6 : 1;
       ctx.strokeStyle = lit ? COLORS.star : tint(colour, plot.silent ? 0.5 * str : 0.95 * str);
       ctx.stroke();
-      roofName(plot.id, plot, P(plot.x, plot.y, plot.h * rise), str, lit);
+      roofName(plot.id, plot, P(plot.x, plot.y, plot.h * rise), lit);
     }
 
     // The avenues' labels, each where the layout leaves the ring of buildings a gap (GAP_ANGLE).
@@ -612,7 +617,7 @@ export function CityMap({ model, width, height, inset: top, hover, open, held = 
   useEffect(() => {
     if (riseStart.current === 0) riseStart.current = performance.now();
     draw.current.town(performance.now());
-  }, [scene, zoom.k, zoom.x, zoom.y, width, height, dpr, focusId, linked, names, named, phone, reachOut, neon, signColours, held, glow]);
+  }, [scene, zoom.k, zoom.x, zoom.y, width, height, dpr, focusId, linked, names, named, phone, reachOut, neon, signColours, held, glow, fade]);
   useEffect(() => {
     let raf = 0;
     const tick = (now: number) => {

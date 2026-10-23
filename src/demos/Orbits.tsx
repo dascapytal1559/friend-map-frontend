@@ -28,7 +28,7 @@ import { scoreLabel } from "./closeness.ts";
 import { type DemoModel, type DemoPerson, type Link } from "./model.ts";
 import {
   displacementTrail, drawnSize, glowColour, hearthGlowRadius, nameGlow, READABLE, personOpacity, rings,
-  BACKGROUND, circleLabelSpot, grown, LINKED_FLOOR, type Box,
+  BACKGROUND, circleLabelSpot, grown, type Box,
 } from "./orbitsLayout.ts";
 import {
   arrivedShare, nameOf, onPage, PLAIN, screenOf, stageOf, useMedia, useNameFit, useOrbitBodies, useOrbitNames, useSettled, useTween, NAME_FONT, WEB_NAME_FONT, type Frame, type OrbitOrder, type PlacedName,
@@ -51,6 +51,7 @@ import { type WebScene } from "./webLook.ts";
 import { webTheme } from "./webTheme.ts";
 import { DEFAULT_NAME_PADDING, useNamePadding } from "./namePadding.ts";
 import { amongTop, DEFAULT_TOP_NAMES, SURELY_NAMED, useTopNames } from "./topNames.ts";
+import { nameHidden, nameStrengthOf, useNameFade } from "./nameFade.ts";
 
 // What this view shares with Orbits 3D (the stage, where everyone sits, who is named where, and how people move) is in orbitsSky.ts.
 export type { OrbitOrder };
@@ -226,6 +227,8 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
   // The person under the pointer.
   const [hoverId, setHoverId] = useState<number | null>(null);
   const names = useNames();
+  // How names fade down the ranking: the Names settings, every map view's (nameFade.ts).
+  const fade = useNameFade();
   const phone = useMedia(PHONE);
   // The Spider web view (`look` "web"): a canvas under the SVG draws the web in the colour chosen (WebLayer.tsx, webLook.ts,
   // webColour.ts, webTheme.ts), booted in by a scan line from the top down (webChoreography.ts), played again whenever
@@ -282,7 +285,7 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
   // with the padding, as names are of each other.
   const ringBoxes = useMemo(() => guides.map((ring) => grown(ringLabelBox(ring.label, -labelR(ring.rank)), -DEFAULT_NAME_PADDING / 2)), [guides, radius, shape]);
   const font = web ? WEB_NAME_FONT : NAME_FONT;
-  const targets = useNameFit(spokes, { on: fitting, model, at, closest, named, reachOut, together, label: names.mapLabel, font, around: ringBoxes, padding });
+  const targets = useNameFit(spokes, { on: fitting, model, at, closest, named, reachOut, together, label: names.mapLabel, font, around: ringBoxes, padding, fade });
 
   // While friend circles are chosen, each circle of two or more: who is in it, its name, and its span round the
   // sun, from its first person's direction to its last's and a little beyond, for the arc that marks it.
@@ -342,7 +345,7 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
   const { labels: placedLabels } = useOrbitNames({
     model, at, closest, named, reachOut, names, phone,
     k: settled.k, sun: { x: cx + settled.x, y: cy + settled.y }, spot,
-    width, height, top, charWidth: font.charWidth, focusId, held, linked,
+    width, height, top, charWidth: font.charWidth, focusId, held, linked, fade,
   });
   // On the Spider web, while someone is held, only they and whoever shares group chats with them are named, hovered or
   // clicked (the user's ask); everyone else stays on the map, unnamed and out of reach, until they are let go.
@@ -662,10 +665,12 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
   // 1 once someone is within a few pixels of where they are headed, fading to 0 by ARRIVED pixels away:
   // names and trails belong to where people settle, so they wait while people rise out of the sun or move.
   const arrived = useCallback((id: number) => arrivedShare(frames.get(id)!, targets.placed.get(id)!), [frames, targets]);
-  // A name is drawn as strongly as its person; one shown only because they are linked to whoever is held, at LINKED_FLOOR.
+  // A name is drawn by how names fade (nameFade.ts), as strongly as its person until the Names settings are moved; one
+  // shown only because they are linked to whoever is held, at Linked names.
   const labelOpacity = useCallback(
-    (label: { id: number; linkedOnly: boolean }) => frames.get(label.id)!.opacity * arrived(label.id) * (label.linkedOnly ? LINKED_FLOOR : strength(label.id)),
-    [frames, arrived, strength],
+    (label: { id: number; linkedOnly: boolean }) => frames.get(label.id)!.opacity * arrived(label.id)
+      * (label.linkedOnly ? fade.linked : nameStrengthOf(label.id, closest.get(label.id) ?? null, reachOut.has(label.id), focusId, linked, fade, glow.lift)),
+    [frames, arrived, closest, reachOut, focusId, linked, fade, glow],
   );
   // Drawn again only when what is in it changes: not for a pan, which moves it whole.
   const sky = useMemo(() => {
@@ -861,7 +866,10 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
   // What the web layer draws from this render (WebScene), while a spider-web look is on.
   const webPeople = useMemo(() => drawn.map((p) => ({ id: p.id, colour: glowColours.get(p.id)! })), [drawn, glowColours]);
   // Whoever is surely named unzoomed: the closest `named` (with All, SURELY_NAMED), and everyone to reach out to.
-  const lockIn = useCallback((id: number) => amongTop(closest.get(id), Math.min(named, SURELY_NAMED)) || reachOut.has(id), [closest, named, reachOut]);
+  const lockIn = useCallback(
+    (id: number) => (amongTop(closest.get(id), Math.min(named, SURELY_NAMED)) || reachOut.has(id)) && !nameHidden(closest.get(id) ?? null, reachOut.has(id), fade),
+    [closest, named, reachOut, fade],
+  );
   // Each name drawn in place of its icon, as wide and tall as it was placed: the web fits round it.
   const webNames = useMemo(() => new Map(labels.map((label) => [label.id, { wide: label.right - label.left, tall: label.bottom - label.top }])), [labels]);
   const scene: WebScene | null = web && shape ? {

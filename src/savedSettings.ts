@@ -3,7 +3,8 @@
 // data/view-settings.json (server/viewSettings.ts), so every browser and the
 // phone share one set (savedStore.ts keeps the page's stores on it).
 // The names choice (Name format), which the Spider web's settings offer with
-// its own, is among them, as it is one choice for every page. Each is
+// its own, is among them, as it is one choice for every page, and so are the
+// map views' Names settings (nameFade.ts), one set for every view. Each is
 // kept as the page keeps it in localStorage, as text, under its key without
 // "friend-map."; nothing but these names, each value one of the setting's own
 // choices or a number, is ever saved, so the set is fit to be served into the
@@ -11,7 +12,8 @@
 // No browser code here: the server reads it too.
 
 /** The settings saved on the server, as named in the file: each is its localStorage key without "friend-map.". */
-export const SAVED_SETTINGS = ["names", "web.colour", "web.curve", "web.spokes", "web.strength", "web.top-names", "web.name-padding", "reach-glow"] as const;
+export const SAVED_SETTINGS = ["names", "web.colour", "web.curve", "web.spokes", "web.strength", "web.top-names", "web.name-padding", "reach-glow",
+  "name-fade.top", "name-fade.bottom", "name-fade.faintest", "name-fade.reach-out", "name-fade.linked"] as const;
 
 export type SavedName = (typeof SAVED_SETTINGS)[number];
 
@@ -31,6 +33,11 @@ const allowed: Record<SavedName, (value: string) => boolean> = {
   "web.top-names": (value) => value === "all" || NUMBER.test(value),
   "web.name-padding": (value) => NUMBER.test(value),
   "reach-glow": (value) => NUMBER.test(value),
+  "name-fade.top": (value) => NUMBER.test(value),
+  "name-fade.bottom": (value) => NUMBER.test(value),
+  "name-fade.faintest": (value) => NUMBER.test(value),
+  "name-fade.reach-out": (value) => value === "bright" || value === "fade",
+  "name-fade.linked": (value) => NUMBER.test(value),
 };
 
 /** The saved setting a page's key is (friend-map.web.spokes is web.spokes), or null for one not saved. */

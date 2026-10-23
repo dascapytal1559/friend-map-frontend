@@ -35,7 +35,7 @@ import { Compass } from "./Compass.tsx";
 import type { DemoPerson } from "./model.ts";
 import { drawnBox, focusLinksOf, focusOf, nameAt, nameStyle, PHONE } from "./Orbits.tsx";
 import {
-  BACKGROUND, displacementTrail, drawnSize, glowColour, hearthGlowRadius, LINKED_FLOOR, orbitRadius, personOpacity, READABLE, rings,
+  BACKGROUND, displacementTrail, drawnSize, glowColour, hearthGlowRadius, orbitRadius, personOpacity, READABLE, rings,
 } from "./orbitsLayout.ts";
 import { drawnAt, heightOf, HOME_VIEW, inclinationOf, lightOn, nearness, paintOrder, ringAxes, sceneExtent, shadeAt } from "./orbits3dScene.ts";
 import { COLOUR_GLOW, HOLLOW, NAME, PHOTO, rgb, SkyGl, SPHERE, SUN_CORE, SUN_GLOW, type Sprite } from "./orbits3dGl.ts";
@@ -43,6 +43,7 @@ import { NameAtlas, nameKey, namesInScene, type NameLook, type NameSlot } from "
 import { tourAt, tourOf } from "./orbits3dTour.ts";
 import { arrivedShare, nameOf, onPage, stageOf, useMedia, useOrbitBodies, useOrbitNames, useSettled, useTween, type XY } from "./orbitsSky.ts";
 import { useTopNames } from "./topNames.ts";
+import { nameStrengthOf, useNameFade } from "./nameFade.ts";
 import { clampZoom, HOME, panBy, pinchZoom, wheelFactor, ZOOM_STEP, zoomAt, zoomBetween, zoomToShow, type Fingers, type Zoom } from "./orbitsZoom.ts";
 import "./orbits.css";
 import "./orbits3d.css";
@@ -100,6 +101,8 @@ export function Orbits3DMap({ model, width, height, inset: top, hover, open, hel
   const names = useNames();
   // How many of the closest are named unzoomed: Orbits 3D's own Show top names (topNames.ts).
   const named = useTopNames("orbits-3d");
+  // How names fade down the ranking: the Names settings, every map view's (nameFade.ts).
+  const fade = useNameFade();
   const phone = useMedia(PHONE);
   const reduced = useMemo(() => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false, []);
   const me = useMePhoto();
@@ -181,7 +184,7 @@ export function Orbits3DMap({ model, width, height, inset: top, hover, open, hel
   const { labels } = useOrbitNames({
     model, at, closest, named, reachOut, names, phone,
     k: settled.zoom.k, sun: { x: cx + settled.zoom.x, y: cy + settled.zoom.y }, spot,
-    width, height, top, focusId, held, linked,
+    width, height, top, focusId, held, linked, fade,
   });
   // Whoever is named is drawn as their name alone, in place of their sphere and its glow.
   const nameOnly = useMemo(() => new Set(labels.map((label) => label.id)), [labels]);
@@ -200,8 +203,9 @@ export function Orbits3DMap({ model, width, height, inset: top, hover, open, hel
     return f.silent ? f.size : drawnSize(f.size, k);
   };
   const arrived = (id: number) => arrivedShare(frames.get(id)!, targets.placed.get(id)!);
-  const labelOpacity = (label: { id: number; linkedOnly: boolean }) =>
-    frames.get(label.id)!.opacity * arrived(label.id) * (label.linkedOnly ? LINKED_FLOOR : strength(label.id));
+  // A name is drawn by how names fade (nameFade.ts); one shown only because they are linked to whoever is held, at Linked names.
+  const labelOpacity = (label: { id: number; linkedOnly: boolean }) => frames.get(label.id)!.opacity * arrived(label.id)
+    * (label.linkedOnly ? fade.linked : nameStrengthOf(label.id, closest.get(label.id) ?? null, reachOut.has(label.id), focusId, linked, fade, glow.lift));
 
   // The names, tilted (orbits3dNames.ts): how far they are in the scene rather than Orbits' flat overlay, and how each
   // is drawn (Orbits' type, the person's colour, bold when picked out, glowing when to reach out to), each drawn once

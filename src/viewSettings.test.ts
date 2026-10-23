@@ -3,9 +3,10 @@
 // has any: Name format first on a page that shows names (NamesMenu.tsx), then
 // the Spider web's Colour, Strand curve, Spokes and Web strength, Orbits'
 // Theme, the Calendar's Messages, each main view's Show top names
-// (topNames.ts), Orbits' and the Spider web's Name padding, and the
-// Reach-out glow every view that glows shares, in a group of its own last; on
-// the Spider web its name settings together in a group of their own, then its
+// (topNames.ts), Orbits' and the Spider web's Name padding, every map view's
+// Names (nameFade.ts) in a group of their own, and the Reach-out glow every
+// view that glows shares, in a group of its own last; on the Spider web its
+// name settings together in a group of their own, then the Names, then its
 // look in another.
 
 import { createElement } from "react";
@@ -55,13 +56,16 @@ const setting = (html: string, label: string) => {
 const pressed = (html: string) => [...html.matchAll(/<button type="button" aria-pressed="(true|false)"[^>]*>(?:<span[^>]*><\/span>)?([^<]+)<\/button>/g)].map((m) => [m[2], m[1]]);
 
 describe("the views' settings", () => {
-  it("are the Spider web's colour, strand curve, spokes and strength, Orbits' theme, the Calendar's messages, each main view's Show top names, Orbits' and the web's Name padding and every glowing view's Reach-out glow, and nothing for any other view", () => {
+  it("are the Spider web's colour, strand curve, spokes and strength, Orbits' theme, the Calendar's messages, each main view's Show top names, Orbits' and the web's Name padding, every map view's Names and every glowing view's Reach-out glow, and nothing for any other view", () => {
     const glow = ["slider", "Reach-out glow"];
-    expect(settingsOf("web").map((s) => [s.kind, s.label])).toEqual([["toggle", "Show top names"], ["slider", "Name padding"], ["colour", "Colour"], ["slider", "Strand curve"], ["slider", "Spokes"], ["slider", "Web strength"], glow]);
-    expect(settingsOf("orbits").map((s) => [s.kind, s.label])).toEqual([["colour", "Theme"], ["toggle", "Show top names"], ["slider", "Name padding"], glow]);
-    expect(settingsOf("orbits-3d").map((s) => [s.kind, s.label])).toEqual([["toggle", "Show top names"], glow]);
-    expect(settingsOf("circles").map((s) => [s.kind, s.label])).toEqual([glow]);
-    expect(settingsOf("city").map((s) => [s.kind, s.label])).toEqual([["toggle", "Show top names"], glow]);
+    const fade = [["toggle", "Name fade from"], ["toggle", "Name fade to"], ["slider", "Faintest name"], ["toggle", "Reach-out names"]];
+    const linked = ["slider", "Linked names"];
+    expect(settingsOf("web").map((s) => [s.kind, s.label])).toEqual([["toggle", "Show top names"], ["slider", "Name padding"], ...fade, linked, ["colour", "Colour"], ["slider", "Strand curve"], ["slider", "Spokes"], ["slider", "Web strength"], glow]);
+    expect(settingsOf("orbits").map((s) => [s.kind, s.label])).toEqual([["colour", "Theme"], ["toggle", "Show top names"], ["slider", "Name padding"], ...fade, linked, glow]);
+    expect(settingsOf("orbits-3d").map((s) => [s.kind, s.label])).toEqual([["toggle", "Show top names"], ...fade, linked, glow]);
+    expect(settingsOf("circles").map((s) => [s.kind, s.label])).toEqual([...fade, linked, glow]);
+    // The City names nobody for a link alone, so it has no Linked names.
+    expect(settingsOf("city").map((s) => [s.kind, s.label])).toEqual([["toggle", "Show top names"], ...fade, glow]);
     expect(settingsOf("calendar").map((s) => [s.kind, s.label])).toEqual([["toggle", "Messages"]]);
     for (const view of VIEWS.filter((v) => !["web", "orbits", "orbits-3d", "circles", "city", "calendar"].includes(v.slug))) expect(settingsOf(view.slug)).toEqual([]);
     for (const slug of Object.keys(VIEW_SETTINGS)) expect(VIEWS.some((v) => v.slug === slug)).toBe(true);
@@ -104,16 +108,20 @@ describe("the settings section in the menu", () => {
     expect(kept.items.has(SETTINGS_OPEN_KEY)).toBe(false);
   });
 
-  it("group the Spider web's name settings together, Name format first, apart from its look; the Reach-out glow is a group of its own, last; every other view's are one group", () => {
-    expect(groupsOf("web").map((group) => group.map((s) => s.label))).toEqual([["Show top names", "Name padding"], ["Colour", "Strand curve", "Spokes", "Web strength"], ["Reach-out glow"]]);
-    for (const slug of ["orbits", "orbits-3d", "city"]) expect(groupsOf(slug).map((group) => group.map((s) => s.label)).at(-1), slug).toEqual(["Reach-out glow"]);
-    for (const slug of Object.keys(VIEW_SETTINGS).filter((slug) => !["web", "orbits", "orbits-3d", "city"].includes(slug))) expect(groupsOf(slug), slug).toHaveLength(1);
+  it("group the Spider web's name settings together, Name format first, then the Names, apart from its look; every map view's Names apart from its own; the Reach-out glow is a group of its own, last; every other view's are one group", () => {
+    const names = ["Name fade from", "Name fade to", "Faintest name", "Reach-out names", "Linked names"];
+    expect(groupsOf("web").map((group) => group.map((s) => s.label))).toEqual([["Show top names", "Name padding"], names, ["Colour", "Strand curve", "Spokes", "Web strength"], ["Reach-out glow"]]);
+    expect(groupsOf("orbits").map((group) => group.map((s) => s.label))).toEqual([["Theme", "Show top names", "Name padding"], names, ["Reach-out glow"]]);
+    expect(groupsOf("orbits-3d").map((group) => group.map((s) => s.label))).toEqual([["Show top names"], names, ["Reach-out glow"]]);
+    expect(groupsOf("circles").map((group) => group.map((s) => s.label))).toEqual([names, ["Reach-out glow"]]);
+    expect(groupsOf("city").map((group) => group.map((s) => s.label))).toEqual([["Show top names"], names.slice(0, 4), ["Reach-out glow"]]);
+    for (const slug of Object.keys(VIEW_SETTINGS).filter((slug) => !["web", "orbits", "orbits-3d", "circles", "city"].includes(slug))) expect(groupsOf(slug), slug).toHaveLength(1);
     /** Each group the menu draws, as its settings' labels. */
     const drawn = (slug: string) =>
       section(menu(slug))!.split('<div class="view-switcher__setting-group">').slice(1).map((group) => [...group.matchAll(/class="view-switcher__label"[^>]*>([^<]+)</g)].map((m) => m[1]));
-    expect(drawn("web")).toEqual([["Name format", "Show top names", "Name padding"], ["Colour", "Strand curve", "Spokes", "Web strength"], ["Reach-out glow"]]);
-    expect(drawn("orbits")).toEqual([["Name format", "Theme", "Show top names", "Name padding"], ["Reach-out glow"]]);
-    expect(drawn("circles")).toEqual([["Name format", "Reach-out glow"]]);
+    expect(drawn("web")).toEqual([["Name format", "Show top names", "Name padding"], names, ["Colour", "Strand curve", "Spokes", "Web strength"], ["Reach-out glow"]]);
+    expect(drawn("orbits")).toEqual([["Name format", "Theme", "Show top names", "Name padding"], names, ["Reach-out glow"]]);
+    expect(drawn("circles")).toEqual([["Name format", ...names], ["Reach-out glow"]]);
     expect(drawn("table")).toEqual([["Name format"]]);
   });
 

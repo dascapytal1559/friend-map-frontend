@@ -17,6 +17,7 @@ import {
   textUnits, TIERS, trailStartRank, wrap,
   type Box, type Drawn, type LabelSpot, type Placed, type RankScale,
 } from "./orbitsLayout.ts";
+import { DEFAULT_NAME_FADE, nameHidden, type NameFade } from "./nameFade.ts";
 import { chooseNamed, type Zoom } from "./orbitsZoom.ts";
 import { SURELY_NAMED } from "./topNames.ts";
 
@@ -220,10 +221,26 @@ export function nameInk(text: string, scale: number, font: NameFont = NAME_FONT)
  * (`ranked` of them, in `closest`'s order), then the belt, most talked to
  * first, named only once zooming in opens room for them.
  */
-export function nameOrderOf(people: readonly DemoPerson[], at: number, closest: ReadonlyMap<number, number>): { order: number[]; ranked: number } {
-  const ranked = [...closest.keys()];
-  const belt = people.filter((p) => !(p.rank[at] > 0)).sort((a, b) => b.total - a.total || a.id - b.id);
+export function nameOrderOf(
+  people: readonly DemoPerson[],
+  at: number,
+  closest: ReadonlyMap<number, number>,
+  keep: (id: number) => boolean = () => true,
+): { order: number[]; ranked: number } {
+  const ranked = [...closest.keys()].filter(keep);
+  const belt = people.filter((p) => !(p.rank[at] > 0) && keep(p.id)).sort((a, b) => b.total - a.total || a.id - b.id);
   return { order: [...ranked, ...belt.map((p) => p.id)], ranked: ranked.length };
+}
+
+/**
+ * Whose names may be drawn, by how names fade (`fade`, nameFade.ts): everyone
+ * but those whose names have faded out entirely (nameHidden), who keep their
+ * icons; and of the people to reach out to, named wherever they are, those.
+ */
+export function nameable(closest: ReadonlyMap<number, number>, reachOut: ReadonlySet<number>, fade: NameFade): { keep: (id: number) => boolean; always: ReadonlySet<number> } {
+  if (fade.faintest > 0) return { keep: () => true, always: reachOut };
+  const keep = (id: number) => !nameHidden(closest.get(id) ?? null, reachOut.has(id), fade);
+  return { keep, always: new Set([...reachOut].filter(keep)) };
 }
 
 /** The type size of the name of whoever is `place`th closest (1 the closest), as a share of the full size: the closest NAMED_LARGE at full size. */
@@ -249,6 +266,8 @@ export interface FitInput {
   around: readonly Box[];
   /** The clear space, in pixels, kept between two names' ink, and between a name and a mark `around` (the view's Name padding, namePadding.ts). */
   padding: number;
+  /** How names fade (nameFade.ts): a name faded out entirely is not fitted. */
+  fade?: NameFade;
 }
 
 /**
@@ -262,13 +281,14 @@ export interface FitInput {
  * so names clear unzoomed stay clear. `targets` as they are when `on` is false.
  */
 export function useNameFit(targets: Targets, input: FitInput): Targets {
-  const { on, model, at, closest, named, reachOut, together, label, font, around, padding } = input;
+  const { on, model, at, closest, named, reachOut, together, label, font, around, padding, fade = DEFAULT_NAME_FADE } = input;
   return useMemo(() => {
     if (!on) return targets;
-    const { order, ranked } = nameOrderOf(model.people, at, closest);
+    const { keep, always } = nameable(closest, reachOut, fade);
+    const { order, ranked } = nameOrderOf(model.people, at, closest, keep);
     const place = new Map(order.map((id, i) => [id, i]));
     const room = Math.min(named, ranked);
-    const chosen = chooseNamed(order, Math.min(room, SURELY_NAMED), 1, () => true, reachOut, room);
+    const chosen = chooseNamed(order, Math.min(room, SURELY_NAMED), 1, () => true, always, room);
     const home = new Set(together);
     const names = [...chosen.required, ...chosen.optional]
       .sort((a, b) => place.get(a)! - place.get(b)!)
@@ -290,14 +310,14 @@ export function useNameFit(targets: Targets, input: FitInput): Targets {
       extent.bottom = Math.max(extent.bottom, p.y + frame.size);
     }
     return { frames, placed, extent, reach: targets.reach };
-  }, [on, targets, model.people, at, closest, named, reachOut, together, label, font, around, padding]);
+  }, [on, targets, model.people, at, closest, named, reachOut, together, label, font, around, padding, fade]);
 }
 
 /** A name as placed on the map: its spot (see centreOnIcons), as an offset (`dx`, `dy`) from its person, so it is carried along with them. */
 export interface PlacedName extends LabelSpot {
   dx: number;
   dy: number;
-  /** Named only because they are linked to whoever is held: drawn at LINKED_FLOOR. */
+  /** Named only because they are linked to whoever is held: drawn at Linked names (nameFade.ts), LINKED_FLOOR until moved. */
   linkedOnly: boolean;
 }
 
@@ -327,6 +347,8 @@ export interface NamesInput {
   focusId: number | null;
   held: number | null;
   linked: ReadonlySet<number>;
+  /** How names fade (nameFade.ts): a name faded out entirely is not drawn, nor a linked one at none. */
+  fade?: NameFade;
 }
 
 /**
@@ -336,7 +358,9 @@ export interface NamesInput {
  * in, more of those in view, the closest first (chooseNamed); then whoever is
  * picked out. While someone is held, everyone they share group chats with who
  * is in view is named too, closest first, those with no name of their own
- * faintly (linkedOnly, at LINKED_FLOOR); not on a phone. With No name, nobody
+ * faintly (linkedOnly, at Linked names, none at all with it at none); not
+ * on a phone. Otherwise nobody whose name has faded out entirely (`fade`,
+ * nameable) is named. With No name, nobody
  * is named; on a phone, only whoever is picked out. Anyone whose label is
  * empty (No name except… leaves out everyone not picked) is left out of all
  * of that, and nobody takes their place. Every name is centred where its
@@ -346,10 +370,13 @@ export interface NamesInput {
  * up as they will, whoever is picked out drawn last, over the rest.
  */
 export function useOrbitNames(input: NamesInput): { labels: PlacedName[]; large: ReadonlySet<number> } {
-  const { model, at, closest, named, reachOut, names, phone, k, sun, spot, width, height, top, charWidth, focusId, held, linked } = input;
+  const { model, at, closest, named, reachOut, names, phone, k, sun, spot, width, height, top, charWidth, focusId, held, linked, fade = DEFAULT_NAME_FADE } = input;
   const unnamed = names.style === "hide";
   const onlyFocus = unnamed || phone;
-  const nameOrder = useMemo(() => (onlyFocus ? { order: [], ranked: 0 } : nameOrderOf(model.people, at, closest)), [model.people, at, closest, onlyFocus]);
+  const { keep, always } = useMemo(() => nameable(closest, reachOut, fade), [closest, reachOut, fade]);
+  // Everyone worth naming, and of them those whose names have not faded out (linked names are drawn whatever their fade).
+  const everyone = useMemo(() => (onlyFocus ? { order: [], ranked: 0 } : nameOrderOf(model.people, at, closest)), [model.people, at, closest, onlyFocus]);
+  const nameOrder = useMemo(() => (onlyFocus ? everyone : nameOrderOf(model.people, at, closest, keep)), [everyone, model.people, at, closest, onlyFocus, keep]);
   const labelRoom = useMemo(() => {
     const page = { left: 0, right: width, top, bottom: height };
     const shown = (id: number) => {
@@ -358,11 +385,11 @@ export function useOrbitNames(input: NamesInput): { labels: PlacedName[]; large:
     };
     // Every one of the closest `named` (or SURELY_NAMED, with All), and with All everyone else in view.
     const room = Math.min(named, nameOrder.ranked);
-    const chosen = chooseNamed(nameOrder.order, Math.min(room, SURELY_NAMED), k, shown, onlyFocus ? undefined : reachOut, room);
+    const chosen = chooseNamed(nameOrder.order, Math.min(room, SURELY_NAMED), k, shown, onlyFocus ? undefined : always, room);
     return { chosen, shown, charWidth };
-  }, [nameOrder, named, reachOut, onlyFocus, k, sun.x, sun.y, spot, width, height, top, charWidth]);
+  }, [nameOrder, named, always, onlyFocus, k, sun.x, sun.y, spot, width, height, top, charWidth]);
   // The closest NAMED_LARGE have their names at full size.
-  const large = useMemo(() => new Set(nameOrder.order.slice(0, Math.min(NAMED_LARGE, nameOrder.ranked))), [nameOrder]);
+  const large = useMemo(() => new Set(everyone.order.slice(0, Math.min(NAMED_LARGE, everyone.ranked))), [everyone]);
   const candidate = (id: number) => {
     const p = spot(id);
     return { id, x: p.x, y: p.y, text: nameOf(model.people, id, names.mapLabel), scale: large.has(id) ? 1 : MINOR_SCALE };
@@ -374,8 +401,8 @@ export function useOrbitNames(input: NamesInput): { labels: PlacedName[]; large:
   const labels = useMemo(() => {
     const named = new Set(namedLabels.map((l) => l.id));
     const focus = focusId !== null && !unnamed && labelRoom.shown(focusId) && !named.has(focusId) ? [focusId] : [];
-    const linkedOnly = held !== null && focusId === held && !phone
-      ? nameOrder.order.filter((id) => linked.has(id) && !named.has(id) && labelRoom.shown(id))
+    const linkedOnly = held !== null && focusId === held && !phone && fade.linked > 0
+      ? everyone.order.filter((id) => linked.has(id) && !named.has(id) && labelRoom.shown(id))
       : [];
     const wanted = [...focus, ...linkedOnly].map(candidate).filter(spoken);
     // Whoever is picked out last, so their name is drawn over any it lands on.
@@ -386,7 +413,7 @@ export function useOrbitNames(input: NamesInput): { labels: PlacedName[]; large:
       const p = spot(s.id);
       return { ...s, dx: s.x - p.x, dy: s.y - p.y, linkedOnly: faint.has(s.id) };
     });
-  }, [namedLabels, focusId, held, linked, nameOrder, unnamed, phone, labelRoom, large, model.people, names.mapLabel]);
+  }, [namedLabels, focusId, held, linked, everyone, unnamed, phone, labelRoom, large, model.people, names.mapLabel, fade.linked]);
   return { labels, large };
 }
 

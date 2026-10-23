@@ -65,6 +65,8 @@ It reads **Usual** until it is moved, and the views look exactly as they always 
 - someone to reach out to is drawn, marker, name, trail and glow alike, at no less than 85% strength, where usually they are never fainter than the last tier (40%), so a glow far out is not dimmed with its tier (`personOpacity`);
 - past halfway the glows breathe, slowly (2.4 seconds in and out), growing up to 12% further and the names' wider halos 30% stronger at the top of each breath. Never with reduced motion (the system setting), and not Orbits 3D's glows in the scene, which it draws only as things move (its names from straight above breathe as Orbits' do); the City's beacons pulse as they always have.
 
+While someone is held (their panel open, not just under the pointer), only their glow and those of the people they share group chats with are drawn, whatever the setting; everyone else's is off until they are let go (see Orbits in [The views](views.md)).
+
 The maps are drawn on a night sky in every theme, so each value is the same in light and dark.
 
 ## How names fade

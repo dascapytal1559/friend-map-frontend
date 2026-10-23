@@ -94,14 +94,73 @@ const labelOpacity = (markup: string, name: string) => Number(markup.match(new R
 describe("heldOnly", () => {
   const linked = new Set([2, 3]);
 
-  it("on the Spider web with someone held and drawn, is they and their links alone", () => {
-    expect(heldOnly(true, 1, 1, linked)).toEqual(new Set([1, 2, 3]));
+  it("with someone held and drawn, is they and their links alone", () => {
+    expect(heldOnly(1, 1, linked)).toEqual(new Set([1, 2, 3]));
   });
 
-  it("is everyone (null) on any other look, with nobody held, or with the held person off the map", () => {
-    expect(heldOnly(false, 1, 1, linked)).toBeNull();
-    expect(heldOnly(true, null, 4, linked)).toBeNull();
-    expect(heldOnly(true, 1, 4, linked)).toBeNull();
+  it("is everyone (null) with nobody held (someone only under the pointer), or with the held person off the map", () => {
+    expect(heldOnly(null, 4, linked)).toBeNull();
+    expect(heldOnly(1, 4, linked)).toBeNull();
+  });
+});
+
+// Holding someone turns off every reach-out glow but theirs and their links' (the user's ask). Ada shares one group
+// with Bea and Cy (10) and another with Cy alone (11); Bea, Cy and Dee are to reach out to, and Dee shares none.
+describe("the reach-out glow with someone held", () => {
+  const report: RelationshipsReport = {
+    generatedAt: NOW,
+    gapDays: 14,
+    people: [person(1, "Ada", 40), ...[person(2, "Bea", 30), person(3, "Cy", 20), person(4, "Dee", 10)].map((p) => ({ ...p, shouldReachOut: true }))],
+    archivedCount: 0, catchUps: [], callDays: [], unlinks: [],
+    groups: [
+      { id: 10, memberIds: [1, 2, 3], selfOnly: false, messageCount: 20, lastMessageAt: NOW, months: [] },
+      { id: 11, memberIds: [1, 3], selfOnly: false, messageCount: 20, lastMessageAt: NOW, months: [] },
+    ],
+  };
+  const model = buildModel(report);
+  const ids: Record<string, number> = { Bea: 2, Cy: 3, Dee: 4 };
+  const draw = (held: number | null, heldGroup: number | null, more: object = {}) => renderToStaticMarkup(createElement(OrbitMap, {
+    model, width: 800, height: 600, inset: 60, hover: () => {}, open: () => {}, held, heldGroup, ...more,
+  }));
+  /** Who of Bea, Cy and Dee have a glowing name (its halo), with everyone named. */
+  const glowingNames = (markup: string) => Object.keys(ids).filter((name) => /drop-shadow/.test(markup.match(new RegExp(`<text class="orbits__name[^"]*"[^>]*style="([^"]*)"[^>]*>${name}<`))?.[1] ?? ""));
+  /** Who of them have a glow round their marker, with nobody named. */
+  const glowingMarkers = (markup: string) => Object.keys(ids).filter((name) => markup.includes(`id="orbits-glow-${ids[name]}"`));
+
+  beforeAll(() => void vi.stubGlobal("window", { matchMedia: (query: string) => ({ matches: query.includes("reduced-motion") }) }));
+  afterAll(() => {
+    nameStyleStore.set("full");
+    vi.unstubAllGlobals();
+  });
+
+  for (const [view, more] of [["Orbits", {}], ["Circles", { order: "circles" }]] as const) {
+    it(`on ${view}, glows everyone to reach out to while nobody is held, and only the held person's links while someone is`, () => {
+      expect(glowingNames(draw(null, null, more))).toEqual(["Bea", "Cy", "Dee"]);
+      expect(glowingNames(draw(1, null, more))).toEqual(["Bea", "Cy"]);
+      // Only the open group chat's, as the hold's lines.
+      expect(glowingNames(draw(1, 11, more))).toEqual(["Cy"]);
+      // Held themselves, they glow, and nobody they share no group chat with.
+      expect(glowingNames(draw(4, null, more))).toEqual(["Dee"]);
+      expect(glowingNames(draw(2, null, more))).toEqual(["Bea", "Cy"]);
+      // Someone held who is off the map holds nothing: everyone glows.
+      expect(glowingNames(draw(99, null, more))).toEqual(["Bea", "Cy", "Dee"]);
+    });
+
+    it(`on ${view}, turns the glow round a marker off the same way`, () => {
+      nameStyleStore.set("hide");
+      const free = glowingMarkers(draw(null, null, more));
+      const held = glowingMarkers(draw(1, null, more));
+      const self = glowingMarkers(draw(4, null, more));
+      nameStyleStore.set("full");
+      expect(free).toEqual(["Bea", "Cy", "Dee"]);
+      expect(held).toEqual(["Bea", "Cy"]);
+      expect(self).toEqual(["Dee"]);
+    });
+  }
+
+  it("on the Spider web, leaves the held person's links' names glowing", () => {
+    expect(glowingNames(draw(null, null, { look: "web" }))).toEqual(["Bea", "Cy", "Dee"]);
+    expect(glowingNames(draw(1, null, { look: "web" }))).toEqual(["Bea", "Cy"]);
   });
 });
 

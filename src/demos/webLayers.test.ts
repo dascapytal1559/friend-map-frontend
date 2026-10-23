@@ -34,10 +34,13 @@ class FakePath {
 
 function fakeCanvas() {
   const strokes: XY[][] = [];
+  // Every image drawn (a halo is one): its centre and width.
+  const images: Array<XY & { w: number }> = [];
   const thing: object = new Proxy(() => thing, { get: (_t, key) => (key === "then" ? undefined : thing), apply: () => thing });
   const ctx = new Proxy({} as Record<string | symbol, unknown>, {
     get: (target, key) => {
       if (key === "stroke") return (path?: FakePath) => void (path && strokes.push(path.points));
+      if (key === "drawImage") return (_image: unknown, x: number, y: number, w: number, h: number) => void images.push({ x: x + w / 2, y: y + h / 2, w });
       if (key in target) return target[key];
       return () => thing;
     },
@@ -46,7 +49,7 @@ function fakeCanvas() {
       return true;
     },
   });
-  return { ctx: ctx as unknown as CanvasRenderingContext2D, strokes };
+  return { ctx: ctx as unknown as CanvasRenderingContext2D, strokes, images };
 }
 
 // The drawing's patterns are painted once on a canvas of their own.
@@ -63,7 +66,7 @@ const scene = (over: Partial<WebScene>): WebScene => ({
   inner: 60, outer: 380, shape: webShape({ inner: 60, outer: 380, count: 2, far: 2400 }),
   frames: new Map([[1, frame(150)], [2, frame(300)], [3, frame(200, Math.PI / 2)]]),
   people: [{ id: 1, colour: "#ff0000" }, { id: 2, colour: "#00ff00" }, { id: 3, colour: "#0000ff" }],
-  strength: () => 1, arrived: () => 1, lockIn: () => true, focusId: null, linked: new Set(), hoverId: null, heldId: null, reduced: true,
+  strength: () => 1, arrived: () => 1, lockIn: () => true, focusId: null, linked: new Set(), glows: () => true, hoverId: null, heldId: null, reduced: true,
   ...over,
 });
 // A stroke that ends at a point (Person B's dot at 300, 0), as the beam and the hold do.
@@ -287,6 +290,23 @@ describe("the Spider web with a name in place of an icon (Name only)", () => {
 
   it("is untouched for everyone else: a line to them ends at their middle", () => {
     expect(strokeTo(draw({ hoverId: 1, focusId: 1 }).above.strokes, { x: 150, y: 0 })).toBeDefined();
+  });
+});
+
+describe("the Spider web's reach-out glow", () => {
+  // Person A, at 150, 0, is to reach out to; the widest image centred on them is their halo.
+  const haloOfA = (glows: (id: number) => boolean) => {
+    const under = fakeCanvas();
+    const frames = new Map([[1, { ...frame(150), glow: 1 }], [2, frame(300)], [3, frame(200, Math.PI / 2)]]);
+    drawWeb(under.ctx, scene({ frames, glows }), still, 10_000, newLookState());
+    return Math.max(...under.images.filter((image) => near(image, { x: 150, y: 0 })).map((image) => image.w));
+  };
+
+  it("is their wider halo, and only the plain one while someone is held whom they are not linked to", () => {
+    const glowing = haloOfA(() => true);
+    const off = haloOfA((id) => id !== 1);
+    // The glow reaches 9 pixels further each way.
+    expect(glowing - off).toBeCloseTo(18, 6);
   });
 });
 

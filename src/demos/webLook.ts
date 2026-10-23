@@ -97,6 +97,8 @@ export interface WebScene {
   lockIn: (id: number) => boolean;
   focusId: number | null;
   linked: ReadonlySet<number>;
+  /** Whose reach-out glow is drawn: everyone's, but while someone is held only theirs and their links' (glowShown). */
+  glows: (id: number) => boolean;
   /** Who is under the pointer, and who is selected (their panel open, and drawn): the spider holds and looks at the second, else looks at the first (webHold.ts). */
   hoverId: number | null;
   heldId: number | null;
@@ -612,10 +614,12 @@ export function drawWeb(ctx: Ctx, scene: WebScene, motion: WebMotion, now: numbe
     }
     // A name in place of an icon has no halo: it would only cloud the name.
     if (mark.name) continue;
-    if (strength < 0.35 && f.glow < 0.05 && person.id !== scene.focusId) continue;
+    // Their reach-out glow, but while someone is held only if the hold is about them (glowShown); else the plain halo everyone has.
+    const shine = scene.glows(person.id) ? f.glow : 0;
+    if (strength < 0.35 && shine < 0.05 && person.id !== scene.focusId) continue;
     const a = f.opacity * scene.arrived(person.id);
-    const glowing = f.glow * reach.reach * (f.glow > 0.5 ? swell : 1);
-    drawHalo(ctx, p.x, p.y, r * 2.2 + 3 + 9 * glowing, f.glow > 0.5 ? person.colour : ink.beam, (0.22 + 0.3 * f.glow * reach.bright) * strength * a);
+    const glowing = shine * reach.reach * (shine > 0.5 ? swell : 1);
+    drawHalo(ctx, p.x, p.y, r * 2.2 + 3 + 9 * glowing, shine > 0.5 ? person.colour : ink.beam, (0.22 + 0.3 * shine * reach.bright) * strength * a);
   }
   // The spider at the hub, fading in as the Spider web boots: a small body on legs standing wide, a little past the closest orbit, unzoomed,
   // and growing with the zoom, slower than the people spread, so it can be looked at closely and never reaches them.

@@ -76,6 +76,15 @@ export function glowLook(boost: number): GlowLook {
   };
 }
 
+/**
+ * Whether `id`'s reach-out glow is drawn: always, but while someone is held (`holding`, heldOnly's in Orbits.tsx: they
+ * and whoever shares group chats with them), only if they are one of those, so the glows left are the hold's own (the
+ * user's ask); everyone else's comes back once they are let go. Someone only under the pointer leaves every glow.
+ */
+export function glowShown(id: number, holding: ReadonlySet<number> | null): boolean {
+  return holding === null || holding.has(id);
+}
+
 /** How long one breath of a pulsing glow takes, in and out, in ms. */
 export const PULSE_MS = 2400;
 

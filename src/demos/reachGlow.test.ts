@@ -11,7 +11,7 @@ import { resetSaved } from "../savedStore.ts";
 import { buildModel } from "./model.ts";
 import { OrbitMap } from "./Orbits.tsx";
 import { NAME_GLOW, nameGlow, personOpacity } from "./orbitsLayout.ts";
-import { DEFAULT_REACH_GLOW, glowLook, pulseAt, PULSE_MS, REACH_GLOW_KEY, reachGlowLabel, reachGlowOf, reachGlowStore } from "./reachGlow.ts";
+import { DEFAULT_REACH_GLOW, glowLook, glowShown, pulseAt, PULSE_MS, REACH_GLOW_KEY, reachGlowLabel, reachGlowOf, reachGlowStore } from "./reachGlow.ts";
 import type { ViewProps } from "./view.tsx";
 
 function memory(initial: Record<string, string> = {}) {
@@ -96,6 +96,14 @@ describe("the glow's look", () => {
     expect(nameGlow(colour, 1, 1)).toBe(`drop-shadow(0 0 3.00px ${colour}ff) drop-shadow(0 0 10.00px ${colour}99)`);
     expect(nameGlow(colour, 0.5, 1)).toBe(`drop-shadow(0 0 1.50px ${colour}80) drop-shadow(0 0 5.00px ${colour}4d)`);
     expect(nameGlow(colour, 0, 1)).toBeUndefined();
+  });
+});
+
+describe("whose glow is drawn", () => {
+  it("is everyone's with nobody held, and only the hold's (they and their links) while someone is", () => {
+    expect(glowShown(4, null)).toBe(true);
+    const holding = new Set([1, 2, 3]);
+    expect([1, 2, 3, 4].map((id) => glowShown(id, holding))).toEqual([true, true, true, false]);
   });
 });
 

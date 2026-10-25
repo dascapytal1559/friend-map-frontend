@@ -1,23 +1,21 @@
 // The geometry behind City (City.tsx): the same closeness as Orbits, built as a
-// radial city seen from a gentle isometric angle. Your tower stands
-// in the middle, whoever you live with (tagged "live-together") has a lit
-// floor in it, and everyone else is a building on the ground round it, nearer
-// the tower the closer they are: the distance is their closeness rank on the
-// very scale Orbits uses (rankFraction in orbitsLayout.ts), so the two views
-// agree on who is near. Ring roads (avenues) mark the closest 10, 25, 50 and
-// so on, as Orbits' guide rings do, and buildings keep off them. A building's
-// height is their closeness score itself, on a log scale, its footprint how
-// much you have talked, and its neon colour their identicon's; both taper
-// away with rank past the closest few hundred, to dots at the edge. Pure
-// functions, no DOM, so the city can be laid out and tested with made-up
-// people. How the ground is seen (turned, tilted, drawn) is cityCamera.ts.
+// radial city. Your tower stands in the middle, whoever you live with (tagged
+// "live-together") has a lit floor in it, and everyone else is a building on
+// the ground round it, nearer the tower the closer they are: the distance is
+// their closeness rank on the very scale Orbits uses (rankFraction in
+// orbitsLayout.ts), so the two views agree on who is near. Ring roads
+// (avenues) mark the closest 10, 25, 50 and so on, as Orbits' guide rings do,
+// and four straight boulevards run out from the tower; buildings keep off
+// both. A building's height is their closeness score itself, on a log scale,
+// and its footprint how much you have talked; both taper away with rank past
+// the closest few hundred, to dots at the edge. Pure functions, no DOM, so
+// the city can be laid out and tested with made-up people. How it is built in
+// 3D and seen is cityScene.ts.
 //
 // Coordinates: the ground is a map seen from above, x to the right and y down
 // as on Orbits, the tower at (0, 0), in ground units.
 
-import { identicon, mix } from "../identicon.ts";
 import { directions, rankFraction, rings } from "./orbitsLayout.ts";
-import { COLORS } from "./palette.ts";
 
 /** How far beyond the last avenue the outskirts lie: buildings for people with no closeness yet. */
 export const OUTSKIRTS = 16;
@@ -160,42 +158,78 @@ export interface CityLayout {
 const SPACING = 2;
 
 /**
- * Where the gap in the ring of buildings is, for the avenues' labels: Orbits
- * leaves it at the top, behind the tower from here, so the City turns
- * everyone this far anticlockwise, to the upper left, where the tower hides
- * nothing. A to Z still runs clockwise from there.
+ * The boulevards: BOULEVARDS straight roads from the tower out past the
+ * outskirts, evenly round it, the first running north (up the map), where A to
+ * Z begins as it does on Orbits, so the City stands everyone in Orbits' own
+ * directions, only squeezed a little within each quarter to leave the roads
+ * clear. Their angles are radians clockwise from east, as the map has them
+ * (y down): north is −π/2.
  */
-export const GAP_TURN = -0.55;
-export const GAP_ANGLE = -Math.PI / 2 + GAP_TURN;
+export const BOULEVARDS = 4;
+export const BOULEVARD_ANGLES: readonly number[] = Array.from({ length: BOULEVARDS }, (_, i) => -Math.PI / 2 + (i * 2 * Math.PI) / BOULEVARDS);
+/** Half a boulevard's width, in ground units: buildings keep this far off its centre line, and their own half-diagonal more. */
+export const BOULEVARD_HALF = 8;
+/** The boulevard the avenues are labelled on, where it crosses each: the one running south, toward where the city is first seen from. */
+export const LABEL_BOULEVARD = Math.PI / 2;
+
+/** How far a point is from the nearest boulevard's centre line, in ground units (behind the tower a boulevard is not there). */
+export function offBoulevards(x: number, y: number): number {
+  let least = Infinity;
+  for (const angle of BOULEVARD_ANGLES) {
+    const [c, s] = [Math.cos(angle), Math.sin(angle)];
+    if (x * c + y * s <= 0) continue;
+    least = Math.min(least, Math.abs(-x * s + y * c));
+  }
+  return least;
+}
+
+/**
+ * Orbits' direction `aim` (A to Z clockwise from north, round the whole
+ * circle) for a building of half-diagonal `size` on a ring of radius `r`,
+ * squeezed into its quarter between two boulevards so its footprint clears
+ * both; its reach either way stays within the quarter. Order round the ring
+ * is kept, so A to Z still runs clockwise.
+ */
+export function betweenBoulevards(aim: { angle: number; lo: number; hi: number }, r: number, size: number): { angle: number; lo: number; hi: number } {
+  const quarter = (2 * Math.PI) / BOULEVARDS;
+  // Where the direction falls round the circle from north, 0 to 1, and in which quarter.
+  const f = Math.min(1, Math.max(0, (aim.angle + Math.PI / 2) / (2 * Math.PI)));
+  const i = Math.min(BOULEVARDS - 1, Math.floor(f * BOULEVARDS));
+  const clear = Math.min(quarter / 2 - 1e-3, Math.asin(Math.min(1, (BOULEVARD_HALF + size) / Math.max(r, 1e-9))));
+  const start = BOULEVARD_ANGLES[i] + clear;
+  const span = quarter - 2 * clear;
+  const at = (local: number) => start + span * Math.min(1, Math.max(0, local));
+  const local = f * BOULEVARDS - i;
+  const perRadian = BOULEVARDS / (2 * Math.PI);
+  return { angle: at(local), lo: at(local - (aim.angle - aim.lo) * perRadian), hi: at(local + (aim.hi - aim.angle) * perRadian) };
+}
 
 /**
  * The city laid out: the tower, with a floor for each person who lives with
  * you, and a building for everyone else, each on the distance their
- * rank gives, in Orbits' directions (A to Z clockwise, from the gap of
- * `topGap` radians left clear for the avenues' labels, at GAP_ANGLE), pushed
- * apart only as far as it takes to stop them overlapping, each within the
- * band between the avenues its rank falls between (placeInBands), so which
- * side of "top 10" someone stands on is always their rank's. Nothing
+ * rank gives, in Orbits' directions (A to Z clockwise from north) squeezed
+ * between the boulevards (betweenBoulevards), pushed apart only as far as it
+ * takes to stop them overlapping, each within the band between the avenues
+ * its rank falls between (placeInBands), so which side of "top 10" someone
+ * stands on is always their rank's, and never on a boulevard. Nothing
  * stands nearer the tower than the plaza. Footprint and height taper away
  * with rank (taper). The tower's floors stack by rank, the closest at the top.
  */
-export function layoutCity(residents: readonly Resident[], { inner, outer, topGap = 0.3 }: { inner: number; outer: number; topGap?: number }): CityLayout {
+export function layoutCity(residents: readonly Resident[], { inner, outer }: { inner: number; outer: number }): CityLayout {
   const count = residents.length;
   const together = residents.filter((p) => p.together).sort((a, b) => a.rank - b.rank || a.id - b.id).map((p) => p.id);
   const ground = residents.filter((p) => !p.together);
   const topScore = Math.max(0, ...ground.map((p) => p.closeness));
   const topTotal = Math.max(0, ...ground.map((p) => p.total));
   const roads = avenues(count, inner, outer, together.length);
-  // Orbits' directions, turned to GAP_ANGLE, each with a wider reach round its orbit than Orbits gives (buildings are
-  // broad, and sliding along is better than stepping out).
-  const aim = new Map([...directions(ground, topGap, SLIDE)].map(([id, d]) => [id, { angle: d.angle + GAP_TURN, lo: d.lo + GAP_TURN, hi: d.hi + GAP_TURN }]));
-  const bodies = ground.map((p) => ({
-    id: p.id,
-    orbit: plotRadius(p.rank, inner, outer, count, together.length),
-    size: footprint(p.total, topTotal, outer) * taper(p.rank, count) + SPACING / 2,
-    band: bandOf(p.rank, roads, inner * PLAZA, outer + OUTSKIRTS + OUTSKIRTS_ROOM),
-    ...aim.get(p.id)!,
-  }));
+  // Orbits' directions round the whole circle, each with a wider reach round its orbit than Orbits gives (buildings are
+  // broad, and sliding along is better than stepping out), then squeezed between the boulevards at its own distance.
+  const aim = directions(ground, 0, SLIDE);
+  const bodies = ground.map((p) => {
+    const orbit = plotRadius(p.rank, inner, outer, count, together.length);
+    const size = footprint(p.total, topTotal, outer) * taper(p.rank, count) + SPACING / 2;
+    return { id: p.id, orbit, size, band: bandOf(p.rank, roads, inner * PLAZA, outer + OUTSKIRTS + OUTSKIRTS_ROOM), ...betweenBoulevards(aim.get(p.id)!, orbit, size) };
+  });
   const placed = placeInBands(bodies);
   const plots = new Map<number, Plot>();
   for (const p of ground) {
@@ -274,10 +308,11 @@ const DODGE_STEP = 2;
 
 /**
  * Buildings stood in their bands, the closest first: each takes its own spot
- * (its orbit, in its direction) if that is free of everyone stood already,
- * and otherwise the nearest free spot to it, trying small steps in or out
- * along its spoke and a little round the ring (within its reach), always
- * within its band (never across an avenue: an avenue means what it says).
+ * (its orbit, in its direction) if that is free of everyone stood already
+ * and of the boulevards, and otherwise the nearest free spot to it, trying
+ * small steps in or out along its spoke and a little round the ring (within
+ * its reach), always within its band (never across an avenue: an avenue
+ * means what it says).
  * So the closest few stand exactly where their rank puts them, and the crowd
  * further out dodges round them. A band too full to hold its buildings at
  * their size (the long tail of a decade of history, crammed into the outer
@@ -330,8 +365,8 @@ function stand(lots: readonly Lot[]): { stood: Map<number, Stood>; crowded: Set<
       if (r < least || r > greatest) continue;
       const angle = da < 0 ? lot.angle + (lot.angle - lot.lo) * da : lot.angle + (lot.hi - lot.angle) * da;
       const [x, y] = [Math.cos(angle) * r, Math.sin(angle) * r];
-      let clear = true;
-      cells.near(x, y, (j) => {
+      let clear = offBoulevards(x, y) >= BOULEVARD_HALF + lot.size;
+      if (clear) cells.near(x, y, (j) => {
         const o = placed[j];
         if (Math.hypot(o.x - x, o.y - y) < o.size + lot.size) {
           clear = false;
@@ -390,45 +425,6 @@ export function tower(together: readonly number[], inner: number, outer: number)
   // Lowest floor first: the last of them at the bottom, the closest on top.
   const floors = [...together].reverse().map((id, i) => ({ id, bottom: each * i, top: each * (i + 1) }));
   return { s, h, floors };
-}
-
-/** The ground's colours: the grid and the avenues, Tron's light blue; your tower, your amber (COLORS.me). */
-export const NEON = {
-  grid: "#4de3ff",
-  ground: "#0a0f1f",
-  night: COLORS.night,
-  me: COLORS.me,
-};
-
-/** Someone's neon: their identicon's main colour (in the hue they picked, if any), as Orbits glows them. */
-export function neonOf(seed: string, hue: number | null): string {
-  return identicon(seed, hue).main;
-}
-
-/**
- * The three faces of a building in `neon`, as lit from above and the right
- * (the roof brightest, the east face next, the west face darkest), each
- * `strength` (0 to 1, as Orbits draws tiers) of the way from the ground's
- * dark toward its lit colour, so a faint tier is a dark shape that still
- * covers what stands behind it. Mixed in OKLab; the same colours are reused,
- * so a city of hundreds asks for a few dozen.
- */
-export function faces(neon: string, strength: number): { roof: string; east: string; west: string } {
-  const key = `${neon}|${strength.toFixed(2)}`;
-  const kept = FACES.get(key);
-  if (kept) return kept;
-  const lit = (t: number) => mix(NEON.ground, neon, t * strength);
-  const made = { roof: lit(0.34), east: lit(0.2), west: lit(0.12) };
-  FACES.set(key, made);
-  return made;
-}
-
-const FACES = new Map<string, { roof: string; east: string; west: string }>();
-
-/** A #rrggbb colour at `alpha`, for the canvas. */
-export function tint(hex: string, alpha: number): string {
-  const n = parseInt(hex.slice(1, 7), 16);
-  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${Math.max(0, Math.min(1, alpha)).toFixed(3)})`;
 }
 
 /**

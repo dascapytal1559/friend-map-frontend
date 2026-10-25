@@ -4,12 +4,11 @@
 // further out past the closest few hundred.
 
 import { describe, expect, it } from "vitest";
-import { cityExtent, HOME_CAMERA, paintOrder } from "./cityCamera.ts";
 import {
-  AVENUE_HALF, avenues, bandOf, buildingHeight, faces, footprint, GAP_ANGLE, layoutCity, LOWEST, OUTSKIRTS, plotRadius, TALLEST, taper, TAPER_DOT, TAPER_KNEE,
-  tint, tower, traffic, type Resident,
+  AVENUE_HALF, avenues, bandOf, betweenBoulevards, BOULEVARD_ANGLES, BOULEVARD_HALF, BOULEVARDS, buildingHeight, footprint, LABEL_BOULEVARD, layoutCity, LOWEST,
+  offBoulevards, OUTSKIRTS, plotRadius, TALLEST, taper, TAPER_DOT, TAPER_KNEE, tower, traffic, type Resident,
 } from "./cityLayout.ts";
-import { wrap } from "./orbitsLayout.ts";
+import { directions } from "./orbitsLayout.ts";
 
 /** A made-up crowd of `count` people ranked 1 to `count` by closeness, the first `together` of them living with you, named in no order of rank (as people are). */
 function crowd(count: number, together = 0, silent = 0): Resident[] {
@@ -165,9 +164,36 @@ describe("the city laid out", () => {
     }
   });
 
-  it("leaves the gap for the avenues' labels clear, at the upper left", () => {
-    const city = layoutCity(crowd(300), STAGE);
-    for (const p of city.plots.values()) expect(Math.abs(wrap(p.angle - GAP_ANGLE))).toBeGreaterThan(0.1);
+  it("keeps every building off the boulevards that run out from the tower, the first north", () => {
+    expect(BOULEVARD_ANGLES[0]).toBeCloseTo(-Math.PI / 2, 9);
+    expect(BOULEVARD_ANGLES).toContain(LABEL_BOULEVARD);
+    for (const people of [crowd(300), crowd(700, 3, 100)]) {
+      const city = layoutCity(people, { inner: 77, outer: 480 });
+      for (const p of city.plots.values()) expect(offBoulevards(p.x, p.y), `person ${p.id}`).toBeGreaterThanOrEqual(BOULEVARD_HALF + p.s - 1e-6);
+    }
+  });
+
+  it("stands everyone in Orbits' order, A to Z clockwise from north, within each quarter between the boulevards", () => {
+    const people = crowd(200);
+    const city = layoutCity(people, { inner: 77, outer: 480 });
+    const aim = directions(people, 0, 12);
+    const quarter = (id: number) => Math.floor(((aim.get(id)!.angle + Math.PI / 2) / (2 * Math.PI)) * BOULEVARDS);
+    const turn = (id: number) => ((city.plots.get(id)!.angle + Math.PI / 2) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+    for (const p of people) expect(Math.floor(turn(p.id) / ((2 * Math.PI) / BOULEVARDS)), `person ${p.id}`).toBe(quarter(p.id));
+  });
+
+  it("squeezes a direction into its quarter, clear of both boulevards, keeping the order", () => {
+    const at = (angle: number) => betweenBoulevards({ angle, lo: angle - 0.05, hi: angle + 0.05 }, 200, 10);
+    const clear = Math.asin((BOULEVARD_HALF + 10) / 200);
+    expect(at(-Math.PI / 2 + 1e-6).angle).toBeCloseTo(-Math.PI / 2 + clear, 4);
+    expect(at(-1e-6).angle).toBeCloseTo(-clear, 4);
+    const angles = [-1.5, -1, -0.2, 0.1, 1, 2, 3, 4.5].map((a) => at(a).angle);
+    expect(angles).toEqual([...angles].sort((a, b) => a - b));
+    for (const a of [-1.5, -1, 0.1, 2, 4.5]) {
+      const d = at(a);
+      expect(d.lo).toBeLessThanOrEqual(d.angle);
+      expect(d.hi).toBeGreaterThanOrEqual(d.angle);
+    }
   });
 
   it("places hundreds of people without overlaps to speak of, in a few milliseconds", () => {
@@ -185,11 +211,6 @@ describe("the city laid out", () => {
     }
     // A band too full has its buildings shrunk until they fit, so only a few pairs are left touching.
     expect(overlapping).toBeLessThan(plots.length * 0.02);
-    expect(paintOrder(plots, HOME_CAMERA).map((p) => p.y)).toEqual(paintOrder(plots, HOME_CAMERA).map((p) => p.y).sort((a, b) => a - b));
-    const extent = cityExtent(city, HOME_CAMERA);
-    expect(extent.left).toBeLessThan(-560);
-    expect(extent.right).toBeGreaterThan(560);
-    expect(extent.top).toBeLessThan(-city.tower.h);
   });
 
   it("is the same for the same people", () => {
@@ -198,17 +219,7 @@ describe("the city laid out", () => {
   });
 });
 
-describe("colour and light", () => {
-  it("mixes a building's faces toward its neon by strength, the roof lightest, and remembers them", () => {
-    const strong = faces("#4de3ff", 1);
-    const faint = faces("#4de3ff", 0.2);
-    expect(strong).toBe(faces("#4de3ff", 1));
-    expect(strong.roof).not.toBe(strong.east);
-    expect(faint.roof).not.toBe(strong.roof);
-    expect(tint("#4de3ff", 0.5)).toBe("rgba(77, 227, 255, 0.500)");
-    expect(tint("#4de3ff", 2)).toBe("rgba(77, 227, 255, 1.000)");
-  });
-
+describe("light on the roads", () => {
   it("sends light down the roads from everyone talked with lately, each setting off at a different moment", () => {
     const lit = traffic([{ id: 1, daysSince: 0 }, { id: 2, daysSince: 7 }, { id: 3, daysSince: 8 }, { id: 4, daysSince: null }], 7);
     expect(lit.map((l) => l.id)).toEqual([1, 2]);

@@ -60,10 +60,10 @@ Everyone you should reach out to glows in their own colour on every map view (se
 
 It reads **Usual** until it is moved, and the views look exactly as they always have; past it, it reads how far toward the strongest it is (+5% to +100%), and at the strongest (`glowLook` in `src/demos/reachGlow.ts`, which every view draws from):
 
-- the glow round a marker reaches 2.2 times as far past it, its gradient up to full at its core (from 75%) and half halfway out (from 22%); the Spider web's halo and the City's beacons (the light on the mast, its spreading ring and a tower floor's pulse) grow and brighten alike;
+- the glow round a marker reaches 2.2 times as far past it, its gradient up to full at its core (from 75%) and half halfway out (from 22%); the Spider web's halo and the City's beams (the beam over the roof, its spreading ring and a tower floor's pulse) grow and brighten alike;
 - a glowing name's halo is a little stronger and gains a wider, softer one round it (`nameGlow` and `NAME_HALO` in `src/demos/orbitsLayout.ts`), outside the name's dark outline, so the letters stay sharp; Orbits 3D draws the same into its names once the view tilts;
 - someone to reach out to is drawn, marker, name, trail and glow alike, at no less than 85% strength, where usually they are never fainter than the last tier (40%), so a glow far out is not dimmed with its tier (`personOpacity`);
-- past halfway the glows breathe, slowly (2.4 seconds in and out), growing up to 12% further and the names' wider halos 30% stronger at the top of each breath. Never with reduced motion (the system setting), and not Orbits 3D's glows in the scene, which it draws only as things move (its names from straight above breathe as Orbits' do); the City's beacons pulse as they always have.
+- past halfway the glows breathe, slowly (2.4 seconds in and out), growing up to 12% further and the names' wider halos 30% stronger at the top of each breath. Never with reduced motion (the system setting), and not Orbits 3D's glows in the scene, which it draws only as things move (its names from straight above breathe as Orbits' do); the City's beams breathe as well, over their rings' own pulse.
 
 While someone is held (their panel open, not just under the pointer), only their glow and those of the people they share group chats with are drawn, whatever the setting; everyone else's is off until they are let go (see Orbits in [The views](views.md)).
 

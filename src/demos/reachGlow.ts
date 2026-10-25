@@ -54,7 +54,7 @@ export interface GlowLook {
   mid: number;
   /** How much brighter its core is than usual, for a glow whose gradient is fixed (Orbits 3D's): 1, up to a third more, to full. */
   gain: number;
-  /** How much brighter than usual it is drawn where there is no gradient to change (the Spider web's halo, the City's beacons): 1, up to 1.6. */
+  /** How much brighter than usual it is drawn where there is no gradient to change (the Spider web's halo, the City's beams): 1, up to 1.6. */
   bright: number;
   /** How much it breathes: none up to halfway, then up to 1 at the strongest. */
   pulse: number;

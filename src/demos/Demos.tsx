@@ -2,7 +2,7 @@
 // as a solar system (Orbits 3D, at /orbits-3d), the same map in
 // friend circles (Circles, at /circles) and as a spider's web (the Spider web, at
 // /spider, which the app opens on: DEFAULT_VIEW in views.ts), the City (/city, the same closeness
-// as a neon city, with everything the main view has but Methodology), the Time
+// as a cyberspace city, with everything the main view has but Methodology), the Time
 // river (/time-river: messages, calls or hangouts over time in the river's look,
 // with the same), and the frozen views (the river, Reciprocity), each at its
 // path in src/views.ts; the

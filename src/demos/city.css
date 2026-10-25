@@ -1,7 +1,7 @@
-/* City (City.tsx). Colours come from the .demos variables (demos.css), palette.ts and NEON in cityLayout.ts. */
+/* City (City.tsx). Colours come from the .demos variables (demos.css); the city itself is drawn in cityGl.ts, in its one cyan. */
 
-/* The three canvases, stacked, centred in the stage as Orbits' map is (orbits.css), so the drawing slides with the
-   map's centre while the docked panel moves, never narrower than the map. */
+/* The canvas, centred in the stage as Orbits' map is (orbits.css), so the drawing slides with the map's centre while
+   the docked panel moves, never narrower than the map. */
 .demos__stage > .city {
   position: absolute;
   top: 0;
@@ -62,14 +62,35 @@
   flex: none;
 }
 
+/* Where WebGL 2 is missing, a line saying so in the middle of the stage. */
+.city__unavailable {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  margin: 0;
+  text-align: center;
+  color: var(--dim);
+}
+
 /* An avenue: a ring road's glowing line. */
 .city-key--avenue::before {
   content: "";
   width: 24px;
   height: 10px;
-  border: 1.5px solid rgba(244, 184, 96, 0.7);
+  border: 1.5px solid rgba(77, 227, 255, 0.7);
   border-radius: 50%;
-  box-shadow: 0 0 6px rgba(244, 184, 96, 0.4);
+  box-shadow: 0 0 6px rgba(77, 227, 255, 0.4);
+}
+
+/* A beam over a roof: a short upright line of light. */
+.city-key--beam::before {
+  content: "";
+  width: 2px;
+  height: 16px;
+  border-radius: 1px;
+  background: linear-gradient(to top, #e6faff, transparent);
+  box-shadow: 0 0 6px rgba(77, 227, 255, 0.8);
 }
 
 /* Light on a road: a short bright trail. */
@@ -78,13 +99,18 @@
   width: 22px;
   height: 2px;
   border-radius: 1px;
-  background: linear-gradient(to right, transparent, #fff);
+  background: linear-gradient(to right, transparent, #e6faff);
+  box-shadow: 0 0 4px rgba(77, 227, 255, 0.7);
 }
 
+/* An arc to a group-chat friend. */
 .city-key--line::before {
   content: "";
-  width: 24px;
-  border-top: 1.5px solid rgba(232, 238, 252, 0.45);
+  width: 22px;
+  height: 9px;
+  border: 1.5px solid rgba(200, 245, 255, 0.6);
+  border-bottom: none;
+  border-radius: 11px 11px 0 0;
 }
 
 /* Turning and tilting: a curved arrow round a dot. */

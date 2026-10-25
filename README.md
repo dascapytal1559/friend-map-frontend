@@ -2,7 +2,7 @@
 
 A map of your friendships, drawn from your message history. Everyone you talk to sits closer or further out by how much you talk, call and meet, and how recently.
 
-It opens on the **Spider web**; **Orbits** is the main view, and there are others: a 3D solar system, a neon city, a table, a calendar and a time river. friend-map is a front end with no database of its own: it draws from any backend that serves its [data contract](docs/contract.md).
+It opens on the **Spider web**; **Orbits** is the main view, and there are others: a 3D solar system, a cyberspace city, a table, a calendar and a time river. friend-map is a front end with no database of its own: it draws from any backend that serves its [data contract](docs/contract.md).
 
 ![The Spider web view, on the demo's made-up crowd](docs/screenshot.jpg)
 

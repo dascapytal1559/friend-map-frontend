@@ -1,6 +1,6 @@
 // Every view of the map: Orbits, the same sky as a solar system (Orbits 3D),
 // the same map in friend circles (Circles), the same map as a spider's web
-// (Spider web), the City (the same closeness as a neon city), the Table of everyone,
+// (Spider web), the City (the same closeness as a cyberspace city), the Table of everyone,
 // the Calendar of every day and the Time river (messages, calls or hangouts over
 // time, in the river's look), then the frozen views, which keep working on
 // the same data but get no new work. The view switcher lists them in this

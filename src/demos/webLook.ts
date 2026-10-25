@@ -97,7 +97,7 @@ export interface WebScene {
   lockIn: (id: number) => boolean;
   focusId: number | null;
   linked: ReadonlySet<number>;
-  /** Whose reach-out glow is drawn: everyone's, but while someone is held only theirs and their links' (glowShown). */
+  /** Whose reach-out glow is drawn: everyone's, but while someone is held only theirs and their links', and nobody's under No name except… (glowsOf). */
   glows: (id: number) => boolean;
   /** Who is under the pointer, and who is selected (their panel open, and drawn): the spider holds and looks at the second, else looks at the first (webHold.ts). */
   hoverId: number | null;

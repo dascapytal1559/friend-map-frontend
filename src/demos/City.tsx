@@ -51,7 +51,7 @@ import { BACKGROUND, nameColour, personOpacity, TIER_FLOOR, TIERS } from "./orbi
 import { nameStrengthOf, useNameFade } from "./nameFade.ts";
 import { clampZoom, HOME, MAX_ZOOM, panBy, pinchZoom, wheelFactor, ZOOM_STEP, zoomAt, zoomBetween, zoomToShow, type Fingers, type Zoom } from "./orbitsZoom.ts";
 import { COLORS } from "./palette.ts";
-import { glowLook, glowShown, useReachGlow } from "./reachGlow.ts";
+import { glowLook, glowShown, glowsOf, useReachGlow } from "./reachGlow.ts";
 import { ringColours, ringShare } from "./ringColours.ts";
 import { trendSummary, windowLabel } from "./trend.ts";
 import { ALL, amongTop, useTopNames } from "./topNames.ts";
@@ -167,8 +167,9 @@ export function CityMap({ model, width, height, inset: top, hover, open, held = 
   const focusId = focusOf(hoverId, held, (id) => layout.plots.has(id) || layout.together.includes(id));
   const focusLinks = useMemo(() => focusLinksOf(model, focusId, held, heldGroup), [model, focusId, held, heldGroup]);
   const linked = useMemo(() => new Set(focusLinks.map((l) => (l.source === focusId ? l.target : l.source))), [focusLinks, focusId]);
-  // While someone is held, only they and their links have beacons (glowShown), as the other views glow.
-  const holding = useMemo(() => heldOnly(held, focusId, linked), [held, focusId, linked]);
+  // While someone is held, only they and their links have beacons, and nobody under No name except… (glowsOf), as the
+  // other views glow.
+  const glowing = useMemo(() => glowsOf(heldOnly(held, focusId, linked), names.hidden), [held, focusId, linked, names.hidden]);
   const strength = (id: number, rank: number) =>
     focusId === null ? personOpacity(rank > 0 ? rank : null, reachOut.has(id), { lift: glow.lift }) : id === focusId ? 1 : linked.has(id) ? 0.7 : BACKGROUND;
   // How strongly a name on a roof is drawn: by how names fade (nameFade.ts), as its building until the Names settings are moved.
@@ -572,7 +573,7 @@ export function CityMap({ model, width, height, inset: top, hover, open, held = 
     if (!ctx) return;
     const t = now / 1000 / BEACON_S;
     for (const id of reachOut) {
-      if (!glowShown(id, holding)) continue;
+      if (!glowShown(id, glowing)) continue;
       const colour = neon.get(id)!;
       const plot = layout.plots.get(id);
       const phase = ((id * 0.7548776662) % 1 + 1) % 1;
@@ -649,7 +650,7 @@ export function CityMap({ model, width, height, inset: top, hover, open, held = 
       cancelAnimationFrame(raf);
       clearTimeout(fallback);
     };
-  }, [moving, scene, zoom.k, zoom.x, zoom.y, width, height, dpr, focusId, focusLinks, streams, reachOut, neon, glow, holding]);
+  }, [moving, scene, zoom.k, zoom.x, zoom.y, width, height, dpr, focusId, focusLinks, streams, reachOut, neon, glow, glowing]);
 
   // Picking: the building under the pointer, the front one where they overlap, or a floor of the tower; else the
   // nearest building's foot within `reach` pixels, so the smallest are easy to catch.

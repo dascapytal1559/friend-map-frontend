@@ -7,9 +7,12 @@
 // breathes gently (never with reduced motion). Saved on friend-map's server in
 // the real app and the demo's default (savedStore.ts), as the Spider web's
 // settings are, not in the address. glowLook is what each view draws from it.
+// No name except… (names.ts), the map shown to someone, draws no reach-out
+// glow at all, whatever the setting (glowsOf).
 
 import { demoMode } from "../demoMode.ts";
 import { useStore } from "../keptSetting.ts";
+import { NOBODY, useNameStyle } from "../names.ts";
 import { savedSetting } from "../savedStore.ts";
 
 /** Where the setting is kept. */
@@ -31,8 +34,10 @@ export function makeReachGlowStore(demo: boolean) {
 /** This page's: the demo's in the demo, the real app's everywhere else. */
 export const reachGlowStore = makeReachGlowStore(demoMode);
 
+/** The setting as the views draw it: as set, but the usual look while No name except… is on, so nobody to reach out to is lifted either (glowsOf). */
 export function useReachGlow(): number {
-  return useStore(reachGlowStore);
+  const boost = useStore(reachGlowStore);
+  return useNameStyle() === "except" ? DEFAULT_REACH_GLOW : boost;
 }
 
 /** The slider's label for a glow: Usual at 0, else how far toward the strongest. */
@@ -77,12 +82,19 @@ export function glowLook(boost: number): GlowLook {
 }
 
 /**
- * Whether `id`'s reach-out glow is drawn: always, but while someone is held (`holding`, heldOnly's in Orbits.tsx: they
- * and whoever shares group chats with them), only if they are one of those, so the glows left are the hold's own (the
- * user's ask); everyone else's comes back once they are let go. Someone only under the pointer leaves every glow.
+ * Whose reach-out glows are drawn: everyone's (null), but while someone is held (`holding`, heldOnly's in Orbits.tsx:
+ * they and whoever shares group chats with them) only theirs, so the glows left are the hold's own; everyone else's
+ * comes back once they are let go, and someone only under the pointer leaves every glow. While No name except… keeps
+ * names off the page (`hidden`), nobody's, held or not, so a map shown to someone never says whom you should reach out
+ * to (the user's asks).
  */
-export function glowShown(id: number, holding: ReadonlySet<number> | null): boolean {
-  return holding === null || holding.has(id);
+export function glowsOf(holding: ReadonlySet<number> | null, hidden: boolean): ReadonlySet<number> | null {
+  return hidden ? NOBODY : holding;
+}
+
+/** Whether `id`'s reach-out glow is drawn, among those glowsOf gives (`glowing`). */
+export function glowShown(id: number, glowing: ReadonlySet<number> | null): boolean {
+  return glowing === null || glowing.has(id);
 }
 
 /** How long one breath of a pulsing glow takes, in and out, in ms. */

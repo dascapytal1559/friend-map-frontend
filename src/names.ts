@@ -21,7 +21,8 @@
 // (HiddenName in PersonParts.tsx), and so is any other name that may be
 // someone's (an account, a sender, a group chat's title); aliases, the next
 // name beneath a label, notes and draft openers hide, the name fields lock,
-// and search finds only those named. Each view's own rule for whom it names
+// search finds only those named, and the map views draw no reach-out glow
+// (glowsOf in demos/reachGlow.ts). Each view's own rule for whom it names
 // still holds (Show top names on the map; while someone is held, everyone linked to
 // them), so it only ever leaves names out. Pages read the choice
 // through useNames, so anything labelled that way follows it. The demo (/demo,

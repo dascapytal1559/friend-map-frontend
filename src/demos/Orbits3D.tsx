@@ -48,7 +48,7 @@ import { clampZoom, HOME, panBy, pinchZoom, wheelFactor, ZOOM_STEP, zoomAt, zoom
 import "./orbits.css";
 import "./orbits3d.css";
 import { COLORS } from "./palette.ts";
-import { glowLook, glowShown, useReachGlow } from "./reachGlow.ts";
+import { glowLook, glowShown, glowsOf, useReachGlow } from "./reachGlow.ts";
 import { ringColours } from "./ringColours.ts";
 import { PHOTO_SHARE, SUN_SHARE, SunControls, useMePhoto } from "./SunPhoto.tsx";
 import { trendSummary, windowLabel } from "./trend.ts";
@@ -126,8 +126,8 @@ export function Orbits3DMap({ model, width, height, inset: top, hover, open, hel
   const focusId = focusOf(hoverId, held, (id) => targets.frames.has(id));
   const focusLinks = useMemo(() => focusLinksOf(model, focusId, held, heldGroup), [model, focusId, held, heldGroup]);
   const linked = useMemo(() => new Set(focusLinks.map((l) => (l.source === focusId ? l.target : l.source))), [focusLinks, focusId]);
-  // While someone is held, only they and their links glow (glowShown), as on Orbits.
-  const holding = useMemo(() => heldOnly(held, focusId, linked), [held, focusId, linked]);
+  // While someone is held, only they and their links glow, and nobody under No name except… (glowsOf), as on Orbits.
+  const glowing = useMemo(() => glowsOf(heldOnly(held, focusId, linked), names.hidden), [held, focusId, linked, names.hidden]);
   const reachOut = useMemo(() => new Set(model.people.filter((p) => p.shouldReachOut).map((p) => p.id)), [model.people]);
   // How strongly they glow (reachGlow.ts), as on Orbits; the scene's glows are drawn as things move, so only the flat names breathe.
   const reachGlow = useReachGlow();
@@ -219,10 +219,10 @@ export function Orbits3DMap({ model, width, height, inset: top, hover, open, hel
       colour: glowColours.get(label.id)!,
       scale: label.scale,
       bold: label.id === focusId,
-      glow: targets.frames.get(label.id)!.glow >= 0.02 && glowShown(label.id, holding) ? glowColours.get(label.id)! : null,
+      glow: targets.frames.get(label.id)!.glow >= 0.02 && glowShown(label.id, glowing) ? glowColours.get(label.id)! : null,
       boost: reachGlow,
     }])),
-    [labels, model.people, names.mapLabel, glowColours, focusId, targets, reachGlow, holding],
+    [labels, model.people, names.mapLabel, glowColours, focusId, targets, reachGlow, glowing],
   );
   const lookKeys = useMemo(() => [...looks.values()].map(nameKey).sort().join("\n"), [looks]);
   const atlas = useRef(new NameAtlas());
@@ -268,7 +268,7 @@ export function Orbits3DMap({ model, width, height, inset: top, hover, open, hel
         // Neither glow: the name's own glow marks someone to reach out to.
       } else if (home.has(person.id)) {
         hearthGlows.push({ x: p.x, y: p.y, r: hearthGlowRadius(size, inner), alpha: f.opacity * str, mode: SUN_GLOW });
-      } else if (f.glow >= 0.02 && glowShown(person.id, holding)) {
+      } else if (f.glow >= 0.02 && glowShown(person.id, glowing)) {
         const [r, g, b] = glowRgb.get(person.id)!;
         reachGlows.push({ x: p.x, y: p.y, r: size + (5 + 13 * f.glow) * glow.reach, alpha: f.opacity * f.glow * str * glow.gain, mode: COLOUR_GLOW, colour: [r, g, b, 1] });
       }
@@ -333,7 +333,7 @@ export function Orbits3DMap({ model, width, height, inset: top, hover, open, hel
   }, [me.photo]);
   useEffect(() => {
     drawRef.current();
-  }, [frames, zoom.k, zoom.x, zoom.y, camera, focusId, linked, width, height, dpr, reachOut, home, closest, photoLoaded, drawn, labels, looks, glow, holding]);
+  }, [frames, zoom.k, zoom.x, zoom.y, camera, focusId, linked, width, height, dpr, reachOut, home, closest, photoLoaded, drawn, labels, looks, glow, glowing]);
 
   // Picking: the nearest person within reach of the pointer, found through a triangulation of where everyone is
   // drawn, built when the pointer first needs it for each drawing.
@@ -654,7 +654,7 @@ export function Orbits3DMap({ model, width, height, inset: top, hover, open, hel
         <g>
           {labels.map((label) => {
             const { x, y } = place(label.id);
-            const shine = glowShown(label.id, holding) ? frames.get(label.id)!.glow : 0;
+            const shine = glowShown(label.id, glowing) ? frames.get(label.id)!.glow : 0;
             const { style, pulsing } = nameStyle(glowColours.get(label.id)!, shine, reachGlow, glow.pulse);
             return (
               <text

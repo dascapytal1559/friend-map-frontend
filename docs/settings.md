@@ -67,6 +67,8 @@ It reads **Usual** until it is moved, and the views look exactly as they always 
 
 While someone is held (their panel open, not just under the pointer), only their glow and those of the people they share group chats with are drawn, whatever the setting; everyone else's is off until they are let go (see Orbits in [The views](views.md)).
 
+Under No name except… (the name choice for showing your map to someone) no reach-out glow is drawn at all, held or not, and the setting lifts nobody: the views draw it as Usual with every glow off, until another name choice is made (see No name except… in [The views](views.md)).
+
 The maps are drawn on a night sky in every theme, so each value is the same in light and dark.
 
 ## How names fade

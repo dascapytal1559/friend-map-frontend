@@ -10,7 +10,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import type { PersonRelationship, RelationshipsReport } from "../archive.ts";
-import { nameStyleStore } from "../names.ts";
+import { NOBODY, nameStyleStore } from "../names.ts";
 import { buildModel } from "./model.ts";
 import { emptyAt, focusLinksOf, focusOf, heldOnly, linksOf, OrbitMap } from "./Orbits.tsx";
 import { BACKGROUND, LINKED_FLOOR } from "./orbitsLayout.ts";
@@ -161,6 +161,22 @@ describe("the reach-out glow with someone held", () => {
   it("on the Spider web, leaves the held person's links' names glowing", () => {
     expect(glowingNames(draw(null, null, { look: "web" }))).toEqual(["Bea", "Cy", "Dee"]);
     expect(glowingNames(draw(1, null, { look: "web" }))).toEqual(["Bea", "Cy"]);
+  });
+
+  // No name except… (the map shown to someone) draws no reach-out glow at all, held or not (the user's ask).
+  it("under No name except…, glows nobody, on Orbits, Circles and the Spider web, held or not", () => {
+    nameStyleStore.set("except");
+    const markers = [null, 1, 4].map((held) => glowingMarkers(draw(held, null)));
+    // Everyone picked, so named: names are drawn, without a halo.
+    nameStyleStore.setNamed(new Set([1, 2, 3, 4]));
+    const names = [{}, { order: "circles" }, { look: "web" }].flatMap((more) => [null, 1, 4].map((held) => [draw(held, null, more), glowingNames(draw(held, null, more))] as const));
+    nameStyleStore.setNamed(NOBODY);
+    nameStyleStore.set("full");
+    expect(markers).toEqual([[], [], []]);
+    for (const [markup, glowing] of names) {
+      expect(markup).toMatch(/>(Bea|Cy|Dee)</);
+      expect(glowing).toEqual([]);
+    }
   });
 });
 

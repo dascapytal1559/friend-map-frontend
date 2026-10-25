@@ -11,7 +11,7 @@ import { resetSaved } from "../savedStore.ts";
 import { buildModel } from "./model.ts";
 import { OrbitMap } from "./Orbits.tsx";
 import { NAME_GLOW, nameGlow, personOpacity } from "./orbitsLayout.ts";
-import { DEFAULT_REACH_GLOW, glowLook, glowShown, pulseAt, PULSE_MS, REACH_GLOW_KEY, reachGlowLabel, reachGlowOf, reachGlowStore } from "./reachGlow.ts";
+import { DEFAULT_REACH_GLOW, glowLook, glowShown, glowsOf, pulseAt, PULSE_MS, REACH_GLOW_KEY, reachGlowLabel, reachGlowOf, reachGlowStore, useReachGlow } from "./reachGlow.ts";
 import type { ViewProps } from "./view.tsx";
 
 function memory(initial: Record<string, string> = {}) {
@@ -105,6 +105,15 @@ describe("whose glow is drawn", () => {
     const holding = new Set([1, 2, 3]);
     expect([1, 2, 3, 4].map((id) => glowShown(id, holding))).toEqual([true, true, true, false]);
   });
+
+  it("is nobody's while No name except… keeps names off the page, held or not", () => {
+    const holding = new Set([1, 2, 3]);
+    expect(glowsOf(null, false)).toBeNull();
+    expect(glowsOf(holding, false)).toBe(holding);
+    for (const glowing of [glowsOf(null, true), glowsOf(holding, true)]) {
+      expect([1, 2, 3, 4].map((id) => glowShown(id, glowing))).toEqual([false, false, false, false]);
+    }
+  });
 });
 
 describe("Orbits drawn with the Reach-out glow", () => {
@@ -159,6 +168,15 @@ describe("Orbits drawn with the Reach-out glow", () => {
       expect(strongStyle, look).toContain("--glow-peak:drop-shadow(0 0 3.00px");
       expect(strongStyle, look).toContain("drop-shadow(0 0 11.80px");
     }
+  });
+
+  it("draws no glow, and reads the setting as the usual look, under No name except…, at the strongest", () => {
+    expect(markerGlow(draw(1, "except")).stops).toEqual([]);
+    const drawnAt = () => renderToStaticMarkup(createElement(() => String(useReachGlow())));
+    resetSaved({ names: "except", "reach-glow": "1" });
+    expect(drawnAt()).toBe("0");
+    resetSaved({ names: "hide", "reach-glow": "1" });
+    expect(drawnAt()).toBe("1");
   });
 
   it("breathes not at all up to halfway", () => {

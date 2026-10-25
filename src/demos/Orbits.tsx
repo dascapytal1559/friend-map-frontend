@@ -42,7 +42,7 @@ import { trendSummary, windowLabel } from "./trend.ts";
 import { basicRows, fieldRows, number, tipAt, type Demo, type ViewProps } from "./view.tsx";
 import { webBoot, type WebMotion } from "./webChoreography.ts";
 import { presetOf, useWebColour } from "./webColour.ts";
-import { glowLook, glowShown, SWELL, useReachGlow } from "./reachGlow.ts";
+import { glowLook, glowShown, glowsOf, SWELL, useReachGlow } from "./reachGlow.ts";
 import { useWebStrength } from "./webStrength.ts";
 import { useWebCurve, useWebSpokes } from "./webStyle.ts";
 import { ringTop, webShape } from "./webGeometry.ts";
@@ -97,7 +97,7 @@ export function focusOf(hovered: number | null, held: number | null, drawn: (id:
  * drawn), and everyone they share group chats with (`linked`); null, everyone,
  * with nobody held. On the Spider web only they can be named, hovered and
  * clicked, and on every view only theirs of the reach-out glows are drawn
- * (glowShown in reachGlow.ts).
+ * (glowsOf in reachGlow.ts).
  */
 export function heldOnly(held: number | null, focusId: number | null, linked: ReadonlySet<number>): ReadonlySet<number> | null {
   return held !== null && focusId === held ? new Set([held, ...linked]) : null;
@@ -348,10 +348,11 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
     k: settled.k, sun: { x: cx + settled.x, y: cy + settled.y }, spot,
     width, height, top, charWidth: font.charWidth, focusId, held, linked, fade,
   });
-  // While someone is held, only they and whoever shares group chats with them glow (glowShown), and on the Spider web only
-  // they are named, hovered or clicked (the user's asks); everyone else stays on the map, unnamed and out of reach, until
-  // they are let go.
+  // While someone is held, only they and whoever shares group chats with them glow (nobody at all under No name except…:
+  // glowsOf), and on the Spider web only they are named, hovered or clicked (the user's asks); everyone else stays on the
+  // map, unnamed and out of reach, until they are let go.
   const holding = useMemo(() => heldOnly(held, focusId, linked), [held, focusId, linked]);
+  const glowing = useMemo(() => glowsOf(holding, names.hidden), [holding, names.hidden]);
   const reachable = web ? holding : null;
   // Their names stay where they were placed with everyone's, so holding someone moves no name.
   const labels = useMemo(() => (reachable ? placedLabels.filter((label) => reachable.has(label.id)) : placedLabels), [placedLabels, reachable]);
@@ -783,7 +784,7 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
         <g>
           {drawn.map((person) => {
             const f = frames.get(person.id)!;
-            if (f.opacity <= 0.01 || f.glow < 0.02 || !glowShown(person.id, holding) || home.has(person.id) || nameOnly.has(person.id)) return null;
+            if (f.opacity <= 0.01 || f.glow < 0.02 || !glowShown(person.id, glowing) || home.has(person.id) || nameOnly.has(person.id)) return null;
             const { x, y } = place(person.id);
             if (!near(x, y)) return null;
             const colour = glowColours.get(person.id);
@@ -843,7 +844,7 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
 
       </>
     );
-  }, [frames, k, cullX, cullY, width, height, beyond, focusId, focusLinks, linked, labels, targets, trailFrom, model, guides, radius, together, inner, outer, shape, drawn, closest, reachOut, glowColours, circleArcs, me.photo, palette, sunColour, strength, arrived, labelOpacity, nameOnly, glow, holding]);
+  }, [frames, k, cullX, cullY, width, height, beyond, focusId, focusLinks, linked, labels, targets, trailFrom, model, guides, radius, together, inner, outer, shape, drawn, closest, reachOut, glowColours, circleArcs, me.photo, palette, sunColour, strength, arrived, labelOpacity, nameOnly, glow, glowing]);
   // The names, over everything in the sky. They are an SVG of their own over the sky's (nameLayer below), so the sky
   // redrawn (a hover, the Spider web's flowing links) never repaints hundreds of names, nor the names the sky's markers.
   // Each name in its person's own colour, with the outline every name has and nothing behind it, its glow on the letters,
@@ -851,7 +852,7 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
   const nameMarks = useMemo(() => labels.map((label) => {
     const at = place(label.id);
     const opacity = labelOpacity(label);
-    const shine = glowShown(label.id, holding) ? frames.get(label.id)!.glow : 0;
+    const shine = glowShown(label.id, glowing) ? frames.get(label.id)!.glow : 0;
     const { style, pulsing } = nameStyle(glowColours.get(label.id)!, shine, reachGlow, glow.pulse);
     return (
       <text
@@ -866,7 +867,7 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
         {nameOf(model.people, label.id, names.mapLabel)}
       </text>
     );
-  }), [labels, frames, k, focusId, model.people, names.mapLabel, glowColours, labelOpacity, reachGlow, glow, holding]);
+  }), [labels, frames, k, focusId, model.people, names.mapLabel, glowColours, labelOpacity, reachGlow, glow, glowing]);
   // What the web layer draws from this render (WebScene), while a spider-web look is on.
   const webPeople = useMemo(() => drawn.map((p) => ({ id: p.id, colour: glowColours.get(p.id)! })), [drawn, glowColours]);
   // Whoever is surely named unzoomed: the closest `named` (with All, SURELY_NAMED), and everyone to reach out to.
@@ -878,7 +879,7 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
   const webNames = useMemo(() => new Map(labels.map((label) => [label.id, { wide: label.right - label.left, tall: label.bottom - label.top }])), [labels]);
   const scene: WebScene | null = web && shape ? {
     colour, webStrength, reachGlow, width, height, top, sun, k, inner, outer, shape, frames, people: webPeople, strength, arrived, lockIn, focusId, linked,
-    glows: (id) => glowShown(id, holding), hoverId, heldId: held !== null && targets.frames.has(held) ? held : null, reduced, names: webNames,
+    glows: (id) => glowShown(id, glowing), hoverId, heldId: held !== null && targets.frames.has(held) ? held : null, reduced, names: webNames,
   } : null;
   // Everyone's identicon, as a pattern their marker is filled with; drawn again only when who is on the map changes.
   const faces = useMemo(

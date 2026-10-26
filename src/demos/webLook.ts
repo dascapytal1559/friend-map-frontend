@@ -77,6 +77,8 @@ export interface WebScene {
   webStrength: number;
   /** How strongly everyone to reach out to glows, 0 (the usual) to 1 (reachGlow.ts). */
   reachGlow: number;
+  /** Whether the web is drawn on paper, the light look (src/theme.ts): its theme as ink (webTheme.ts). */
+  light: boolean;
   width: number;
   height: number;
   /** The header's height: the web fades under it. */
@@ -505,7 +507,7 @@ function webStrands(ctx: Ctx, scene: WebScene, ink: Ink, split: number): void {
 /** The Spider web, drawn: see the file's head. */
 export function drawWeb(ctx: Ctx, scene: WebScene, motion: WebMotion, now: number, state: LookState): void {
   const { width, height, sun, k, shape } = scene;
-  const ink = webTheme(scene.colour).ink;
+  const ink = webTheme(scene.colour, scene.light).ink;
   const t = motion.bootStart === null ? Infinity : now - motion.bootStart;
   const booted = t >= BOOT_MS;
   const random = flicker(now, 50);
@@ -527,8 +529,8 @@ export function drawWeb(ctx: Ctx, scene: WebScene, motion: WebMotion, now: numbe
     ctx.fillStyle = grid;
     ctx.fillRect(0, 0, width, height);
   }
-  const scanlines = pattern(ctx, state, "scanlines", 3, (c) => {
-    c.fillStyle = "rgba(0, 0, 0, 0.22)";
+  const scanlines = pattern(ctx, state, `scanlines-${ink.scanline}`, 3, (c) => {
+    c.fillStyle = ink.scanline;
     c.fillRect(0, 0, 3, 1);
   });
   if (scanlines) {
@@ -667,7 +669,7 @@ export function drawWeb(ctx: Ctx, scene: WebScene, motion: WebMotion, now: numbe
  */
 export function drawWebOver(ctx: Ctx, scene: WebScene, now: number, state: LookState): void {
   ctx.clearRect(0, 0, scene.width, scene.height);
-  const ink = webTheme(scene.colour).ink;
+  const ink = webTheme(scene.colour, scene.light).ink;
   const random = flicker(now, 50);
   const beam = state.hold.beam;
   ctx.save();

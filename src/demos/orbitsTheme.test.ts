@@ -5,10 +5,11 @@
 import { describe, expect, it } from "vitest";
 import { contrast, mix } from "../identicon.ts";
 import { rings } from "./orbitsLayout.ts";
-import { NIGHT_PALETTE, ORANGE, orbitsPalette, themeSun } from "./orbitsTheme.ts";
-import { COLORS } from "./palette.ts";
+import { NIGHT_PALETTE, ORANGE, orbitsPalette, PAPER_PALETTE, themeSun } from "./orbitsTheme.ts";
+import { COLORS, PAPER } from "./palette.ts";
 import { RING_LABEL, ringColours } from "./ringColours.ts";
-import { hueGap, oklch } from "./themeColour.ts";
+import { hueGap, inkOf, oklch } from "./themeColour.ts";
+import { rgba } from "./webDraw.ts";
 
 const PICKS = ["#ff0000", "#ffee00", "#00ff66", "#00ffee", "#0088ff", "#2200ff", "#aa00ff", "#ff00aa", "#6fd0c6", "#102030", "#ffffff"];
 
@@ -44,5 +45,26 @@ describe("Orbits' theme", () => {
     const far = (sun: string) => oklch(ringColours(1000, sun).colour)[2];
     const turn = oklch(themeSun("#6fd0c6"))[2] - oklch(ORANGE)[2];
     expect(hueGap(far("#6fd0c6"), far(ORANGE) + turn)).toBeLessThan(3);
+  });
+});
+
+describe("Orbits on paper", () => {
+  it("draws the sun as a solid disc in the theme's hue with a pale halo, rims in ink, and Paper's trails", () => {
+    expect(orbitsPalette(ORANGE, true)).toBe(PAPER_PALETTE);
+    expect(orbitsPalette(ORANGE)).toBe(NIGHT_PALETTE);
+    for (const pick of [ORANGE, ...PICKS]) {
+      const palette = orbitsPalette(pick, true);
+      expect(orbitsPalette(pick, true)).toBe(palette);
+      const [core, halo] = [palette.sun[0][1], palette.sun[2][1]];
+      // A disc, not text: it needs only to stand out on white, and a yellow sun stays yellow.
+      expect(contrast(core, PAPER.night)).toBeGreaterThanOrEqual(2.2);
+      expect(oklch(halo)[0]).toBeGreaterThan(oklch(core)[0]);
+      if (oklch(pick)[1] > 0.05) expect(hueGap(oklch(core)[2], oklch(pick)[2])).toBeLessThan(4);
+      expect(palette.sun.at(-1)![2]).toBe(0);
+      expect(palette.body.lit).toBe(PAPER.star);
+      expect(palette.body.silent).toBe(PAPER.dim);
+      expect(palette.body.plain("#f6c177")).toBe(rgba(inkOf("#f6c177"), 0.55));
+      expect(palette.trail).toEqual({ warm: PAPER.warm, cool: PAPER.cool });
+    }
   });
 });

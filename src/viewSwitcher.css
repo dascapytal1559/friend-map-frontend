@@ -372,3 +372,32 @@
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
+
+/* Paper, the light look (demos--light; src/theme.ts): the switcher in the console's inks, its menu on white. */
+.demos--light .view-switcher {
+  --vs-ink: var(--star);
+  --vs-dim: var(--dim);
+  --vs-panel: #ffffff;
+  --vs-line: var(--glass-line);
+  --vs-hover: var(--hover);
+}
+
+.demos--light .view-switcher__menu {
+  box-shadow: var(--glass-shadow);
+}
+
+.demos--light .view-switcher__dot {
+  background: var(--me);
+}
+
+.demos--light .view-switcher__slider input {
+  accent-color: var(--me);
+}
+
+/* On paper the pressed choice is the console's: a white pill with the ink on it, on the grey track. */
+.demos--light .view-switcher__toggle > button[aria-pressed="true"],
+.demos--light .view-switcher__custom[data-on] {
+  background: #ffffff;
+  color: var(--star);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08), 0 0 0 1px var(--glass-line);
+}

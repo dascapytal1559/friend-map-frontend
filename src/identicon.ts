@@ -8,11 +8,15 @@
 // The picture is IDENTICON_SIZE cells square, its left half drawn at random and
 // mirrored onto the right, each cell the background, the main colour or a spot
 // colour. The three colours are picked in OKLCH, so their lightness is what the
-// eye sees whatever the hue: a dark, soft background; a light, vivid main
-// colour (what makes a person's marker on Orbits stand out, and tints their
-// name there, so it must read on the map's night sky); and a mid spot colour of another hue. Lightness is fixed
-// by role, so no seed gives a picture whose parts disappear into each other,
-// and hue, chroma, the picture and which hues go together carry the variety.
+// eye sees whatever the hue, by role, in the look the page is drawn in
+// (IdenticonLook; src/theme.ts): on the night, a dark, soft background, a
+// light, vivid main colour (what makes a person's marker on Orbits stand out,
+// and their name there is written in it, so it must read on the night sky)
+// and a mid spot colour of another hue; on paper, a pale background, the main
+// colour as ink and a mid spot, so the same picture reads on white. Lightness
+// is fixed by role, so no seed gives a picture whose parts disappear into each
+// other, and hue, chroma, the picture and which hues go together carry the
+// variety; the seed draws the same picture in either look.
 //
 // You may pick a person's colour (the person panel's icon picker): a
 // hue kept beside the seed (person.identicon_hue). Their main colour is then
@@ -57,14 +61,36 @@ export function randomIdenticonSeed(): string {
   return [...bytes].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-/** The main colour a picked hue gives: the picker's swatch, and the person's colour everywhere. */
-export function pickedColour(hue: number): string {
-  return oklchHex(PICKED_LIGHTNESS, PICKED_CHROMA, hue);
+/** A lightness and a chroma a colour is picked between, in OKLCH. */
+interface Range {
+  l: [number, number];
+  c: [number, number];
 }
 
-/** A picked hue's lightness and chroma: the middle of what a seed gives. */
-const PICKED_LIGHTNESS = 0.79;
-const PICKED_CHROMA = 0.15;
+/** The three colours' ranges in a look: the background's, the main colour's and the spot's. */
+export interface IdenticonLook {
+  name: "night" | "paper";
+  background: Range;
+  main: Range;
+  spot: Range;
+}
+
+/** On the night: a dark background, a light, vivid main colour, a mid spot. */
+export const NIGHT_LOOK: IdenticonLook = { name: "night", background: { l: [0.2, 0.29], c: [0.03, 0.08] }, main: { l: [0.74, 0.84], c: [0.11, 0.17] }, spot: { l: [0.52, 0.6], c: [0.14, 0.2] } };
+
+/** On paper: a pale background, the main colour as ink, a mid spot. */
+export const PAPER_LOOK: IdenticonLook = { name: "paper", background: { l: [0.9, 0.95], c: [0.03, 0.06] }, main: { l: [0.46, 0.54], c: [0.13, 0.18] }, spot: { l: [0.62, 0.7], c: [0.14, 0.2] } };
+
+/** The look for a page's theme (src/theme.ts). */
+export function identiconLook(theme: "light" | "dark"): IdenticonLook {
+  return theme === "light" ? PAPER_LOOK : NIGHT_LOOK;
+}
+
+/** The main colour a picked hue gives in a look: the picker's swatch, and the person's colour everywhere; the middle of what a seed gives. */
+export function pickedColour(hue: number, look: IdenticonLook = NIGHT_LOOK): string {
+  const mid = ([low, high]: [number, number]) => (low + high) / 2;
+  return oklchHex(mid(look.main.l), mid(look.main.c), hue);
+}
 
 export interface Identicon {
   /** IDENTICON_SIZE rows of IDENTICON_SIZE cells, top to bottom, left to right. */
@@ -81,11 +107,11 @@ export interface Identicon {
 const cache = new Map<string, Identicon>();
 
 /**
- * The identicon a seed draws, in the hue picked for it if one was (null: the seed's own). The same seed and hue always
- * give the same picture.
+ * The identicon a seed draws, in the hue picked for it if one was (null: the seed's own), in a look (the night's unless
+ * the page says). The same seed and hue always give the same picture.
  */
-export function identicon(seed: string, picked: number | null = null): Identicon {
-  const key = picked === null ? seed : `${seed}@${picked}`;
+export function identicon(seed: string, picked: number | null = null, look: IdenticonLook = NIGHT_LOOK): Identicon {
+  const key = `${look.name}:${picked === null ? seed : `${seed}@${picked}`}`;
   const kept = cache.get(key);
   if (kept) return kept;
   const random = generator(seed);
@@ -97,10 +123,10 @@ export function identicon(seed: string, picked: number | null = null): Identicon
   // The background sits a quarter to three quarters of the way round from the main hue; the spot on the other side of it.
   const backgroundHue = hue + between(90, 270);
   const spotHue = hue + (random() < 0.5 ? -1 : 1) * between(100, 160);
-  const [lightness, chroma] = [between(0.74, 0.84), between(0.11, 0.17)];
-  const main = picked === null ? oklchHex(lightness, chroma, hue) : pickedColour(hue);
-  const background = oklchHex(between(0.2, 0.29), between(0.03, 0.08), backgroundHue);
-  const spot = oklchHex(between(0.52, 0.6), between(0.14, 0.2), spotHue);
+  const [lightness, chroma] = [between(...look.main.l), between(...look.main.c)];
+  const main = picked === null ? oklchHex(lightness, chroma, hue) : pickedColour(hue, look);
+  const background = oklchHex(between(...look.background.l), between(...look.background.c), backgroundHue);
+  const spot = oklchHex(between(...look.spot.l), between(...look.spot.c), spotHue);
 
   const half = IDENTICON_SIZE / 2;
   const cells: IdenticonCell[][] = [];

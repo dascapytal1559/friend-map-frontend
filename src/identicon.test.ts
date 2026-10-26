@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BACKGROUND, contrast, identicon, IDENTICON_SIZE, identiconSeedOf, isIdenticonHue, isIdenticonSeed, MAIN, mix, oklab, pickedColour, randomIdenticonSeed, SPOT } from "./identicon.ts";
+import { BACKGROUND, contrast, identicon, IDENTICON_SIZE, identiconLook, identiconSeedOf, isIdenticonHue, isIdenticonSeed, MAIN, mix, NIGHT_LOOK, oklab, PAPER_LOOK, pickedColour, randomIdenticonSeed, SPOT } from "./identicon.ts";
 
 /** Seeds as People gives them: ids in order, made a few seconds apart. */
 const SEEDS = Array.from({ length: 5000 }, (_, i) => identiconSeedOf(i + 1, 1_700_000_000_000 + i * 3_217));
@@ -153,3 +153,24 @@ function hueOf(hex: string): number {
   const [, a, b] = oklab(hex);
   return ((Math.atan2(b, a) * 180) / Math.PI + 360) % 360;
 }
+
+describe("on paper", () => {
+  it("draws the same picture in a pale background, the main colour as ink and a mid spot, each reading on white", () => {
+    for (const seed of SEEDS.slice(0, 500)) {
+      const night = identicon(seed);
+      const paper = identicon(seed, null, PAPER_LOOK);
+      expect(paper.cells).toEqual(night.cells);
+      expect(paper.hue).toBe(night.hue);
+      expect(contrast(paper.main, PAPER)).toBeGreaterThanOrEqual(3.5);
+      expect(contrast(paper.main, paper.background)).toBeGreaterThanOrEqual(3);
+      expect(contrast(paper.spot, paper.background)).toBeGreaterThanOrEqual(1.6);
+      expect(oklab(paper.background)[0]).toBeGreaterThan(0.88);
+    }
+    expect(identicon(SEEDS[0], 120, PAPER_LOOK).main).toBe(pickedColour(120, PAPER_LOOK));
+    expect(contrast(pickedColour(120, PAPER_LOOK), PAPER)).toBeGreaterThanOrEqual(3.5);
+    expect(identiconLook("light")).toBe(PAPER_LOOK);
+    expect(identiconLook("dark")).toBe(NIGHT_LOOK);
+    expect(identicon(SEEDS[0], null, NIGHT_LOOK)).toBe(identicon(SEEDS[0]));
+    expect(identicon(SEEDS[0], null, PAPER_LOOK)).not.toBe(identicon(SEEDS[0]));
+  });
+});

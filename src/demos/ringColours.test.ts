@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { contrast, mix } from "../identicon.ts";
 import { rings } from "./orbitsLayout.ts";
-import { COLORS } from "./palette.ts";
-import { RING_LABEL, ringColours, ringShare } from "./ringColours.ts";
+import { COLORS, PAPER } from "./palette.ts";
+import { PAPER_RING_LABEL, RING_LABEL, ringColours, ringShare } from "./ringColours.ts";
+import { inkOf } from "./themeColour.ts";
 
 const alpha = (rgba: string) => Number(/([\d.]+)\)$/.exec(rgba)![1]);
 
@@ -31,5 +32,23 @@ describe("the guide rings' colours", () => {
       expect(alpha(label)).toBeLessThan(0.55);
       expect(contrast(mix(COLORS.night, colour, RING_LABEL), COLORS.night)).toBeGreaterThanOrEqual(2);
     }
+  });
+});
+
+describe("the guide rings on paper", () => {
+  it("are the same family as ink, every label reading on white, the lines stronger and fainter outward still", () => {
+    const all = rings(10_000).slice(0, 6).map((ring) => ringColours(ring.rank, COLORS.me, true));
+    expect(all[0].colour).toBe(inkOf(COLORS.me, 0.58));
+    for (const { colour, label } of all) {
+      expect(contrast(mix(PAPER.night, colour, PAPER_RING_LABEL), PAPER.night)).toBeGreaterThanOrEqual(3);
+      expect(alpha(label)).toBe(PAPER_RING_LABEL);
+    }
+    for (let i = 1; i < all.length; i++) expect(alpha(all[i].line)).toBeLessThan(alpha(all[i - 1].line));
+    expect(alpha(all[0].line)).toBeGreaterThan(alpha(ringColours(10.5).line));
+    // Another sun turns the family round the wheel as it does on the night, from that sun's ink.
+    const teal = rings(10_000).slice(0, 6).map((ring) => ringColours(ring.rank, "#6fd0c6", true));
+    expect(teal[0].colour).toBe(inkOf("#6fd0c6", 0.58));
+    expect(teal.map((ring) => ring.colour)).not.toEqual(all.map((ring) => ring.colour));
+    expect(ringColours(10.5, COLORS.me, true)).toEqual(all[0]);
   });
 });

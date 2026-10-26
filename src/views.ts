@@ -33,19 +33,25 @@ export interface ViewInfo {
   frozen: boolean;
   /** What of the data contract it reads beside `map` (archive.ts, CAPABILITIES): a backend without them has no such view. */
   needs?: readonly Capability[];
+  /**
+   * Drawn dark whatever the page's look (theme.ts, lookOf): the night scenes (Orbits 3D and the City, drawn from the
+   * night's palette and their own colours), and the views whose own sheets are the night's alone (the Time river, and
+   * the frozen views).
+   */
+  night?: boolean;
 }
 
 export const VIEWS: ViewInfo[] = [
   { slug: "orbits", path: "/orbits", title: "Orbits", frozen: false },
-  { slug: "orbits-3d", path: "/orbits-3d", title: "Orbits 3D", frozen: false },
+  { slug: "orbits-3d", path: "/orbits-3d", title: "Orbits 3D", frozen: false, night: true },
   { slug: "circles", path: "/circles", title: "Circles", frozen: false },
   { slug: "web", path: "/spider", title: "Spider web", frozen: false },
-  { slug: "city", path: "/city", title: "City", frozen: false },
+  { slug: "city", path: "/city", title: "City", frozen: false, night: true },
   { slug: "table", path: "/table", title: "Table", frozen: false, needs: ["table", "scores"] },
   { slug: "calendar", path: "/calendar", title: "Calendar", frozen: false, needs: ["calendar"] },
-  { slug: "time-river", path: "/time-river", title: "Time river", frozen: false, needs: ["river"] },
-  { slug: "river", path: "/river", title: "The river", frozen: true },
-  { slug: "reciprocity", path: "/reciprocity", title: "Reciprocity", frozen: true },
+  { slug: "time-river", path: "/time-river", title: "Time river", frozen: false, needs: ["river"], night: true },
+  { slug: "river", path: "/river", title: "The river", frozen: true, night: true },
+  { slug: "reciprocity", path: "/reciprocity", title: "Reciprocity", frozen: true, night: true },
 ];
 
 /** The main views, listed first in the switcher, under "Main views", each naming as many as its own Show top names says (topNames.ts). */

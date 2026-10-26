@@ -5,11 +5,14 @@
 // colour as the rest of the web is (webTheme.ts); on Orbits, the sun in its
 // theme colour (orbitsTheme.ts) and the teal Orbits draws the other person
 // in; every other view keeps the sun's orange and that teal, the
-// stylesheet's own (--me and --them in demos.css).
+// stylesheet's own (--me and --them in demos.css). On paper (the light look,
+// src/theme.ts) the same colours as ink, so the card's lines and labels read
+// on white.
 
 import type { CSSProperties } from "react";
-import { COLORS } from "./palette.ts";
+import { COLORS, PAPER } from "./palette.ts";
 import { themeSun, useOrbitsTheme } from "./orbitsTheme.ts";
+import { inkOf } from "./themeColour.ts";
 import { useWebColour, type WebColour } from "./webColour.ts";
 import { webTheme } from "./webTheme.ts";
 
@@ -19,19 +22,22 @@ export interface PanelGlow {
   "--panel-beam": string;
 }
 
-/** The panel's colours on the view at `slug`, given the Spider web's colour and Orbits' theme colour; null on the views that keep the stylesheet's. */
-export function panelGlow(slug: string, web: WebColour, orbits: string): PanelGlow | null {
+/**
+ * The panel's colours on the view at `slug`, given the Spider web's colour and Orbits' theme colour, on the night or on
+ * paper (`light`); null on the views that keep the stylesheet's.
+ */
+export function panelGlow(slug: string, web: WebColour, orbits: string, light = false): PanelGlow | null {
   if (slug === "web") {
-    const { strand, rings } = webTheme(web).ink;
+    const { strand, rings } = webTheme(web, light).ink;
     return { "--panel-glow": strand, "--panel-beam": rings };
   }
-  if (slug === "orbits") return { "--panel-glow": themeSun(orbits), "--panel-beam": COLORS.them };
+  if (slug === "orbits") return light ? { "--panel-glow": inkOf(themeSun(orbits)), "--panel-beam": PAPER.them } : { "--panel-glow": themeSun(orbits), "--panel-beam": COLORS.them };
   return null;
 }
 
-/** The panel's colours on the view at `slug`, as a style for the page, following the colours as they are chosen. */
-export function usePanelGlow(slug: string): CSSProperties | undefined {
+/** The panel's colours on the view at `slug` in its look, as a style for the page, following the colours as they are chosen. */
+export function usePanelGlow(slug: string, light: boolean): CSSProperties | undefined {
   const web = useWebColour();
   const orbits = useOrbitsTheme();
-  return (panelGlow(slug, web, orbits) as CSSProperties | null) ?? undefined;
+  return (panelGlow(slug, web, orbits, light) as CSSProperties | null) ?? undefined;
 }

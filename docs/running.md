@@ -34,6 +34,15 @@ Open <https://your-mac.tail1234.ts.net/friend-map/> on the phone. The server ans
 
 On the phone the page is laid out for it (media queries for a narrow screen, a short one held sideways, and touch, so a laptop sees no change): a person's panel, People and the frozen views' panel take the whole screen, with × and the back arrow at the top; the header closes up to three rows (the title with Names and People, then the find box and Methodology as its icon, or the Table's Tags and Changes, then the Query bar); the Table scrolls sideways with the names held at the left; fields are 16 px, so the iPhone does not zoom in on them; and buttons are big enough for a finger. On Orbits two fingers pinch to zoom and one drags to pan (starting on someone too), a tap opens someone's panel, and a finger held on someone shows their hover card, above the finger, until it lets go (which opens nothing). Orbits and Circles name nobody on a phone, however far zoomed in: not the closest, not people to reach out to, not the people a held person shares group chats with, nor the friend circles' arcs; only whoever is picked out (a finger held on them, or their panel open) is named. The frozen views get the full-screen panel but keep their hover-only cards.
 
+## Inside the console
+
+The life archive's console embeds friend-map whole, as it runs, in a frame (its Social aspect; `viewer/console/SocialView.tsx` there), and friend-map takes the console's look, light or dark, so one switch, the console's, rules inside it (see [Look](settings.md#look)). Any page that embeds friend-map can do the same, two ways, both read by `src/theme.ts`:
+
+- **On the address**: `?theme=light` or `?theme=dark` on the page's address (`http://127.0.0.1:4600/friend-map/?theme=light`) sets the look for as long as the page is open, whatever is chosen in friend-map's own menu. The address of a view switched to inside the page carries no query, so the parameter is read once as the page opens, not again at every view.
+- **By a message**, as the embedder's look flips, with no reload: the embedding page posts `{ type: "friend-map:theme", theme: "light" }` (or `"dark"`) to the frame's window (`frame.contentWindow.postMessage(message, friendMapOrigin)`), and friend-map takes it from its parent page alone; any other message, or one from anywhere else, is ignored.
+
+Opened on its own, friend-map hears nothing and follows its own Look choice, the device's setting until one is made. Orbits 3D and the City, night scenes, stay dark under either look.
+
 ## Tests, and trying it without real data
 
 ```sh

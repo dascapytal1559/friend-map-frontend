@@ -43,7 +43,9 @@ afterEach(() => {
   for (const store of [webStrengthStore, webCurveStore, webSpokesStore, webCustomStore, orbitsThemeStore, orbitsCustomStore, includeGroupsStore, ...Object.values(topNamesStores), ...Object.values(namePaddingStores)]) store.reload(memory());
 });
 
-const menu = (current: string, demo = false, names = true) => renderToStaticMarkup(createElement(ViewList, { current, onPick: () => {}, demo, names }));
+// Look is offered where the map page draws the view (Demos.tsx), not on the Table's or the Calendar's page of its own.
+const menu = (current: string, demo = false, names = true, look = names && !["table", "calendar"].includes(current)) =>
+  renderToStaticMarkup(createElement(ViewList, { current, onPick: () => {}, demo, names, look }));
 /** The settings section of a menu, or null for none. */
 const section = (html: string) => /<section class="view-switcher__settings"[^>]*>.*?<\/section>/.exec(html)?.[0] ?? null;
 /** A toggle's buttons, as [title, pressed]. */
@@ -119,9 +121,9 @@ describe("the settings section in the menu", () => {
     /** Each group the menu draws, as its settings' labels. */
     const drawn = (slug: string) =>
       section(menu(slug))!.split('<div class="view-switcher__setting-group">').slice(1).map((group) => [...group.matchAll(/class="view-switcher__label"[^>]*>([^<]+)</g)].map((m) => m[1]));
-    expect(drawn("web")).toEqual([["Name format", "Show top names", "Name padding"], names, ["Colour", "Strand curve", "Spokes", "Web strength"], ["Reach-out glow"]]);
-    expect(drawn("orbits")).toEqual([["Name format", "Theme", "Show top names", "Name padding"], names, ["Reach-out glow"]]);
-    expect(drawn("circles")).toEqual([["Name format", ...names], ["Reach-out glow"]]);
+    expect(drawn("web")).toEqual([["Name format", "Look", "Show top names", "Name padding"], names, ["Colour", "Strand curve", "Spokes", "Web strength"], ["Reach-out glow"]]);
+    expect(drawn("orbits")).toEqual([["Name format", "Look", "Theme", "Show top names", "Name padding"], names, ["Reach-out glow"]]);
+    expect(drawn("circles")).toEqual([["Name format", "Look", ...names], ["Reach-out glow"]]);
     expect(drawn("table")).toEqual([["Name format"]]);
   });
 
@@ -129,12 +131,11 @@ describe("the settings section in the menu", () => {
     for (const slug of ["table", "time-river", "river", "reciprocity"]) expect(section(menu(slug, false, false))).toBeNull();
   });
 
-  it("is on every page that shows names, if only for Name format: the Table's and the Time river's hold Name format alone", () => {
-    for (const slug of ["table", "time-river"]) {
-      const html = section(menu(slug))!;
-      expect(html).toContain(">Name format</span>");
-      expect(html.match(/class="view-switcher__label"/g)).toHaveLength(1);
-    }
+  it("is on every page that shows names, if only for Name format: the Table's holds Name format alone, the Time river's Name format and Look", () => {
+    expect(section(menu("table"))).toContain(">Name format</span>");
+    expect(section(menu("table"))!.match(/class="view-switcher__label"/g)).toHaveLength(1);
+    expect(section(menu("time-river"))).toContain(">Look</span>");
+    expect(section(menu("time-river"))!.match(/class="view-switcher__label"/g)).toHaveLength(2);
   });
 
   it("is in the demo's menu as well", () => {

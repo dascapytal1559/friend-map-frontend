@@ -24,3 +24,10 @@
   white-space: nowrap;
   pointer-events: none;
 }
+
+/* On paper (demos--light; src/theme.ts): the note on white. */
+.demos--light .demo-mode {
+  border-color: var(--glass-line);
+  background: rgba(255, 255, 255, 0.8);
+  color: var(--star);
+}

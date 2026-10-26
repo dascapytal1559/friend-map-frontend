@@ -4,7 +4,8 @@
 import { describe, expect, it } from "vitest";
 import { contrast } from "../identicon.ts";
 import { hueGap, oklch } from "./themeColour.ts";
-import { customTheme, TEAL, webTheme } from "./webTheme.ts";
+import type { WebColour } from "./webColour.ts";
+import { customTheme, PAPER_TEAL, paperCustomTheme, TEAL, webTheme } from "./webTheme.ts";
 
 const HEX = /^#[0-9a-f]{6}$/;
 const RGBA = /^rgba\(\d+, \d+, \d+, [\d.]+\)$/;
@@ -63,5 +64,31 @@ describe("a theme worked out from a custom colour", () => {
   it("is what the Spider web draws for a custom colour", () => {
     expect(JSON.stringify(webTheme("#3dff9a"))).toBe(JSON.stringify(customTheme("#3dff9a")));
     expect(webTheme("#3dff9a")).toBe(webTheme("#3dff9a"));
+  });
+});
+
+describe("on paper", () => {
+  it("is Amber as ink on white, the beam the teal's ink, the haze white and the scanlines all but gone", () => {
+    const paper = webTheme("amber", true);
+    expect(paper.ink.background).toBe("#ffffff");
+    for (const colour of [paper.ink.strand, paper.ink.rings, paper.ink.accent, paper.ink.beam, paper.ink.dark]) expect(contrast(colour, "#ffffff")).toBeGreaterThanOrEqual(3);
+    for (const colour of [paper.ink.beam, paper.ink.scan, paper.ink.eye]) expect(colour).toBe(PAPER_TEAL);
+    expect(paper.ink.haze[1]).toMatch(/^rgba\(255, 255, 255/);
+    expect(webTheme("amber").ink.scanline).toBe("rgba(0, 0, 0, 0.22)");
+    expect(paper.ink.scanline).toBe("rgba(0, 0, 0, 0.03)");
+    expect(webTheme("amber", true)).toBe(paper);
+    expect(webTheme("amber", false)).not.toBe(paper);
+  });
+
+  it("works a custom colour out as ink: its hue kept in the strands, every ink reading on white, the same every time", () => {
+    for (const pick of PICKS) {
+      const { ink, palette, css } = paperCustomTheme(pick);
+      expect(ink.background).toBe("#ffffff");
+      for (const colour of [ink.strand, ink.rings, ink.accent, ink.dark]) expect(contrast(colour, "#ffffff")).toBeGreaterThanOrEqual(3);
+      if (oklch(pick)[1] > 0.05) expect(hueGap(oklch(ink.strand)[2], oklch(pick)[2])).toBeLessThan(4);
+      for (const colour of [ink.grid, palette.body.silent, palette.body.plain("#ffffff"), ...Object.values(css)]) expect(colour).toMatch(RGBA);
+      expect(webTheme(pick as WebColour, true)).toBe(webTheme(pick as WebColour, true));
+      expect(JSON.stringify(paperCustomTheme(pick))).toBe(JSON.stringify(paperCustomTheme(pick)));
+    }
   });
 });

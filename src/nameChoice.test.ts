@@ -390,8 +390,8 @@ describe("Name format in the menu", () => {
   });
 
   it("is in the menu of every live view, in the real app and the demo alike, not in its header", () => {
-    // The map views' page (Orbits, Circles, the City, Orbits 3D and any live view to come), the Table and the Calendar.
-    for (const [file, names] of [["demos/Demos.tsx", "names={live} />"], ["demos/TablePage.tsx", "names />"], ["demos/CalendarPage.tsx", "names />"]]) {
+    // The map views' page (Orbits, Circles, the City, Orbits 3D and any live view to come; it offers Look too), the Table and the Calendar.
+    for (const [file, names] of [["demos/Demos.tsx", "names={live} look />"], ["demos/TablePage.tsx", "names />"], ["demos/CalendarPage.tsx", "names />"]]) {
       const source = readFileSync(new URL(file, import.meta.url), "utf8");
       expect([file, source.includes(names), source.includes("NameStylePicker")]).toEqual([file, true, false]);
       expect([file, source.includes("useShownNames(!demoMode);")]).toEqual([file, true]);

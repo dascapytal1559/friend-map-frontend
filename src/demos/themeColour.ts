@@ -32,3 +32,18 @@ export function turned(hex: string, degrees: number): string {
   const [l, c, h] = oklch(hex);
   return oklchHex(l, c, h + degrees);
 }
+
+/** How dark ink is on paper, in OKLCH: dark enough to read on white, light enough to keep its hue. */
+export const INK_LIGHTNESS = 0.46;
+/** The least chroma ink keeps, so a pale colour is still told from grey on paper. */
+export const INK_CHROMA = 0.12;
+
+/**
+ * A colour as ink on paper (the light look, src/theme.ts): its hue kept, darkened to INK_LIGHTNESS, at least INK_CHROMA
+ * strong. The night's light, vivid colours (a person's identicon colour, the sun, the Spider web's strands) are what
+ * reads on the dark; written on white they would be too pale, so what is drawn in them there is drawn in their ink.
+ */
+export function inkOf(hex: string, lightness: number = INK_LIGHTNESS): string {
+  const [, c, h] = oklch(hex);
+  return oklchHex(lightness, Math.max(c, INK_CHROMA), h);
+}

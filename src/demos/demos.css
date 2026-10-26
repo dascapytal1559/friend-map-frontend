@@ -2085,3 +2085,162 @@ button.tag-manager__name:hover {
     min-height: 40px;
   }
 }
+
+/* Paper, the light look (src/theme.ts; the map page sets demos--light when the page's look is light and the view is
+   not a night scene): the life archive console's premium white and its inks, so friend-map embedded in the console
+   reads as one of its pages. The tokens take Paper's values (PAPER in palette.ts); what floats over the map (the
+   header's controls, the legend, the hover card, the find box's list, Methodology, the Query bar's box) takes a white
+   glass with a hairline in place of the night's dark glass; and the person panel is the app's own white panel again
+   (app.css's tokens), in the view's colours as ink (panelGlow.ts), with the console's surface and hairline and none
+   of the dark card's chrome. */
+.demos--light {
+  --night: #ffffff;
+  --star: #0f0f0f;
+  --dim: #6b6b6b;
+  --me: #d9822b;
+  --them: #0f8f86;
+  --warm: #e8732a;
+  --cool: #2f6fde;
+  --call: #15803d;
+  --faint: rgba(15, 15, 15, 0.08);
+  /* What floats over the map: its glass, its hairline, its shadow, and a hover's wash. */
+  --glass: rgba(255, 255, 255, 0.74);
+  --glass-line: rgba(15, 15, 15, 0.12);
+  --glass-shadow: 0 12px 32px rgba(20, 30, 60, 0.14);
+  --hover: rgba(15, 15, 15, 0.06);
+  color: var(--star);
+  color-scheme: light;
+  background: var(--night);
+}
+
+.demos--light .demos__people,
+.demos--light .demos__method,
+.demos--light .demos__find,
+.demos--light .query-bar__transcript {
+  border-color: var(--glass-line);
+  background: var(--glass);
+  color: var(--star);
+}
+
+.demos--light .demos__method {
+  color: var(--dim);
+}
+
+.demos--light .demos__people:hover,
+.demos--light .demos__method:hover,
+.demos--light .demos__method[aria-expanded="true"],
+.demos--light .demos__method[aria-pressed="true"] {
+  color: var(--star);
+  background: var(--hover);
+}
+
+.demos--light .query-bar__transcript--on {
+  border-color: color-mix(in srgb, var(--me) 70%, transparent);
+}
+
+.demos--light .query-bar__transcript:focus {
+  border-color: color-mix(in srgb, var(--star) 50%, transparent);
+}
+
+.demos--light .query-bar__buttons {
+  background: linear-gradient(to right, transparent, var(--night) 10px);
+}
+
+.demos--light .query-bar__go:disabled,
+.demos--light .query-bar__clear:hover,
+.demos--light .query-bar__examples-panel li button:focus-visible,
+.demos--light .find-box__option[aria-selected="true"] {
+  background: var(--hover);
+}
+
+.demos--light .query-bar__status--error {
+  color: #b42318;
+}
+
+.demos--light .demo-legend {
+  background: var(--glass);
+  border-color: var(--glass-line);
+}
+
+.demos--light .demo-tip,
+.demos--light .find-box__list,
+.demos--light .method,
+.demos--light .tag-filter__panel {
+  background: var(--night);
+  border-color: var(--glass-line);
+  box-shadow: var(--glass-shadow);
+}
+
+.demos--light .demo-tip__hint,
+.demos--light .method__default,
+.demos--light .method__note {
+  color: var(--dim);
+}
+
+.demos--light .method__tile {
+  border-color: var(--glass-line);
+  background: rgba(15, 15, 15, 0.02);
+}
+
+.demos--light .method__tile:hover {
+  border-color: rgba(15, 15, 15, 0.25);
+  background: rgba(15, 15, 15, 0.04);
+}
+
+.demos--light .method__curve-axis {
+  stroke: rgba(15, 15, 15, 0.2);
+}
+
+.demos--light .method__curve-mark circle,
+.demos--light .method__curve-mark text {
+  stroke: var(--night);
+}
+
+/* The person panel: the app's white panel again, in the view's ink, with the console's surface and hairline. */
+.demos--light .side-panel {
+  --ink: var(--star);
+  --muted: var(--dim);
+  --line: color-mix(in srgb, var(--glow) 18%, rgba(15, 15, 15, 0.1));
+  --paper: #ffffff;
+  --wash: #fafafa;
+  --accent: var(--glow);
+  --danger: #b42318;
+  --panel-label: 600 11px/1.3 var(--sans);
+  --panel-spacing: 0.1em;
+  color-scheme: light;
+  background: var(--wash);
+  scrollbar-color: color-mix(in srgb, var(--glow) 35%, transparent) transparent;
+}
+
+.demos--light .demos__docked.side-panel {
+  border-left: 1px solid rgba(15, 15, 15, 0.08);
+  box-shadow: none;
+}
+
+.demos--light .demos__drawer.side-panel {
+  border-color: var(--glass-line);
+  box-shadow: var(--glass-shadow);
+}
+
+.demos--light .demos__dock::before,
+.demos--light .demos__dock::after {
+  display: none;
+}
+
+.demos--light .side-panel .notes h3,
+.demos--light .side-panel .review h3,
+.demos--light .side-panel .side-panel__header h2,
+.demos--light .side-panel .side-panel__close:hover,
+.demos--light .side-panel .side-panel__close:focus-visible,
+.demos--light .side-panel .side-panel__back:hover,
+.demos--light .side-panel .side-panel__back:focus-visible {
+  text-shadow: none;
+}
+
+.demos--light .side-panel .timeline__scroller {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.demos--light .side-panel .name-chip--first {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--glow) 25%, transparent);
+}

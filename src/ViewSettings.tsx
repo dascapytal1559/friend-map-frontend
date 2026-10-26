@@ -2,7 +2,8 @@
 // the top left (ViewSwitcher.tsx) set apart by a line above and below, under
 // "<view> settings": first, on a page that shows names, the name choice
 // (NamesSetting, NamesMenu.tsx), with a dot beside the title while No name
-// except… is on, then the view's own, each group of them set apart by a line
+// except… is on, and the page's Look (LookSetting, theme.ts: Auto, Light or
+// Dark, or what the page that embeds this one set), then the view's own, each group of them set apart by a line
 // (the name choice in the first); nothing for a page with none. A choice between a few is
 // a row of toggle buttons, the one on pressed; a theme colour is the same row
 // of its presets, each with its swatch, then Custom, whose swatch opens the
@@ -16,24 +17,27 @@ import { demoMode } from "./demoMode.ts";
 import { keptSetting, useStore } from "./keptSetting.ts";
 import { useNameStyle } from "./names.ts";
 import { NamesSetting } from "./NamesMenu.tsx";
+import { lookSetting, useForcedTheme } from "./theme.ts";
 import { groupsOf, type ColourSetting, type SliderSetting, type ToggleSetting, type ViewSetting } from "./viewSettings.ts";
 
 export const SETTINGS_OPEN_KEY = "friend-map.viewSettings.open";
 /** Whether the settings section is open, for every view alike; closed until opened. */
 export const settingsOpenStore = keptSetting(SETTINGS_OPEN_KEY, false, (kept) => kept === "true");
 
-export function ViewSettings({ slug, title, names = false, demo = demoMode }: {
+export function ViewSettings({ slug, title, names = false, look = false, demo = demoMode }: {
   slug: string;
   title: string;
   /** Whether the page shows names, so its settings open with the name choice. */
   names?: boolean;
+  /** Whether the page offers Look, its theme (theme.ts), after the name choice. */
+  look?: boolean;
   demo?: boolean;
 }) {
   const groups = groupsOf(slug);
   const open = useStore(settingsOpenStore);
   const style = useNameStyle();
   const id = useId();
-  if (groups.length === 0 && !names) return null;
+  if (groups.length === 0 && !names && !look) return null;
   return (
     <section className="view-switcher__settings" aria-label={`${title} settings`}>
       <button type="button" className="view-switcher__group view-switcher__fold" aria-expanded={open} aria-controls={id} onClick={() => settingsOpenStore.set(!open)}>
@@ -46,12 +50,29 @@ export function ViewSettings({ slug, title, names = false, demo = demoMode }: {
           {(groups.length > 0 ? groups : [[]]).map((group, i) => (
             <div key={i} className="view-switcher__setting-group">
               {i === 0 && names && <NamesSetting demo={demo} />}
+              {i === 0 && look && <LookSetting />}
               {group.map((setting) => <Setting key={setting.label} setting={setting} />)}
             </div>
           ))}
         </div>
       )}
     </section>
+  );
+}
+
+/** The page's look (theme.ts): Auto, Light or Dark; or, while the address or the page that embeds this one sets it, which it set. */
+function LookSetting() {
+  const forced = useForcedTheme();
+  const id = useId();
+  return (
+    <div className="view-switcher__setting">
+      <span className="view-switcher__label" id={id}>Look</span>
+      {forced ? (
+        <span className="view-switcher__dim">{forced === "light" ? "Light" : "Dark"}, set by the page this one is in</span>
+      ) : (
+        <Toggle setting={lookSetting as ToggleSetting<unknown>} labelledBy={id} />
+      )}
+    </div>
   );
 }
 

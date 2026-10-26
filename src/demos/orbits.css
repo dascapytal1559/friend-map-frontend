@@ -344,3 +344,51 @@
 .orbits--web .orbits__photo-ring {
   stroke: var(--web-accent);
 }
+
+/* Paper, the light look (demos--light; src/theme.ts): the names outlined in the ground, the held person's links and
+   the friend circles in ink, your photo's buttons on white glass; the rings' colours come from ringColours.ts as ink,
+   and the Spider web's from webTheme.ts, its held name shadowed rather than lit. */
+.demos--light .orbits__rings .orbits__own-ring {
+  stroke: color-mix(in srgb, var(--star) 30%, transparent);
+}
+
+.demos--light .orbits__name {
+  stroke: color-mix(in srgb, var(--night) 92%, transparent);
+}
+
+.demos--light .orbits__links line {
+  stroke: color-mix(in srgb, var(--star) 40%, transparent);
+}
+
+.demos--light .orbits__circle {
+  stroke: color-mix(in srgb, var(--star) 20%, transparent);
+}
+
+.demos--light .orbits__circle--lit {
+  stroke: color-mix(in srgb, var(--star) 60%, transparent);
+}
+
+.demos--light .orbits__circles text {
+  fill: var(--dim);
+}
+
+.demos--light .orbits-me button {
+  background: var(--glass);
+  border-color: color-mix(in srgb, var(--me) 70%, transparent);
+}
+
+.demos--light .orbits-me__problem {
+  background: var(--night);
+}
+
+.demos--light .orbits--web .orbits__name {
+  stroke: color-mix(in srgb, var(--night) 92%, transparent);
+}
+
+.demos--light .orbits--web .orbits__rings .orbits__own-ring {
+  stroke: color-mix(in srgb, var(--star) 35%, transparent);
+}
+
+.demos--light .orbits--web .orbits__name--focus {
+  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.22));
+}

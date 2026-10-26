@@ -47,6 +47,7 @@ import { circles, orbits, web } from "./Orbits.tsx";
 import { city } from "./City.tsx";
 import { ChangeChip, Dock, ErrorNotice, useHideNamesKey, useSidePanel } from "./page.tsx";
 import { usePanelGlow } from "./panelGlow.ts";
+import { Look, lookOf, showLook, useTheme } from "../theme.ts";
 import { QueryBar, useQueryBar } from "./QueryBar.tsx";
 import { reciprocity } from "./Reciprocity.tsx";
 import { river } from "./River.tsx";
@@ -144,9 +145,15 @@ function ViewPage({ demo, navigate }: { demo: Demo; navigate: Navigate }) {
   const docked = live;
   const keepsSize = docked && demo.keepsSize === true;
   const { panel, setPanel, shown, closed } = useSidePanel(docked, { open: method, close: () => setMethod(false) });
-  // The panel is a dark card on every map view (demos.css), in the view's own colours (panelGlow.ts); on the Spider
-  // web, in its monospaced type too.
-  const glow = usePanelGlow(demo.slug);
+  // The look the page is drawn in (theme.ts): the chosen theme, but a night scene (Orbits 3D, the City) stays dark. The
+  // views, the panel and the identicons read it from Look; the browser is told it too (its colour scheme, theme-color).
+  const theme = useTheme();
+  const look = lookOf(theme, VIEWS.find((view) => view.slug === demo.slug)?.night === true);
+  const light = look === "light";
+  useEffect(() => showLook(look), [look]);
+  // The panel is a card in the view's own colours on every map view (demos.css, panelGlow.ts): dark on the night, the
+  // console's white on paper; on the Spider web, in its monospaced type too.
+  const glow = usePanelGlow(demo.slug, light);
   useUsage(demo.slug);
   useEffect(() => setTip(null), [demo]);
   useHideNamesKey(live);
@@ -191,7 +198,8 @@ function ViewPage({ demo, navigate }: { demo: Demo; navigate: Navigate }) {
   );
 
   return (
-    <div className={`demos${docked && panel ? " demos--docked" : ""}${keepsSize ? " demos--keeps-size" : ""}${!docked && shown ? " demos--drawer" : ""}${demo === web ? " demos--web" : ""}`} style={glow}>
+    <Look.Provider value={look}>
+    <div className={`demos${docked && panel ? " demos--docked" : ""}${keepsSize ? " demos--keeps-size" : ""}${!docked && shown ? " demos--drawer" : ""}${demo === web ? " demos--web" : ""}${light ? " demos--light" : ""}`} style={glow}>
       <div className="demos__room" ref={roomRef} aria-hidden />
       <div className="demos__map" style={{ "--header": `${inset}px` } as CSSProperties}>
         <div className="demos__stage" ref={stageRef}>
@@ -218,7 +226,7 @@ function ViewPage({ demo, navigate }: { demo: Demo; navigate: Navigate }) {
         </div>
         <header className="demos__header" ref={headerRef}>
           {/* Each view's own settings are in the switcher's menu (viewSettings.ts), in the app and the demo alike. */}
-          <ViewSwitcher current={demo.slug} crumb={demoMode ? "Friend map · demo" : frozen ? "Frozen view, kept as it is" : "Friend map"} navigate={navigate} names={live} />
+          <ViewSwitcher current={demo.slug} crumb={demoMode ? "Friend map · demo" : frozen ? "Frozen view, kept as it is" : "Friend map"} navigate={navigate} names={live} look />
           <div className="demos__controls">
             {/* The live views say how many they show on the Query bar's line instead. */}
             {!live && model && (
@@ -279,6 +287,7 @@ function ViewPage({ demo, navigate }: { demo: Demo; navigate: Navigate }) {
         shown && peoplePanel(shown, "demos__drawer")
       )}
     </div>
+    </Look.Provider>
   );
 }
 

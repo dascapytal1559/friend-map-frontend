@@ -11,9 +11,9 @@
 // no other (fitNames). Pure
 // functions, no DOM, so the layout can be tested with made-up people.
 
-import { identicon, mix } from "../identicon.ts";
+import { identicon, identiconLook, mix } from "../identicon.ts";
 import { NameRoom } from "./nameRoom.ts";
-import { COLORS } from "./palette.ts";
+import { COLORS, coloursOf } from "./palette.ts";
 
 export { boxesMeet } from "./nameRoom.ts";
 
@@ -585,17 +585,33 @@ export const NAME_TINT = 0.5;
 
 /**
  * The colour of someone's name: a soft tint of their identicon's main colour,
- * NAME_TINT of the way to the plain light text, so where markers sit side by
+ * NAME_TINT of the way to the plain text, so where markers sit side by
  * side each name is easy to match to its own, and still reads almost as
- * plainly as light text on the night sky.
+ * plainly as the plain text does: light on the night sky, ink on paper (`light`, src/theme.ts).
  */
-export function nameColour(seed: string, hue: number | null): string {
-  return mix(identicon(seed, hue).main, COLORS.star, NAME_TINT);
+export function nameColour(seed: string, hue: number | null, light = false): string {
+  return mix(identicon(seed, hue, identiconLook(light ? "light" : "dark")).main, coloursOf(light).star, NAME_TINT);
 }
 
-/** The colour someone glows in when you should reach out to them: their identicon's main colour, so the glow is plainly theirs. */
-export function glowColour(seed: string, hue: number | null): string {
-  return identicon(seed, hue).main;
+/**
+ * The colour someone glows in when you should reach out to them, and their name on Orbits is written in: their
+ * identicon's main colour in the page's look (`light`: as ink on paper), so the glow is plainly theirs.
+ */
+export function glowColour(seed: string, hue: number | null, light = false): string {
+  return identicon(seed, hue, identiconLook(light ? "light" : "dark")).main;
+}
+
+/**
+ * How far every strength is lifted toward full on paper: ink at an alpha reads fainter on white than light does on the
+ * night (a fifth of a mid ink over white is nearly white; a fifth of the star over the night still stands out), so the
+ * tiers, the floors and the hold's background (TIERS, TIER_FLOOR, BACKGROUND, and the Names settings over them) are all
+ * drawn this much of the way stronger there, the closest at full strength still.
+ */
+export const PAPER_LIFT = 0.22;
+
+/** A strength (0 to 1) as drawn on paper: lifted PAPER_LIFT of the way to full. */
+export function paperStrength(strength: number): number {
+  return strength + (1 - strength) * PAPER_LIFT;
 }
 
 /**

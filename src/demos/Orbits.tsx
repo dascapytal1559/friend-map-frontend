@@ -27,7 +27,7 @@ import { useNames } from "../names.ts";
 import { scoreLabel } from "./closeness.ts";
 import { type DemoModel, type DemoPerson, type Link } from "./model.ts";
 import {
-  displacementTrail, drawnSize, glowColour, hearthGlowRadius, nameGlow, READABLE, personOpacity, rings,
+  displacementTrail, drawnSize, glowColour, hearthGlowRadius, nameGlow, paperStrength, READABLE, personOpacity, rings,
   BACKGROUND, circleLabelSpot, grown, type Box,
 } from "./orbitsLayout.ts";
 import {
@@ -49,6 +49,8 @@ import { ringTop, webShape } from "./webGeometry.ts";
 import { WebLayer } from "./WebLayer.tsx";
 import { type WebScene } from "./webLook.ts";
 import { webTheme } from "./webTheme.ts";
+import { useLook } from "../theme.ts";
+import { inkOf } from "./themeColour.ts";
 import { DEFAULT_NAME_PADDING, useNamePadding } from "./namePadding.ts";
 import { amongTop, DEFAULT_TOP_NAMES, SURELY_NAMED, useTopNames } from "./topNames.ts";
 import { nameHidden, nameStrengthOf, useNameFade } from "./nameFade.ts";
@@ -177,6 +179,9 @@ export function focusLinksOf(
  * strength, those linked to them at 70%, and everyone else at one flat
  * BACKGROUND.
  */
+/** A strength as it is: on the night nothing is lifted (paperStrength lifts on paper). */
+const asIs = (strength: number) => strength;
+
 export function strengthOf(id: number, place: number | null, reachOut: boolean, focusId: number | null, linked: ReadonlySet<number>, lift = 0): number {
   if (focusId === null) return personOpacity(place, reachOut, { lift });
   return id === focusId ? 1 : linked.has(id) ? 0.7 : BACKGROUND;
@@ -252,7 +257,10 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
   // pointer on the sun, or a tap on it.
   const me = useMePhoto(photoShown(look));
   const [onSun, setOnSun] = useState(false);
-  const palette = web ? webTheme(colour).palette : orbitsPalette(theme);
+  // The look the page is drawn in (theme.ts): on paper every colour drawn here is its ink, and every strength is lifted.
+  const light = useLook() === "light";
+  const onPaper = light ? paperStrength : asIs;
+  const palette = web ? webTheme(colour, light).palette : orbitsPalette(theme, light);
   const sunColour = themeSun(theme);
   const boot = useRef<WebMotion>({ bootStart: null });
   const choreography = useMemo(() => (web ? webBoot(boot) : PLAIN), [web]);
@@ -663,9 +671,9 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
 
   const drawn = useMemo(() => [...model.people].sort((a, b) => b.total - a.total), [model.people]);
   // Everyone glows in their own identicon colour (glowColour), and their name is drawn in it, so both are plainly theirs.
-  const glowColours = useMemo(() => new Map(model.people.map((p) => [p.id, glowColour(p.identiconSeed, p.identiconHue)])), [model.people]);
+  const glowColours = useMemo(() => new Map(model.people.map((p) => [p.id, glowColour(p.identiconSeed, p.identiconHue, light)])), [model.people, light]);
   // How strongly someone's marker, name, trail and glow are drawn (strengthOf).
-  const strength = useCallback((id: number) => strengthOf(id, closest.get(id) ?? null, reachOut.has(id), focusId, linked, glow.lift), [closest, reachOut, focusId, linked, glow]);
+  const strength = useCallback((id: number) => onPaper(strengthOf(id, closest.get(id) ?? null, reachOut.has(id), focusId, linked, glow.lift)), [closest, reachOut, focusId, linked, glow, onPaper]);
   // 1 once someone is within a few pixels of where they are headed, fading to 0 by ARRIVED pixels away:
   // names and trails belong to where people settle, so they wait while people rise out of the sun or move.
   const arrived = useCallback((id: number) => arrivedShare(frames.get(id)!, targets.placed.get(id)!), [frames, targets]);
@@ -673,8 +681,8 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
   // shown only because they are linked to whoever is held, at Linked names.
   const labelOpacity = useCallback(
     (label: { id: number; linkedOnly: boolean }) => frames.get(label.id)!.opacity * arrived(label.id)
-      * (label.linkedOnly ? fade.linked : nameStrengthOf(label.id, closest.get(label.id) ?? null, reachOut.has(label.id), focusId, linked, fade, glow.lift)),
-    [frames, arrived, closest, reachOut, focusId, linked, fade, glow],
+      * onPaper(label.linkedOnly ? fade.linked : nameStrengthOf(label.id, closest.get(label.id) ?? null, reachOut.has(label.id), focusId, linked, fade, glow.lift)),
+    [frames, arrived, closest, reachOut, focusId, linked, fade, glow, onPaper],
   );
   // Drawn again only when what is in it changes: not for a pan, which moves it whole.
   const sky = useMemo(() => {
@@ -687,7 +695,7 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
       <>
         {/* Guide rings: the closest 10, 25, 50 and so on; the web's own rings stand in for them. */}
         <g className="orbits__rings">
-          {!web && guides.map((ring) => <circle key={ring.label} r={radius(ring.rank) * k} style={{ stroke: ringColours(ring.rank, sunColour).line }} />)}
+          {!web && guides.map((ring) => <circle key={ring.label} r={radius(ring.rank) * k} style={{ stroke: ringColours(ring.rank, sunColour, light).line }} />)}
           {focusPerson && frames.get(focusPerson.id)!.opacity > 0 && (
             <circle className="orbits__own-ring" r={frames.get(focusPerson.id)!.r * k} />
           )}
@@ -838,13 +846,13 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
         {/* The rings' labels, over the people so a big one near the top can't hide "top 10". */}
         <g className="orbits__rings">
           {guides.map((ring) => (
-            <text key={ring.label} y={-labelR(ring.rank) * k + 3.5} textAnchor="middle" style={{ fill: ringColours(ring.rank, sunColour).label }}>{ring.label}</text>
+            <text key={ring.label} y={-labelR(ring.rank) * k + 3.5} textAnchor="middle" style={{ fill: ringColours(ring.rank, sunColour, light).label }}>{ring.label}</text>
           ))}
         </g>
 
       </>
     );
-  }, [frames, k, cullX, cullY, width, height, beyond, focusId, focusLinks, linked, labels, targets, trailFrom, model, guides, radius, together, inner, outer, shape, drawn, closest, reachOut, glowColours, circleArcs, me.photo, palette, sunColour, strength, arrived, labelOpacity, nameOnly, glow, glowing]);
+  }, [frames, k, cullX, cullY, width, height, beyond, focusId, focusLinks, linked, labels, targets, trailFrom, model, guides, radius, together, inner, outer, shape, drawn, closest, reachOut, glowColours, circleArcs, me.photo, palette, sunColour, strength, arrived, labelOpacity, nameOnly, glow, glowing, light]);
   // The names, over everything in the sky. They are an SVG of their own over the sky's (nameLayer below), so the sky
   // redrawn (a hover, the Spider web's flowing links) never repaints hundreds of names, nor the names the sky's markers.
   // Each name in its person's own colour, with the outline every name has and nothing behind it, its glow on the letters,
@@ -878,7 +886,7 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
   // Each name drawn in place of its icon, as wide and tall as it was placed: the web fits round it.
   const webNames = useMemo(() => new Map(labels.map((label) => [label.id, { wide: label.right - label.left, tall: label.bottom - label.top }])), [labels]);
   const scene: WebScene | null = web && shape ? {
-    colour, webStrength, reachGlow, width, height, top, sun, k, inner, outer, shape, frames, people: webPeople, strength, arrived, lockIn, focusId, linked,
+    colour, webStrength, reachGlow, light, width, height, top, sun, k, inner, outer, shape, frames, people: webPeople, strength, arrived, lockIn, focusId, linked,
     glows: (id) => glowShown(id, glowing), hoverId, heldId: held !== null && targets.frames.has(held) ? held : null, reduced, names: webNames,
   } : null;
   // Everyone's identicon, as a pattern their marker is filled with; drawn again only when who is on the map changes.
@@ -893,7 +901,7 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
 
   // The sky's SVG and the names' over it share their look (the class) and its colours (the style).
   const svgClass = web ? `orbits orbits--web orbits--${presetOf(colour)}` : "orbits";
-  const svgColours = (web ? webTheme(colour).css : { "--me": sunColour }) as CSSProperties;
+  const svgColours = (web ? webTheme(colour, light).css : { "--me": light ? inkOf(sunColour, 0.6) : sunColour }) as CSSProperties;
   const svg = (
     <svg
       ref={svgRef}

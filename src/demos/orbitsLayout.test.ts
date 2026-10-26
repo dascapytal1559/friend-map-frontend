@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { contrast, identicon, identiconSeedOf, oklab } from "../identicon.ts";
+import { contrast, identicon, identiconLook, identiconSeedOf, oklab } from "../identicon.ts";
 import type { DemoPerson } from "./model.ts";
 import {
-  centreOnIcons, directions, displacementTrail, drawnSize, EVEN_LAST, FIT_TURN, fitNames, boxesMeet, evenFraction, glowColour, glowOf, HEARTH, hearth, hearthGlowRadius, movesVisibly, NAME_GLOW, NAME_TINT, nameColour, nameGlow, namedIds, orbitRadius, placeBodies, rankFraction, textUnits, READABLE, rings, personOpacity, TIER_FLOOR, TIERS, tierOpacity, trailStartRank, wrap,
+  centreOnIcons, directions, displacementTrail, drawnSize, EVEN_LAST, FIT_TURN, fitNames, boxesMeet, evenFraction, glowColour, glowOf, HEARTH, PAPER_LIFT, paperStrength, hearth, hearthGlowRadius, movesVisibly, NAME_GLOW, NAME_TINT, nameColour, nameGlow, namedIds, orbitRadius, placeBodies, rankFraction, textUnits, READABLE, rings, personOpacity, TIER_FLOOR, TIERS, tierOpacity, trailStartRank, wrap,
   type Aimed, type Box, type Drawn, type FitName, type Placed,
 } from "./orbitsLayout.ts";
 import { COLORS } from "./palette.ts";
@@ -619,5 +619,25 @@ describe("hearthGlowRadius", () => {
     expect(hearthGlowRadius(6, 100)).toBeLessThan(100 * 0.95 / 2);
     expect(hearthGlowRadius(6, 100)).toBeGreaterThan(6);
     expect(hearthGlowRadius(30, 40)).toBeGreaterThan(30);
+  });
+});
+
+describe("on paper", () => {
+  it("lifts every strength a fifth of the way to full, the closest at full strength still, and keeps their order", () => {
+    expect(PAPER_LIFT).toBe(0.22);
+    expect(paperStrength(1)).toBe(1);
+    expect(paperStrength(0)).toBe(PAPER_LIFT);
+    expect(paperStrength(0.2)).toBeCloseTo(0.2 + 0.8 * PAPER_LIFT, 10);
+    const strengths = [0, 0.1, 0.2, 0.4, 0.6, 0.8, 1];
+    for (let i = 1; i < strengths.length; i++) expect(paperStrength(strengths[i])).toBeGreaterThan(paperStrength(strengths[i - 1]));
+    for (const s of strengths) expect(paperStrength(s)).toBeGreaterThanOrEqual(s);
+  });
+
+  it("writes names and glows in the identicon's paper colour, as ink", () => {
+    const seed = identiconSeedOf(42, 1_700_000_000_000);
+    expect(glowColour(seed, null, true)).toBe(identicon(seed, null, identiconLook("light")).main);
+    expect(glowColour(seed, null)).toBe(identicon(seed).main);
+    expect(contrast(glowColour(seed, null, true), "#ffffff")).toBeGreaterThanOrEqual(3.5);
+    expect(contrast(nameColour(seed, null, true), "#ffffff")).toBeGreaterThanOrEqual(3);
   });
 });

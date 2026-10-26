@@ -5,6 +5,7 @@ import { provideArchive } from "../archiveApi.ts";
 import { takeContract } from "../contract/handshake.ts";
 import { Demos } from "../demos/Demos.tsx";
 import { ReadOnly } from "../readOnly.ts";
+import { listenToEmbedder } from "../theme.ts";
 import { movedAddress } from "../views.ts";
 import { demoApp } from "./app.ts";
 import { DEMO_CONTRACT, DemoArchive } from "./archive.ts";
@@ -27,6 +28,8 @@ await new Promise((drawn) => requestAnimationFrame(() => setTimeout(drawn)));
 takeContract(DEMO_CONTRACT);
 provideArchive(new DemoArchive(generateDemo()).api);
 provideApp(demoApp);
+// Embedded in another page, the demo takes its look (theme.ts).
+listenToEmbedder();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

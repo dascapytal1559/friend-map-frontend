@@ -14,9 +14,11 @@ import type { PersonRelationship, RelationshipsReport } from "../archive.ts";
 import { buildModel } from "./model.ts";
 import { drawnBox, keptZoom, nameAt, OrbitMap } from "./Orbits.tsx";
 import { Orbits3DMap } from "./Orbits3D.tsx";
-import { boxesMeet, centreOnIcons, glowColour, textUnits } from "./orbitsLayout.ts";
+import { DEFAULT_NAME_PADDING, namePaddingStores } from "./namePadding.ts";
+import { boxesMeet, centreOnIcons, glowColour, grown, textUnits } from "./orbitsLayout.ts";
 import { WEB_CHAR_WIDTH } from "./orbitsSky.ts";
 import { HOME } from "./orbitsZoom.ts";
+import { DEFAULT_TOP_NAMES, topNamesStores } from "./topNames.ts";
 import type { ViewProps } from "./view.tsx";
 import { settingsOpenStore } from "../ViewSettings.tsx";
 import { ViewList } from "../ViewSwitcher.tsx";
@@ -44,7 +46,7 @@ describe("in the menu", () => {
     const fade = ["Name fade from", "Name fade to", "Faintest name", "Reach-out names", "Linked names"];
     expect(labels(settings("orbits"))).toEqual(["Name format", "Look", "Theme", "Show top names", "Name padding", ...fade, "Reach-out glow"]);
     expect(labels(settings("web"))).toEqual(["Name format", "Look", "Show top names", "Name padding", ...fade, "Colour", "Strand curve", "Spokes", "Web strength", "Reach-out glow"]);
-    expect(labels(settings("orbits-3d"))).toEqual(["Name format", "Look", "Show top names", ...fade, "Reach-out glow"]);
+    expect(labels(settings("orbits-3d"))).toEqual(["Name format", "Look", "Show top names", "Name padding", ...fade, "Reach-out glow"]);
     expect(labels(settings("circles"))).toEqual(["Name format", "Look", ...fade, "Reach-out glow"]);
     expect(labels(settings("city"))).toEqual(["Name format", "Look", "Show top names", ...fade.slice(0, 4), "Reach-out glow"]);
     for (const view of ["orbits", "orbits-3d", "circles", "web", "city"]) expect(settings(view), view).not.toMatch(/Name placement|Next to|On icon|Name only/);
@@ -166,10 +168,37 @@ describe("the map's names", () => {
     }
   });
 
-  it("is the same on Orbits 3D seen from straight above, without the turning", () => {
+  it("is the same on Orbits 3D seen from straight above, turned round their orbits as far apart as its Name padding says", () => {
     const names = namesIn(draw(createElement(Orbits3DMap, props)));
     expect(names.map((n) => n.id).sort((a, b) => a - b)).toEqual(TOP_100);
     for (const n of names) expect(n.anchor).toBe("middle");
+    // With the closest 25 named, they are as far apart as Orbits 2D fits its names at the same padding, and off the
+    // ring labels: all of them clear at the default; at 10 pixels most, the fitting, turning each only a few degrees,
+    // finding no room for a few on this crowded test map (each name's box grown by half the padding).
+    const overlaps = (list: typeof names, pad: number) =>
+      list.reduce((sum, a, i) => sum + list.slice(i + 1).filter((b) => boxesMeet(grown(box(a), pad / 2), grown(box(b), pad / 2))).length, 0);
+    topNamesStores["orbits-3d"].set(25);
+    try {
+      for (const pad of [3, 10]) {
+        namePaddingStores["orbits-3d"].set(pad);
+        const markup = draw(createElement(Orbits3DMap, props));
+        const fewer = namesIn(markup);
+        expect(fewer, `${pad} px`).toHaveLength(25);
+        const flat = namesIn(draw(createElement(OrbitMap, { ...props, named: 25, padding: pad })));
+        for (const within of [0, pad]) expect([pad, within, overlaps(fewer, within)]).toEqual([pad, within, overlaps(flat, within)]);
+        if (pad === DEFAULT_NAME_PADDING) expect(overlaps(fewer, pad)).toBe(0);
+        for (const n of fewer) for (const ring of ringLabelsIn(markup)) expect(boxesMeet(box(n), ring), `${pad} px`).toBe(false);
+      }
+      // Wider padding spreads them further: no name moves nearer or further from the sun, but some turn aside.
+      namePaddingStores["orbits-3d"].set(0);
+      const tight = namesIn(draw(createElement(Orbits3DMap, props)));
+      namePaddingStores["orbits-3d"].set(10);
+      const loose = namesIn(draw(createElement(Orbits3DMap, props)));
+      expect(loose.some((n) => { const t = tight.find((m) => m.id === n.id)!; return Math.abs(t.x - n.x) > 1 || Math.abs(t.y - n.y) > 1; })).toBe(true);
+    } finally {
+      topNamesStores["orbits-3d"].set(DEFAULT_TOP_NAMES);
+      namePaddingStores["orbits-3d"].set(DEFAULT_NAME_PADDING);
+    }
   });
 });
 

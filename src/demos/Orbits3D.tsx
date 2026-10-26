@@ -33,15 +33,16 @@ import { cameraBetween, squash, turnCamera, twistCamera, type Camera, type Finge
 import { scoreLabel } from "./closeness.ts";
 import { Compass } from "./Compass.tsx";
 import type { DemoPerson } from "./model.ts";
-import { drawnBox, focusLinksOf, focusOf, heldOnly, nameAt, nameStyle, PHONE } from "./Orbits.tsx";
+import { drawnBox, focusLinksOf, focusOf, heldOnly, nameAt, nameStyle, PHONE, ringLabelBox } from "./Orbits.tsx";
 import {
-  BACKGROUND, displacementTrail, drawnSize, glowColour, hearthGlowRadius, orbitRadius, personOpacity, READABLE, rings,
+  BACKGROUND, displacementTrail, drawnSize, glowColour, grown, hearthGlowRadius, orbitRadius, personOpacity, READABLE, rings,
 } from "./orbitsLayout.ts";
 import { drawnAt, heightOf, HOME_VIEW, inclinationOf, lightOn, nearness, paintOrder, ringAxes, sceneExtent, shadeAt } from "./orbits3dScene.ts";
 import { COLOUR_GLOW, HOLLOW, NAME, PHOTO, rgb, SkyGl, SPHERE, SUN_CORE, SUN_GLOW, type Sprite } from "./orbits3dGl.ts";
 import { NameAtlas, nameKey, namesInScene, type NameLook, type NameSlot } from "./orbits3dNames.ts";
 import { tourAt, tourOf } from "./orbits3dTour.ts";
-import { arrivedShare, nameOf, onPage, stageOf, useMedia, useOrbitBodies, useOrbitNames, useSettled, useTween, type XY } from "./orbitsSky.ts";
+import { arrivedShare, NAME_FONT, nameOf, onPage, stageOf, useMedia, useNameFit, useOrbitBodies, useOrbitNames, useSettled, useTween, type XY } from "./orbitsSky.ts";
+import { DEFAULT_NAME_PADDING, useNamePadding } from "./namePadding.ts";
 import { useTopNames } from "./topNames.ts";
 import { nameStrengthOf, useNameFade } from "./nameFade.ts";
 import { clampZoom, HOME, panBy, pinchZoom, wheelFactor, ZOOM_STEP, zoomAt, zoomBetween, zoomToShow, type Fingers, type Zoom } from "./orbitsZoom.ts";
@@ -101,6 +102,8 @@ export function Orbits3DMap({ model, width, height, inset: top, hover, open, hel
   const names = useNames();
   // How many of the closest are named unzoomed: Orbits 3D's own Show top names (topNames.ts).
   const named = useTopNames("orbits-3d");
+  // How many pixels apart its names are fitted: its own Name padding (namePadding.ts).
+  const padding = useNamePadding("orbits-3d");
   // How names fade down the ranking: the Names settings, every map view's (nameFade.ts).
   const fade = useNameFade();
   const phone = useMedia(PHONE);
@@ -110,7 +113,14 @@ export function Orbits3DMap({ model, width, height, inset: top, hover, open, hel
 
   // The same stage and the same places as Orbits (orbitsSky.ts), A to Z round the sun.
   const { outer, inner, cx, cy } = stageOf(width, height, top);
-  const { count, together, standings, closest, trends, trailFrom, targets } = useOrbitBodies(model, at, inner, outer, "name");
+  const { count, together, radius, standings, closest, trends, trailFrom, targets: spokes } = useOrbitBodies(model, at, inner, outer, "name");
+  const reachOut = useMemo(() => new Set(model.people.filter((p) => p.shouldReachOut).map((p) => p.id)), [model.people]);
+  // Those named on the whole map are turned round their orbits until no name covers another or a ring label, `padding`
+  // pixels clear (useNameFit), as on Orbits 2D, so from straight above it is that map; nobody's distance changes.
+  const ringBoxes = useMemo(() => rings(count).map((ring) => grown(ringLabelBox(ring.label, -radius(ring.rank)), -DEFAULT_NAME_PADDING / 2)), [count, radius]);
+  const targets = useNameFit(spokes, {
+    on: !phone && names.style !== "hide", model, at, closest, named, reachOut, together, label: names.mapLabel, font: NAME_FONT, around: ringBoxes, padding, fade,
+  });
   const frames = useTween(targets.frames, MOVE_MS, { from: inner * 0.3, stagger: 700, outer, inner }, `${inner}:${outer}`);
   const home = useMemo(() => new Set(together), [together]);
   // How each person's orbit leans out of the plane: from their seed, so it never changes under them.
@@ -128,7 +138,6 @@ export function Orbits3DMap({ model, width, height, inset: top, hover, open, hel
   const linked = useMemo(() => new Set(focusLinks.map((l) => (l.source === focusId ? l.target : l.source))), [focusLinks, focusId]);
   // While someone is held, only they and their links glow, and nobody under No name except… (glowsOf), as on Orbits.
   const glowing = useMemo(() => glowsOf(heldOnly(held, focusId, linked), names.hidden), [held, focusId, linked, names.hidden]);
-  const reachOut = useMemo(() => new Set(model.people.filter((p) => p.shouldReachOut).map((p) => p.id)), [model.people]);
   // How strongly they glow (reachGlow.ts), as on Orbits; the scene's glows are drawn as things move, so only the flat names breathe.
   const reachGlow = useReachGlow();
   const glow = useMemo(() => glowLook(reachGlow), [reachGlow]);

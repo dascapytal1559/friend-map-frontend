@@ -1043,7 +1043,7 @@ export function photoShown(look: OrbitLook): boolean {
 }
 
 /** What a guide ring's label (`label`, drawn centred at `y` straight up from the sun) covers, with a little room round it. */
-function ringLabelBox(label: string, y: number): Box {
+export function ringLabelBox(label: string, y: number): Box {
   const half = (label.length * 7) / 2 + 4;
   return { left: -half, right: half, top: y - 8, bottom: y + 6 };
 }

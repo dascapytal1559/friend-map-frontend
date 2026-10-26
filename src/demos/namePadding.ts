@@ -1,26 +1,28 @@
-// How much clear space each map view (Orbits and the Spider web) keeps between
-// names when it fits them round the sun (useNameFit in
-// orbitsSky.ts): Name padding in that view's settings in the menu
-// (viewSettings.ts), 0 to 10 pixels, so two names are at least that far apart,
-// across and up and down, ink to ink, wherever the fitting finds room. Until
-// another is chosen, 3 on Orbits, the room the fitting kept before there was a
-// setting, and 5 on the Spider web, its default. Kept per view: Orbits' on
-// this device, as the app's other settings are (per browser, and apart in the
-// demo), the Spider web's saved on friend-map's server in the real app and the
-// demo's default (savedStore.ts), as the web's other settings are.
+// How much clear space each map view (Orbits 2D, Orbits, the solar system,
+// and the Spider web) keeps between names when it fits them round the sun
+// (useNameFit in orbitsSky.ts): Name padding in that view's settings in the
+// menu (viewSettings.ts), 0 to 10 pixels, so two names are at least that far
+// apart, across and up and down, ink to ink, wherever the fitting finds room
+// (on the solar system, as seen from straight above). Until another is
+// chosen, 3 on Orbits 2D and the solar system, the room the fitting kept
+// before there was a setting, and 5 on the Spider web, its default. Kept per
+// view: both Orbits' on this device, as the app's other settings are (per
+// browser, and apart in the demo), the Spider web's saved on friend-map's
+// server in the real app and the demo's default (savedStore.ts), as the web's
+// other settings are.
 
 import { demoMode, keptAs } from "../demoMode.ts";
 import { keptSetting, useStore, type KeptSetting } from "../keptSetting.ts";
 import { savedSetting } from "../savedStore.ts";
 
 /** The map views, each with its own Name padding. */
-export const MAP_VIEWS = ["orbits", "web"] as const;
+export const MAP_VIEWS = ["orbits", "orbits-3d", "web"] as const;
 
 export type MapView = (typeof MAP_VIEWS)[number];
 
 /** What the slider offers, in pixels: whole steps from none to 10. */
 export const NAME_PADDING = { min: 0, max: 10, step: 1 } as const;
-/** Orbits' padding until another is chosen: 3, as the names were fitted before there was a setting. */
+/** Orbits' padding (either one's) until another is chosen: 3, as the names were fitted before there was a setting. */
 export const DEFAULT_NAME_PADDING = 3;
 /** The Spider web's until another is chosen: 5. */
 export const WEB_NAME_PADDING = 5;
@@ -41,6 +43,7 @@ export function makeNamePaddingStores(demo: boolean): Record<MapView, KeptSettin
   const parse = (kept: string | null, fallback: number) => namePaddingOf(kept ?? undefined, fallback);
   return {
     orbits: keptSetting(namePaddingKey("orbits", demo), DEFAULT_NAME_PADDING, (kept) => parse(kept, DEFAULT_NAME_PADDING)),
+    "orbits-3d": keptSetting(namePaddingKey("orbits-3d", demo), DEFAULT_NAME_PADDING, (kept) => parse(kept, DEFAULT_NAME_PADDING)),
     web: savedSetting("friend-map.web.name-padding", demo, WEB_NAME_PADDING, parse),
   };
 }

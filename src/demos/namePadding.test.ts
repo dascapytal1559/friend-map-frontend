@@ -1,4 +1,4 @@
-// Each map view's Name padding (namePadding.ts): a slider's setting, kept per view: Orbits' on this device, the Spider web's saved with its other settings (savedStore.ts).
+// Each map view's Name padding (namePadding.ts): a slider's setting, kept per view: both Orbits' on this device, the Spider web's saved with its other settings (savedStore.ts).
 
 import { afterEach, describe, expect, it } from "vitest";
 import { DEFAULT_NAME_PADDING, MAP_VIEWS, NAME_PADDING, namePaddingKey, namePaddingOf, namePaddingStores, WEB_NAME_PADDING } from "./namePadding.ts";
@@ -18,11 +18,11 @@ afterEach(() => {
 });
 
 describe("the map views' name padding", () => {
-  it("is offered for Orbits and the Spider web, 0 to 5 pixels in whole steps, until set 3 on Orbits and 5 on the Spider web", () => {
-    expect(MAP_VIEWS).toEqual(["orbits", "web"]);
+  it("is offered for both Orbits and the Spider web, 0 to 10 pixels in whole steps, until set 3 on either Orbits and 5 on the Spider web", () => {
+    expect(MAP_VIEWS).toEqual(["orbits", "orbits-3d", "web"]);
     expect(NAME_PADDING).toEqual({ min: 0, max: 10, step: 1 });
     expect([DEFAULT_NAME_PADDING, WEB_NAME_PADDING]).toEqual([3, 5]);
-    expect([namePaddingStores.orbits.get(), namePaddingStores.web.get()]).toEqual([3, 5]);
+    expect([namePaddingStores.orbits.get(), namePaddingStores["orbits-3d"].get(), namePaddingStores.web.get()]).toEqual([3, 3, 5]);
   });
 
   it("reads whatever was kept as a whole number within 0 and 5, and anything else as the default", () => {

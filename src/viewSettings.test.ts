@@ -64,7 +64,7 @@ describe("the views' settings", () => {
     const linked = ["slider", "Linked names"];
     expect(settingsOf("web").map((s) => [s.kind, s.label])).toEqual([["toggle", "Show top names"], ["slider", "Name padding"], ...fade, linked, ["colour", "Colour"], ["slider", "Strand curve"], ["slider", "Spokes"], ["slider", "Web strength"], glow]);
     expect(settingsOf("orbits").map((s) => [s.kind, s.label])).toEqual([["colour", "Theme"], ["toggle", "Show top names"], ["slider", "Name padding"], ...fade, linked, glow]);
-    expect(settingsOf("orbits-3d").map((s) => [s.kind, s.label])).toEqual([["toggle", "Show top names"], ...fade, linked, glow]);
+    expect(settingsOf("orbits-3d").map((s) => [s.kind, s.label])).toEqual([["toggle", "Show top names"], ["slider", "Name padding"], ...fade, linked, glow]);
     expect(settingsOf("circles").map((s) => [s.kind, s.label])).toEqual([...fade, linked, glow]);
     // The City names nobody for a link alone, so it has no Linked names.
     expect(settingsOf("city").map((s) => [s.kind, s.label])).toEqual([["toggle", "Show top names"], ...fade, glow]);
@@ -114,7 +114,7 @@ describe("the settings section in the menu", () => {
     const names = ["Name fade from", "Name fade to", "Faintest name", "Reach-out names", "Linked names"];
     expect(groupsOf("web").map((group) => group.map((s) => s.label))).toEqual([["Show top names", "Name padding"], names, ["Colour", "Strand curve", "Spokes", "Web strength"], ["Reach-out glow"]]);
     expect(groupsOf("orbits").map((group) => group.map((s) => s.label))).toEqual([["Theme", "Show top names", "Name padding"], names, ["Reach-out glow"]]);
-    expect(groupsOf("orbits-3d").map((group) => group.map((s) => s.label))).toEqual([["Show top names"], names, ["Reach-out glow"]]);
+    expect(groupsOf("orbits-3d").map((group) => group.map((s) => s.label))).toEqual([["Show top names", "Name padding"], names, ["Reach-out glow"]]);
     expect(groupsOf("circles").map((group) => group.map((s) => s.label))).toEqual([names, ["Reach-out glow"]]);
     expect(groupsOf("city").map((group) => group.map((s) => s.label))).toEqual([["Show top names"], names.slice(0, 4), ["Reach-out glow"]]);
     for (const slug of Object.keys(VIEW_SETTINGS).filter((slug) => !["web", "orbits", "orbits-3d", "circles", "city"].includes(slug))) expect(groupsOf(slug), slug).toHaveLength(1);
@@ -179,11 +179,11 @@ describe("the settings section in the menu", () => {
     expect(html).toContain("<output>25%</output>");
   });
 
-  it("gives Orbits and the Spider web each a Name padding slider in pixels, 0 to 10: 3 px on Orbits and 5 px on the Spider web until moved, each kept apart", () => {
+  it("gives both Orbits and the Spider web each a Name padding slider in pixels, 0 to 10: 3 px on either Orbits and 5 px on the Spider web until moved, each kept apart", () => {
     const kept = memory();
     for (const store of Object.values(namePaddingStores)) store.reload(kept);
     const slider = (view: string) => /<input type="range"[^>]*aria-label="Name padding"[^>]*>/.exec(setting(section(menu(view))!, "Name padding"))![0];
-    for (const [view, px] of [["orbits", 3], ["web", 5]] as const) {
+    for (const [view, px] of [["orbits", 3], ["orbits-3d", 3], ["web", 5]] as const) {
       for (const attribute of ['min="0"', 'max="10"', 'step="1"', `value="${px}"`, `aria-valuetext="${px} px"`]) expect(slider(view)).toContain(attribute);
       expect(setting(section(menu(view))!, "Name padding")).toContain(`<output>${px} px</output>`);
     }
@@ -192,8 +192,12 @@ describe("the settings section in the menu", () => {
     expect(setting(section(menu("orbits"))!, "Name padding")).toContain("<output>3 px</output>");
     expect(kept.items.get(namePaddingKey("web"))).toBe("1");
     expect(kept.items.has(namePaddingKey("orbits"))).toBe(false);
+    namePaddingStores["orbits-3d"].set(10);
+    expect(setting(section(menu("orbits-3d"))!, "Name padding")).toContain("<output>10 px</output>");
+    expect(setting(section(menu("orbits"))!, "Name padding")).toContain("<output>3 px</output>");
+    expect(kept.items.get(namePaddingKey("orbits-3d"))).toBe("10");
     // Nor on the views that do not fit names round the sun.
-    for (const view of ["orbits-3d", "city"]) expect(section(menu(view))).not.toContain("Name padding");
+    for (const view of ["circles", "city"]) expect(section(menu(view)) ?? "").not.toContain("Name padding");
   });
 
   it("gives the web's Strand curve and Spokes as sliders, with no Web style beside them: 10% and 14 spokes until moved, each kept", () => {

@@ -135,7 +135,7 @@ export const VIEW_SETTINGS: Readonly<Record<string, readonly SettingGroup[]>> = 
     topNames("orbits"),
     namePadding("orbits"),
   ], nameFade(), REACH_GLOW],
-  "orbits-3d": [[topNames("orbits-3d")], nameFade(), REACH_GLOW],
+  "orbits-3d": [[topNames("orbits-3d"), namePadding("orbits-3d")], nameFade(), REACH_GLOW],
   circles: [nameFade(), REACH_GLOW],
   // Its name settings together (with Name format, first), how names fade, the web's own look, then the glow.
   web: [

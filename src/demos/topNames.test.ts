@@ -1,6 +1,6 @@
 // Each main view names as many of the closest as its own Show top names says
-// (topNames.ts): every main view the closest 100 until another is chosen in the
-// real app, and the closest 50 in the demo; the rest stay on the map unnamed.
+// (topNames.ts): every main view the closest 100 until another is chosen, in the
+// real app and the demo alike; the rest stay on the map unnamed.
 // The maps are drawn to markup, wide, with nobody picked out.
 
 import { readFileSync } from "node:fs";
@@ -14,7 +14,7 @@ import { buildModel } from "./model.ts";
 import { keptZoom, OrbitMap, orbits, web } from "./Orbits.tsx";
 import { Orbits3DMap } from "./Orbits3D.tsx";
 import { HOME } from "./orbitsZoom.ts";
-import { ALL, amongTop, DEFAULT_TOP_NAMES, defaultTopNames, DEMO_TOP_NAMES, MAIN_VIEWS, makeTopNamesStores, topNamesKey, topNamesStores } from "./topNames.ts";
+import { ALL, amongTop, DEFAULT_TOP_NAMES, MAIN_VIEWS, makeTopNamesStores, topNamesKey, topNamesStores } from "./topNames.ts";
 import type { ViewProps } from "./view.tsx";
 
 beforeEach(() => resetSaved());
@@ -64,10 +64,9 @@ function memory(initial: Record<string, string> = {}) {
 }
 
 describe("Show top names until another is chosen", () => {
-  it("is the closest 100 on every main view in the real app, and the closest 50 in the demo", () => {
-    expect([defaultTopNames(false), defaultTopNames(true)]).toEqual([100, 50]);
-    expect([DEFAULT_TOP_NAMES, DEMO_TOP_NAMES]).toEqual([100, 50]);
-    for (const [demo, named] of [[false, 100], [true, 50]] as const) {
+  it("is the closest 100 on every main view, in the real app and the demo alike", () => {
+    expect(DEFAULT_TOP_NAMES).toBe(100);
+    for (const [demo, named] of [[false, 100], [true, 100]] as const) {
       const stores = makeTopNamesStores(demo);
       expect(Object.keys(stores)).toEqual(MAIN_VIEWS);
       for (const slug of MAIN_VIEWS) {
@@ -82,11 +81,11 @@ describe("Show top names until another is chosen", () => {
     const demo = makeTopNamesStores(true);
     const kept = memory({ [topNamesKey("orbits", false)]: "all", [topNamesKey("web", true)]: "200" });
     for (const store of [...Object.values(real), ...Object.values(demo)]) store.reload(kept);
-    expect([real.orbits.get(), real.web.get(), demo.orbits.get(), demo.web.get()]).toEqual([ALL, 100, 50, 200]);
+    expect([real.orbits.get(), real.web.get(), demo.orbits.get(), demo.web.get()]).toEqual([ALL, 100, 100, 200]);
     demo.city.set(25);
     expect(kept.kept.get(topNamesKey("city", true))).toBe("25");
     expect(kept.kept.has(topNamesKey("city", false))).toBe(false);
-    demo.city.set(50);
+    demo.city.set(100);
     expect(kept.kept.has(topNamesKey("city", true))).toBe(false);
   });
 });

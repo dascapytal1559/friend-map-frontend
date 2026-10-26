@@ -7,6 +7,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { keptAs } from "./demoMode.ts";
+import { DEFAULT_NAME_FADE, makeNameFadeStores } from "./demos/nameFade.ts";
 import { makeTopNamesStores } from "./demos/topNames.ts";
 import { makeWebColourChosen } from "./demos/webColour.ts";
 import { makeWebSpokesStore, SPOKES_KEY, webCurveStore, webSpokesStore } from "./demos/webStyle.ts";
@@ -31,10 +32,21 @@ describe("in the demo", () => {
     const stores = [makeWebSpokesStore(true), makeWebColourChosen(true), makeNameStyleStore(true)];
     for (const store of stores) store.reload(memory());
     expect(stores.map((store) => store.get())).toEqual([20, "amber", "full"]);
-    // Show top names was never chosen: the demo keeps its own 50.
-    expect(makeTopNamesStores(true).web.get()).toBe(50);
+    // Show top names was never chosen: the default, 100.
+    expect(makeTopNamesStores(true).web.get()).toBe(100);
     resetSaved({ "web.top-names": "200" });
     expect(makeTopNamesStores(true).web.get()).toBe(200);
+  });
+
+  it("starts at its own choice over yours where it has one (DEMO_SAVED): how names fade", () => {
+    resetSaved({ "name-fade.faintest": "0.5", "name-fade.reach-out": "fade" });
+    const demo = makeNameFadeStores(true);
+    for (const store of Object.values(demo)) store.reload(memory());
+    // Its own faintest and bottom; yours for the rest.
+    expect([demo.faintest.get(), demo.bottom.get(), demo.reachOut.get()]).toEqual([0.4, 50, false]);
+    // The real app keeps yours.
+    const real = makeNameFadeStores(false);
+    expect([real.faintest.get(), real.bottom.get()]).toEqual([0.5, DEFAULT_NAME_FADE.bottom]);
   });
 
   it("keeps its visitor's choice in their browser, apart, and never on the server", () => {

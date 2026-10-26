@@ -5,10 +5,9 @@
 // apart in the demo), but the Spider web's, saved on friend-map's server in the
 // real app and the demo's default (savedStore.ts), as the web's other settings
 // are. Everyone else stays on the map, unnamed until hovered or
-// zoomed in on. Until another is chosen every main view names the closest 100
-// in the real app and the closest 50 in the demo, whose crowd a first look
-// should take in without a wall of names. Circles is not a main view and
-// keeps the closest 100.
+// zoomed in on. Until another is chosen every main view names the closest
+// 100, in the real app and the demo alike. Circles is not a main view and
+// keeps the closest 100 too.
 
 import { demoMode, keptAs } from "../demoMode.ts";
 import { keptSetting, useStore, type KeptSetting, type Store } from "../keptSetting.ts";
@@ -26,15 +25,8 @@ export const TOP_NAMES: readonly number[] = [25, 50, 100, 200, ALL];
  */
 export const SURELY_NAMED = 200;
 
-/** How many the real app's main views and Circles name until another is chosen. */
+/** How many the main views and Circles name until another is chosen, in the real app and the demo alike. */
 export const DEFAULT_TOP_NAMES = 100;
-/** How many the demo's main views name until another is chosen. */
-export const DEMO_TOP_NAMES = 50;
-
-/** How many each main view of an app (the demo's, `demo`, or the real one's) names until another is chosen. */
-export function defaultTopNames(demo: boolean): number {
-  return demo ? DEMO_TOP_NAMES : DEFAULT_TOP_NAMES;
-}
 
 /** The main views, each with its own Show top names. */
 export const MAIN_VIEWS = ["orbits", "orbits-3d", "web", "city"] as const;
@@ -59,7 +51,7 @@ export function amongTop(place: number | null | undefined, named: number): boole
 
 /** Each main view's Show top names in an app (the demo's, `demo`, or the real one's). */
 export function makeTopNamesStores(demo: boolean): Record<MainView, KeptSetting<number>> {
-  const fallback = defaultTopNames(demo);
+  const fallback = DEFAULT_TOP_NAMES;
   const write = (n: number) => (n === ALL ? "all" : String(n));
   return Object.fromEntries(
     MAIN_VIEWS.map((slug) => [

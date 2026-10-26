@@ -4,7 +4,9 @@
 // and for the real app "similar, except top100 show name. full name.", then
 // for the demo Strand curve 10% and 14 Spokes; since then the user's own Spider web,
 // "I would like that to just be the default settings": First L., Name only,
-// 14 spokes curved 10%, a blue and 5 px between names, in both apps). Every
+// 14 spokes curved 10%, a blue and 5 px between names, in both apps; and as
+// the demo went public, Orbits' closest 100 named, 10 px apart, and names
+// fading to their faintest, 40%, past the closest 50, src/demo/defaults.ts). Every
 // one is a default only: in the real app a choice saved on the server
 // (savedStore.ts) stands, the demo's own choices are kept apart in its
 // visitor's browser, and the demo starts at your saved choices
@@ -23,7 +25,7 @@ import { makeNameStyleStore, NAME_STYLE_KEY } from "./names.ts";
 const kept = (initial: Record<string, string> = {}) => ({ getItem: (key: string) => initial[key] ?? null, setItem: () => {}, removeItem: () => {} });
 
 describe("a first visit", () => {
-  for (const [app, demo, named] of [["the demo", true, 50], ["the real app", false, 100]] as const) {
+  for (const [app, demo, named] of [["the demo", true, 100], ["the real app", false, 100]] as const) {
     it(`to ${app} names the closest ${named} on every main view, as First L.`, () => {
       const top = makeTopNamesStores(demo);
       for (const slug of MAIN_VIEWS) {
@@ -41,6 +43,12 @@ describe("a first visit", () => {
       expect(stores.map((store) => store.get())).toEqual(["#65a5e2", 0.1, 14, 0.35, 5]);
       expect(makeNamePaddingStores(demo).orbits.get()).toBe(3);
     });
+
+    it(`to ${app} fits Orbits' (the solar system's) names ${demo ? 10 : 3} px apart`, () => {
+      const solar = makeNamePaddingStores(demo)["orbits-3d"];
+      solar.reload(kept());
+      expect(solar.get()).toBe(demo ? 10 : 3);
+    });
   }
 
   it("leaves a choice already made as it was, the demo's apart from the real app's", () => {
@@ -48,7 +56,7 @@ describe("a first visit", () => {
     const browser = kept({ [topNamesKey("web", true)]: "200", [topNamesKey("orbits", false)]: "25" });
     const top = makeTopNamesStores(true);
     for (const store of Object.values(top)) store.reload(browser);
-    expect([top.web.get(), top.orbits.get()]).toEqual([200, 50]);
+    expect([top.web.get(), top.orbits.get()]).toEqual([200, 100]);
     // The demo's Spokes set to 40, and the real app's Strand curve to 50%, which the demo's does not read.
     const web = kept({ [keptAs(SPOKES_KEY, true)]: "40", [CURVE_KEY]: "0.5" });
     const [curve, spokes] = [makeWebCurveStore(true), makeWebSpokesStore(true)];

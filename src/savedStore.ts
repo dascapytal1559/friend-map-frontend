@@ -6,10 +6,12 @@
 // coming back into view asks for the set again, so a choice made on another
 // device shows there too. The demo keeps its visitor's choices in the browser,
 // apart (keptAs), as it keeps its other settings, and asks the server for
-// nothing: until its visitor chooses, each is your saved choice, as
-// the page was served it (live at /demo, or built into the static demo), else
-// the setting's own default.
+// nothing: until its visitor chooses, each is the demo's own choice
+// (DEMO_SAVED in src/demo/defaults.ts), else your saved choice, as the page
+// was served it (live at /demo, or built into the static demo), else the
+// setting's own default.
 
+import { DEMO_SAVED } from "./demo/defaults.ts";
 import { keptAs } from "./demoMode.ts";
 import { keptSetting, type Kept, type KeptSetting } from "./keptSetting.ts";
 import { address } from "./mount.ts";
@@ -50,8 +52,8 @@ export const savedStorage: Kept = {
 /**
  * The setting under `key` (one of SAVED_SETTINGS', friend-map.<name>) in an app (the demo's, `demo`, or the real
  * one's): `builtIn` until it is chosen, `parse` reading what is kept, anything it does not know being `fallback`. In
- * the real app it is kept on the server; in the demo in the browser, its default your saved choice where
- * there is one `demoTakes`.
+ * the real app it is kept on the server; in the demo in the browser, its default the demo's own (DEMO_SAVED), else
+ * your saved choice, where there is one `demoTakes`.
  */
 export function savedSetting<T>(
   key: string,
@@ -61,7 +63,8 @@ export function savedSetting<T>(
   { write, demoTakes = () => true }: { write?: (value: T) => string; demoTakes?: (value: T) => boolean } = {},
 ): KeptSetting<T> {
   if (demo) {
-    const served = parse(savedStorage.getItem(key), builtIn);
+    const name = savedName(key);
+    const served = parse((name && DEMO_SAVED[name]) ?? savedStorage.getItem(key), builtIn);
     const fallback = demoTakes(served) ? served : builtIn;
     return keptSetting(keptAs(key, true), fallback, (kept) => parse(kept, fallback), write);
   }

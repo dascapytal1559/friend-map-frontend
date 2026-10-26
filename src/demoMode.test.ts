@@ -35,16 +35,26 @@ describe("the demo's address", () => {
       expect([path, inDemo(path), viewAt(path, views)?.slug, viewAt(`${path}/`, views)?.slug]).toEqual([path, true, view.slug, view.slug]);
       expect([view.path, inDemo(view.path), viewAt(view.path)?.slug]).toEqual([view.path, false, view.slug]);
     }
-    expect(viewPath(VIEWS[0], true)).toBe("/demo/orbits");
-    expect(viewPath(VIEWS.find((v) => v.slug === "city")!, true)).toBe("/demo/city");
-    // The Table, the Calendar and Circles are the real app's alone.
-    for (const slug of ["table", "calendar", "circles"]) expect(viewAt(viewPath(VIEWS.find((v) => v.slug === slug)!, true), views)).toBeUndefined();
+    expect(views.map((view) => viewPath(view, true))).toEqual(["/demo/orbits-3d", "/demo/spider"]);
+    // The rest are the real app's alone.
+    for (const slug of ["orbits", "table", "calendar", "circles", "city", "time-river", "river", "reciprocity"]) {
+      expect([slug, viewAt(viewPath(VIEWS.find((v) => v.slug === slug)!, true), views)?.slug]).toEqual([slug, undefined]);
+    }
   });
 
   it("is only /demo and under it: not the real app's pages, nor an address that merely starts alike", () => {
     for (const path of ["/", "/table", "/demos", "/demos/orbits", "/demonstration"]) expect([path, inDemo(path)]).toEqual([path, false]);
     // An address the demo does not have is no view, so the demo's page shows its Spider web.
     expect(viewAt("/demo/nowhere")).toBeUndefined();
+  });
+
+  it("lists, on the static demo's site, its own views alone, so its files carry no other view", async () => {
+    vi.resetModules();
+    vi.stubEnv("MODE", "static-demo");
+    const { DEMOS: own } = await import("./demos/Demos.tsx");
+    expect(own.map((demo) => demo.slug)).toEqual([...DEMO_VIEWS]);
+    vi.unstubAllEnvs();
+    vi.resetModules();
   });
 
   it("decides the page as it opens, from the address alone", async () => {
@@ -226,7 +236,7 @@ describe("in the demo every view draws the made-up crowd", () => {
   const crowd = new Set(data.people.map((p) => p.name));
   let api: ArchiveApi;
   beforeAll(async () => {
-    // The map asks the window whether motion is reduced, and the river measures names on a canvas; neither is here.
+    // The map asks the window whether motion is reduced, and names are measured on a canvas; neither is here.
     vi.stubGlobal("window", {});
     vi.stubGlobal("document", { createElement: () => ({ getContext: () => null }) });
     const { DemoArchive } = await import("./demo/archive.ts");
@@ -234,7 +244,7 @@ describe("in the demo every view draws the made-up crowd", () => {
   });
   const named = (html: string) => [...crowd].filter((name) => html.includes(name.split(" ")[0]));
 
-  it("Orbits, Orbits 3D, the Spider web, the City, the river and Reciprocity, from its map report", async () => {
+  it("Orbits (the solar system) and the Spider web, from its map report", async () => {
     const model = buildModel(await api.relationships(), { settings: DEFAULT_SETTINGS });
     expect(model.people.length).toBeGreaterThan(50);
     expect(DEMOS.filter((demo) => DEMO_VIEWS.includes(demo.slug)).map((demo) => demo.slug)).toEqual([...DEMO_VIEWS]);
@@ -244,8 +254,7 @@ describe("in the demo every view draws the made-up crowd", () => {
       const html = renderToStaticMarkup(createElement(View, {
         model, width: 1600, height: 1000, inset: 80, hover: () => {}, open: () => {}, held: null, heldGroup: null, find: null,
       }));
-      // The river names only the streams with room for a name; the City draws on canvases, which its markup counts the crowd for.
-      const drawn = demo.slug === "city" ? html.includes(`A city of ${model.people.length} people`) : named(html).length >= (demo.slug === "orbits" ? 20 : 1);
+      const drawn = named(html).length >= 1;
       expect([demo.slug, drawn]).toEqual([demo.slug, true]);
     }
   }, 30_000);

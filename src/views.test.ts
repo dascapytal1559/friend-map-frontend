@@ -7,6 +7,11 @@ it("lists the main view first, then Orbits 3D, Circles, the Spider web, the City
   expect(VIEWS.slice(0, 8).every((v) => !v.frozen)).toBe(true);
   expect(VIEWS.filter((v) => v.frozen).map((v) => v.slug)).toEqual(["river", "reciprocity"]);
   expect(viewAt("/orbits")?.slug).toBe("orbits");
+  // The solar system is Orbits; the flat sky, Orbits 2D, is hidden from the switcher for now but still at /orbits.
+  expect(VIEWS.filter((v) => v.title.startsWith("Orbits")).map((v) => [v.slug, v.path, v.title, v.hidden ?? false])).toEqual([
+    ["orbits", "/orbits", "Orbits 2D", true],
+    ["orbits-3d", "/orbits-3d", "Orbits", false],
+  ]);
   // The bare address is no view's own: it leads to the Spider web (movedPath), and the page falls back to it.
   expect(viewAt("/")).toBeUndefined();
   expect(viewAt("/river/")?.slug).toBe("river");
@@ -73,17 +78,19 @@ it("has the static demo's site send /web and /demo/web to /spider before any oth
   expect(first("/demo/city")).toEqual(["/demo/*", "/:splat", "301"]);
 });
 
-it("offers in the demo the map views but the Table, the Calendar and Circles, in the same order, at /demo in the app and at the root of the static demo's site", () => {
+it("offers in the demo Orbits (the solar system, at /orbits-3d) and the Spider web, at /demo in the app and at the root of the static demo's site", () => {
   const demo = viewsFor(true);
-  expect(demo.map((v) => v.slug)).toEqual(["orbits", "orbits-3d", "web", "city", "river", "reciprocity"]);
+  expect(demo.map((v) => [v.slug, v.title])).toEqual([["orbits-3d", "Orbits"], ["web", "Spider web"]]);
   expect(DEMO_VIEWS.every((slug) => VIEWS.some((v) => v.slug === slug))).toBe(true);
   expect(viewsFor(false)).toEqual(VIEWS);
-  expect(demo.map((v) => viewPath(v, true))).toEqual(["/demo/orbits", "/demo/orbits-3d", "/demo/spider", "/demo/city", "/demo/river", "/demo/reciprocity"]);
-  expect(demo.map((v) => viewPath(v, true, ""))).toEqual(["/orbits", "/orbits-3d", "/spider", "/city", "/river", "/reciprocity"]);
-  // The views it does not offer are no view there, so its page shows the Spider web.
-  for (const path of ["/demo/table", "/demo/calendar", "/demo/circles", "/table", "/calendar", "/circles"]) expect([path, viewAt(path, demo)]).toEqual([path, undefined]);
+  expect(demo.map((v) => viewPath(v, true))).toEqual(["/demo/orbits-3d", "/demo/spider"]);
+  expect(demo.map((v) => viewPath(v, true, ""))).toEqual(["/orbits-3d", "/spider"]);
+  expect(viewAt("/demo/orbits-3d/", demo)?.slug).toBe("orbits-3d");
   expect(viewAt("/spider", demo)?.slug).toBe("web");
-  expect(viewAt("/demo/river/", demo)?.slug).toBe("river");
+  // The views it does not offer are no view there, so its page shows the Spider web.
+  for (const view of ["orbits", "table", "calendar", "circles", "city", "river", "reciprocity", "time-river"]) {
+    for (const path of [`/demo/${view}`, `/${view}`]) expect([path, viewAt(path, demo)]).toEqual([path, undefined]);
+  }
 });
 
 it("offers a view only where the backend serves what it reads beside the map: the Table, the Calendar and the Time river", () => {

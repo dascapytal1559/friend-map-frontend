@@ -140,7 +140,10 @@ describe("the settings section in the menu", () => {
 
   it("is in the demo's menu as well", () => {
     expect(section(menu("web", true))).toContain("Spider web settings");
-    expect(section(menu("calendar", true))).toContain("Calendar settings");
+    // Under the demo's name for the view: Orbits 3D is its Orbits.
+    expect(section(menu("orbits-3d", true))).toContain("Orbits settings");
+    // A view the demo does not offer has none there.
+    expect(section(menu("city", true))).toBeNull();
   });
 
   it("gives the Spider web's colour as toggle buttons, each with its swatch, then Custom with a colour picker, on the default blue until another is chosen", () => {
@@ -238,7 +241,7 @@ describe("each main view's Show top names", () => {
   it("offers the closest 25, 50, 100 or 200, or All: 100 on every main view until another is chosen", () => {
     for (const slug of MAIN_VIEWS) expect(pressed(setting(section(menu(slug))!, "Show top names"))).toEqual(choices("100"));
     expect(section(menu("orbits"))).toMatch(/<button type="button" aria-pressed="false" title="Name the closest 25; everyone else is named on hovering, or zooming in">25<\/button>/);
-    expect(section(menu("city", true))).toContain("Show top names");
+    expect(section(menu("orbits-3d", true))).toContain("Show top names");
   });
 
   it("is each view's own: choosing one on Orbits leaves the others as they were", () => {

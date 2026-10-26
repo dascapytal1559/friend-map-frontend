@@ -1,7 +1,7 @@
 // The title at the top left of every page, which is also the view switcher:
 // the page's name with a caret beside it, over a small line (the crumb).
 // Clicking the name or the caret, or Enter or Space on it, opens the list of
-// views: the main views first (Orbits, Orbits 3D, the Spider web and the City), then
+// views: the main views first (Orbits, the Spider web and the City; Orbits 2D is hidden for now), then
 // Circles, the Table and the Calendar, then the frozen views, then the open view's settings, if it has any, in a section set apart
 // (ViewSettings.tsx, viewSettings.ts; on a page that shows names, Name format, which
 // names it shows, comes first in it), then, under About the app, the Demo
@@ -10,9 +10,8 @@
 // `navigate` lets the map views switch between themselves in place, and a page
 // (the Demo) always loads as its own. In the demo (demoMode.ts) the
 // demo's views are listed (DEMO_VIEWS in views.ts) at their places in it (under
-// /demo in the app, at the root of the static demo's site), with none of them
-// called frozen, the main views first as ever, and nothing else: no Demo, and no way into the
-// real map.
+// /demo in the app, at the root of the static demo's site), the main views first
+// as ever, and nothing else: no Demo, and no way into the real map.
 
 import { useEffect, useId, useRef, useState } from "react";
 import { demoMode, demoRoot } from "./demoMode.ts";
@@ -106,10 +105,12 @@ export function ViewList({ id, current, navigate, onPick, names = false, look = 
   /** Where the demo's views are (demoRoot). */
   root?: string;
 }) {
-  const views = viewsFor(demo);
+  const offered = viewsFor(demo);
+  // A hidden view is not listed, but opened by its address it keeps its settings here.
+  const views = offered.filter((view) => !view.hidden);
   const main = views.filter((view) => MAIN_VIEWS.includes(view.slug));
   const others = views.filter((view) => !MAIN_VIEWS.includes(view.slug));
-  const shown = VIEWS.find((view) => view.slug === current);
+  const shown = offered.find((view) => view.slug === current);
   const link = (view: Pick<ViewInfo, "slug" | "path" | "title">, go?: Navigate, title?: string) => {
     const path = viewPath(view, demo, root);
     return (
@@ -131,7 +132,7 @@ export function ViewList({ id, current, navigate, onPick, names = false, look = 
     <nav className="view-switcher__menu" id={id} aria-label="Views">
       <span className="view-switcher__group">Main views</span>
       {main.map((view) => link(view, navigate))}
-      <span className="view-switcher__group">Other views</span>
+      {others.some((view) => demo || !view.frozen) && <span className="view-switcher__group">Other views</span>}
       {others.filter((view) => demo || !view.frozen).map((view) => link(view, navigate))}
       {!demo && (
         <>

@@ -377,8 +377,8 @@ describe("Name format in the menu", () => {
   });
 
   it("offers the demo the first four alone, its people all made up", () => {
-    expect(choices(menu(true)).map(([title]) => title)).toEqual(NAME_STYLES.slice(0, 4).map((s) => s.title));
-    expect(menu(true)).not.toContain("Name someone");
+    expect(choices(menu(true, "orbits-3d")).map(([title]) => title)).toEqual(NAME_STYLES.slice(0, 4).map((s) => s.title));
+    expect(menu(true, "orbits-3d")).not.toContain("Name someone");
   });
 
   it("is not in the menu unless the page asks for it, nor its dot", () => {

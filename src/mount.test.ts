@@ -86,7 +86,7 @@ describe("a page opened under /friend-map", () => {
     expect(mount.mount).toBe("/friend-map");
     expect(mount.appPath("/friend-map/spider")).toBe("/spider");
     const html = renderToStaticMarkup(createElement(ViewList, { current: "web", onPick: () => {}, demo: false }));
-    expect(html).toContain('href="/friend-map/orbits"');
+    expect(html).toContain('href="/friend-map/orbits-3d"');
     expect(html).toContain('href="/friend-map/spider"');
     expect(html).toContain('href="/friend-map/demo"');
     expect(html).not.toMatch(/href="\/(?!friend-map\/)/);

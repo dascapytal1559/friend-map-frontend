@@ -795,7 +795,7 @@ export function Orbits3DMap({ model, width, height, inset: top, hover, open, hel
         <svg className="orbits-3d__ground" width={width} height={height} aria-hidden>{ground}</svg>
         <canvas ref={canvasRef} className="orbits-3d__sky" style={style} role="img" aria-label={`A solar system of ${number(count)} people round you`} />
         <svg className="orbits-3d__text" width={width} height={height} aria-hidden>{text}</svg>
-        {noGl && <p className="orbits-3d__status">Orbits 3D needs WebGL 2, which this browser does not offer. Orbits itself shows the same map.</p>}
+        {noGl && <p className="orbits-3d__status">Orbits needs WebGL 2, which this browser does not offer.</p>}
       </div>
       <SunControls x={sun.x} y={sun.y} inner={inner} photo={me.photo} shown={onSun} onPhoto={me.setPhoto} />
       <Compass

@@ -86,7 +86,7 @@ describe("the report", () => {
     );
     const text = usageReport(summary, NOW - 40 * DAY, NOW);
     expect(text.split("\n")[0]).toMatch(/^View\s+Last opened\s+Last 30 days\s+All time$/);
-    expect(text).toMatch(/Orbits\s+27 Sept 2026 \(yesterday\)\s+1 open, 1\.5 min\s+1 open, 1\.5 min/);
+    expect(text).toMatch(/Orbits 2D\s+27 Sept 2026 \(yesterday\)\s+1 open, 1\.5 min\s+1 open, 1\.5 min/);
     expect(text).toMatch(/Reciprocity \(frozen\)\s+never\s+0 opens, 0 min\s+0 opens, 0 min/);
     expect(text).toContain(
       "Not opened in the last 30 days: The river, Reciprocity. Propose removing them to you; remove nothing without a yes.",

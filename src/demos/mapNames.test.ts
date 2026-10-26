@@ -31,7 +31,7 @@ afterEach(() => {
 
 describe("in the menu", () => {
   /** The open view's settings, as the menu draws them (open), on a page that shows names. */
-  const settings = (current: string, demo = true) => {
+  const settings = (current: string, demo = false) => {
     settingsOpenStore.reload(null);
     settingsOpenStore.set(true);
     const html = renderToStaticMarkup(createElement(ViewList, { current, onPick: () => {}, names: true, look: true, demo }));
@@ -48,6 +48,9 @@ describe("in the menu", () => {
     expect(labels(settings("circles"))).toEqual(["Name format", "Look", ...fade, "Reach-out glow"]);
     expect(labels(settings("city"))).toEqual(["Name format", "Look", "Show top names", ...fade.slice(0, 4), "Reach-out glow"]);
     for (const view of ["orbits", "orbits-3d", "circles", "web", "city"]) expect(settings(view), view).not.toMatch(/Name placement|Next to|On icon|Name only/);
+    // The demo's views offer the same.
+    expect(labels(settings("orbits-3d", true))).toEqual(labels(settings("orbits-3d")));
+    expect(labels(settings("web", true))).toEqual(labels(settings("web")));
   });
 });
 

@@ -100,7 +100,9 @@ export function Demos({ pages = {} }: { pages?: OwnPages }) {
   const page = slug === "table" || slug === "calendar" ? slug : null;
   const demo = DEMOS.find((d) => d.slug === slug) ?? DEMOS.find((d) => d.slug === DEFAULT_VIEW)!;
   useEffect(() => {
-    const title = page ? `${VIEWS.find((view) => view.slug === page)!.title} · Friend map` : demo.slug === DEFAULT_VIEW ? "Friend map" : `${demo.title} · Friend map`;
+    // The view's name as the switcher gives it (views.ts): Orbits 2D for the flat sky, Orbits for the solar system.
+    const name = VIEWS.find((view) => view.slug === (page ?? demo.slug))?.title ?? demo.title;
+    const title = !page && demo.slug === DEFAULT_VIEW ? "Friend map" : `${name} · Friend map`;
     document.title = demoMode ? `${title} · demo` : title;
   }, [demo, page]);
   const navigate: Navigate = (to) => (event) => {

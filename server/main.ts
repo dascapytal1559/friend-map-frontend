@@ -23,6 +23,7 @@ import { archiveProxy } from "./archiveProxy.ts";
 import { BASE_PATH, serveAtBase } from "./basePath.ts";
 import { archiveUrl, dataHome } from "./dataHome.ts";
 import { createMethodologyHandler } from "./methodology.ts";
+import { savedSettingsPlugin } from "./savedSettingsPlugin.ts";
 
 const PORT = Number(process.env.PORT ?? 4600);
 const HOST = "127.0.0.1";
@@ -39,6 +40,9 @@ const vite = await createViteServer({
   root: ROOT,
   configFile: fileURLToPath(new URL("../vite.config.ts", import.meta.url)),
   server: { middlewareMode: true, ws: { server } },
+  // Every page is served your saved view settings, read afresh; added here rather than in vite.config.ts, whose
+  // imports Vite watches, so editing the app (src/savedSettings.ts) never restarts it.
+  plugins: [savedSettingsPlugin(DATA_DIR)],
 });
 // Every request and websocket upgrade first passes the Host check, with the names Vite read from
 // FRIEND_MAP_ALLOWED_HOSTS (vite.config.ts), so the API and media refuse a DNS-rebinding page as the page does.

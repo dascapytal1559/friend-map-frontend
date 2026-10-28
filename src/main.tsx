@@ -26,7 +26,9 @@ import { movedAddress } from "./views.ts";
 const { pathname, search, hash } = window.location;
 const moved = movedAddress({ pathname: appPath(pathname), search, hash });
 if (moved) window.history.replaceState(null, "", address(moved));
-const Demos = lazy(() => import("./demos/Demos.tsx").then((m) => ({ default: m.Demos })));
+// Held in an object, not a capitalized name of its own, which React Refresh would take for a component: that would
+// make this entry take hot updates itself, running createRoot again on every edit beneath it, not reloading the page.
+const views = { Demos: lazy(() => import("./demos/Demos.tsx").then((m) => ({ default: m.Demos }))) };
 // The Table and the Calendar, pages of their own beside the map views, each loaded when it is opened.
 const pages = {
   table: lazy(() => import("./demos/TablePage.tsx").then((m) => ({ default: m.TablePage }))),
@@ -51,7 +53,7 @@ createRoot(document.getElementById("root")!).render(
     ) : (
       <ReadOnly.Provider value={demoMode || !takesEdits()}>
         <Suspense>
-          <Demos pages={pages} />
+          <views.Demos pages={pages} />
         </Suspense>
       </ReadOnly.Provider>
     )}

@@ -2,7 +2,7 @@
 // as JSON in <script type="application/json" id="friend-map-saved-settings">
 // in its head, which the page reads as it opens (src/savedStore.ts): the real
 // app's settings come from it, and the demo's defaults. Read afresh for each
-// page in the app (vite.config.ts), and once by the demo's build
+// page in the app (server/main.ts), and once by the demo's build
 // (vite.demo.config.ts), which so carries your choices as they were
 // when it was built. Only the saved settings, each one of its own values,
 // ever go in: never anything else from the data folder.

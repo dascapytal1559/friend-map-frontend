@@ -4,7 +4,7 @@ friend-map is the map and its views: a front end, with no database of its own. T
 
 ## Starting it
 
-Runs on Node 24.21.0 only (the server runs TypeScript directly), pinned in `package.json`'s `devEngines.runtime`. The Vite+ shims in `~/.vite-plus/bin` read the pin and run that version here, so put them first on the PATH; `npm test`, `npm start` and `npm run check-settings` stop on any other Node with a message saying so (`server/nodeVersion.ts`), so a result never depends on which Node the PATH found first.
+Runs on Node 24.22.1 only (the server runs TypeScript directly), pinned in `package.json`'s `devEngines.runtime`. The Vite+ shims in `~/.vite-plus/bin` read the pin and run that version here, so put them first on the PATH; `npm test`, `npm start` and `npm run check-settings` stop on any other Node with a message saying so (`server/nodeVersion.ts`), so a result never depends on which Node the PATH found first.
 
 ```sh
 export PATH="$HOME/.vite-plus/bin:$PATH"

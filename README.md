@@ -10,7 +10,7 @@ It opens on the **Spider web**; **Orbits** draws the same map as a 3D solar syst
 
 ## Quick start
 
-Needs Node 24.21.0, pinned in `package.json` ([details](docs/running.md#starting-it)).
+Needs Node 24.22.1, pinned in `package.json` ([details](docs/running.md#starting-it)).
 
 ```sh
 npm install

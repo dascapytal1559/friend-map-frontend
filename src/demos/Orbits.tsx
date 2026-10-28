@@ -43,6 +43,7 @@ import { basicRows, fieldRows, number, tipAt, type Demo, type ViewProps } from "
 import { webBoot, type WebMotion } from "./webChoreography.ts";
 import { presetOf, useWebColour } from "./webColour.ts";
 import { glowLook, glowShown, glowsOf, SWELL, useReachGlow } from "./reachGlow.ts";
+import { useWebShadow } from "./webShadow.ts";
 import { useWebStrength } from "./webStrength.ts";
 import { useWebCurve, useWebSpokes } from "./webStyle.ts";
 import { ringTop, webShape } from "./webGeometry.ts";
@@ -245,6 +246,7 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
   // by rank between them, so the rings stay true.
   const colour = useWebColour();
   const webStrength = useWebStrength();
+  const shadow = useWebShadow();
   // How strongly everyone to reach out to glows (reachGlow.ts), the same on every view that glows.
   const reachGlow = useReachGlow();
   const glow = useMemo(() => glowLook(reachGlow), [reachGlow]);
@@ -678,10 +680,10 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
   // names and trails belong to where people settle, so they wait while people rise out of the sun or move.
   const arrived = useCallback((id: number) => arrivedShare(frames.get(id)!, targets.placed.get(id)!), [frames, targets]);
   // A name is drawn by how names fade (nameFade.ts), as strongly as its person until the Names settings are moved; one
-  // shown only because they are linked to whoever is held, at Linked names.
+  // shown only because they are linked to whoever is held, at the Faintest name.
   const labelOpacity = useCallback(
     (label: { id: number; linkedOnly: boolean }) => frames.get(label.id)!.opacity * arrived(label.id)
-      * onPaper(label.linkedOnly ? fade.linked : nameStrengthOf(label.id, closest.get(label.id) ?? null, reachOut.has(label.id), focusId, linked, fade, glow.lift)),
+      * onPaper(label.linkedOnly ? fade.faintest : nameStrengthOf(label.id, closest.get(label.id) ?? null, focusId, linked, fade)),
     [frames, arrived, closest, reachOut, focusId, linked, fade, glow, onPaper],
   );
   // Drawn again only when what is in it changes: not for a pan, which moves it whole.
@@ -880,13 +882,13 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
   const webPeople = useMemo(() => drawn.map((p) => ({ id: p.id, colour: glowColours.get(p.id)! })), [drawn, glowColours]);
   // Whoever is surely named unzoomed: the closest `named` (with All, SURELY_NAMED), and everyone to reach out to.
   const lockIn = useCallback(
-    (id: number) => (amongTop(closest.get(id), Math.min(named, SURELY_NAMED)) || reachOut.has(id)) && !nameHidden(closest.get(id) ?? null, reachOut.has(id), fade),
+    (id: number) => (amongTop(closest.get(id), Math.min(named, SURELY_NAMED)) || reachOut.has(id)) && !nameHidden(closest.get(id) ?? null, fade),
     [closest, named, reachOut, fade],
   );
   // Each name drawn in place of its icon, as wide and tall as it was placed: the web fits round it.
   const webNames = useMemo(() => new Map(labels.map((label) => [label.id, { wide: label.right - label.left, tall: label.bottom - label.top }])), [labels]);
   const scene: WebScene | null = web && shape ? {
-    colour, webStrength, reachGlow, light, width, height, top, sun, k, inner, outer, shape, frames, people: webPeople, strength, arrived, lockIn, focusId, linked,
+    colour, webStrength, shadow, reachGlow, light, width, height, top, sun, k, inner, outer, shape, frames, people: webPeople, strength, arrived, lockIn, focusId, linked,
     glows: (id) => glowShown(id, glowing), hoverId, heldId: held !== null && targets.frames.has(held) ? held : null, reduced, names: webNames,
   } : null;
   // Everyone's identicon, as a pattern their marker is filled with; drawn again only when who is on the map changes.

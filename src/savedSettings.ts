@@ -12,8 +12,8 @@
 // No browser code here: the server reads it too.
 
 /** The settings saved on the server, as named in the file: each is its localStorage key without "friend-map.". */
-export const SAVED_SETTINGS = ["names", "web.colour", "web.curve", "web.spokes", "web.strength", "web.top-names", "web.name-padding", "reach-glow",
-  "name-fade.top", "name-fade.bottom", "name-fade.faintest", "name-fade.reach-out", "name-fade.linked"] as const;
+export const SAVED_SETTINGS = ["names", "web.colour", "web.curve", "web.spokes", "web.strength", "web.top-names", "web.name-padding", "web.shadow", "reach-glow",
+  "name-fade.top", "name-fade.bottom", "name-fade.faintest"] as const;
 
 export type SavedName = (typeof SAVED_SETTINGS)[number];
 
@@ -32,12 +32,11 @@ const allowed: Record<SavedName, (value: string) => boolean> = {
   "web.strength": (value) => NUMBER.test(value),
   "web.top-names": (value) => value === "all" || NUMBER.test(value),
   "web.name-padding": (value) => NUMBER.test(value),
+  "web.shadow": (value) => value === "on" || value === "off",
   "reach-glow": (value) => NUMBER.test(value),
   "name-fade.top": (value) => NUMBER.test(value),
   "name-fade.bottom": (value) => NUMBER.test(value),
   "name-fade.faintest": (value) => NUMBER.test(value),
-  "name-fade.reach-out": (value) => value === "bright" || value === "fade",
-  "name-fade.linked": (value) => NUMBER.test(value),
 };
 
 /** The saved setting a page's key is (friend-map.web.spokes is web.spokes), or null for one not saved. */

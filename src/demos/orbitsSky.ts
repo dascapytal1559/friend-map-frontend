@@ -239,7 +239,7 @@ export function nameOrderOf(
  */
 export function nameable(closest: ReadonlyMap<number, number>, reachOut: ReadonlySet<number>, fade: NameFade): { keep: (id: number) => boolean; always: ReadonlySet<number> } {
   if (fade.faintest > 0) return { keep: () => true, always: reachOut };
-  const keep = (id: number) => !nameHidden(closest.get(id) ?? null, reachOut.has(id), fade);
+  const keep = (id: number) => !nameHidden(closest.get(id) ?? null, fade);
   return { keep, always: new Set([...reachOut].filter(keep)) };
 }
 
@@ -317,7 +317,7 @@ export function useNameFit(targets: Targets, input: FitInput): Targets {
 export interface PlacedName extends LabelSpot {
   dx: number;
   dy: number;
-  /** Named only because they are linked to whoever is held: drawn at Linked names (nameFade.ts), LINKED_FLOOR until moved. */
+  /** Named only because they are linked to whoever is held: drawn at the Faintest name (nameFade.ts). */
   linkedOnly: boolean;
 }
 
@@ -358,7 +358,7 @@ export interface NamesInput {
  * in, more of those in view, the closest first (chooseNamed); then whoever is
  * picked out. While someone is held, everyone they share group chats with who
  * is in view is named too, closest first, those with no name of their own
- * faintly (linkedOnly, at Linked names, none at all with it at none); not
+ * faintly (linkedOnly, at the Faintest name, none at all with it at Hidden); not
  * on a phone. Otherwise nobody whose name has faded out entirely (`fade`,
  * nameable) is named. With No name, nobody
  * is named; on a phone, only whoever is picked out. Anyone whose label is
@@ -401,7 +401,7 @@ export function useOrbitNames(input: NamesInput): { labels: PlacedName[]; large:
   const labels = useMemo(() => {
     const named = new Set(namedLabels.map((l) => l.id));
     const focus = focusId !== null && !unnamed && labelRoom.shown(focusId) && !named.has(focusId) ? [focusId] : [];
-    const linkedOnly = held !== null && focusId === held && !phone && fade.linked > 0
+    const linkedOnly = held !== null && focusId === held && !phone && fade.faintest > 0
       ? everyone.order.filter((id) => linked.has(id) && !named.has(id) && labelRoom.shown(id))
       : [];
     const wanted = [...focus, ...linkedOnly].map(candidate).filter(spoken);
@@ -413,7 +413,7 @@ export function useOrbitNames(input: NamesInput): { labels: PlacedName[]; large:
       const p = spot(s.id);
       return { ...s, dx: s.x - p.x, dy: s.y - p.y, linkedOnly: faint.has(s.id) };
     });
-  }, [namedLabels, focusId, held, linked, everyone, unnamed, phone, labelRoom, large, model.people, names.mapLabel, fade.linked]);
+  }, [namedLabels, focusId, held, linked, everyone, unnamed, phone, labelRoom, large, model.people, names.mapLabel, fade.faintest]);
   return { labels, large };
 }
 

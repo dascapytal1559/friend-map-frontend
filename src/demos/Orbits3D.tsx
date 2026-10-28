@@ -214,9 +214,9 @@ export function Orbits3DMap({ model, width, height, inset: top, hover, open, hel
     return f.silent ? f.size : drawnSize(f.size, k);
   };
   const arrived = (id: number) => arrivedShare(frames.get(id)!, targets.placed.get(id)!);
-  // A name is drawn by how names fade (nameFade.ts); one shown only because they are linked to whoever is held, at Linked names.
+  // A name is drawn by how names fade (nameFade.ts); one shown only because they are linked to whoever is held, at the Faintest name.
   const labelOpacity = (label: { id: number; linkedOnly: boolean }) => frames.get(label.id)!.opacity * arrived(label.id)
-    * (label.linkedOnly ? fade.linked : nameStrengthOf(label.id, closest.get(label.id) ?? null, reachOut.has(label.id), focusId, linked, fade, glow.lift));
+    * (label.linkedOnly ? fade.faintest : nameStrengthOf(label.id, closest.get(label.id) ?? null, focusId, linked, fade));
 
   // The names, tilted (orbits3dNames.ts): how far they are in the scene rather than Orbits' flat overlay, and how each
   // is drawn (Orbits' type, the person's colour, bold when picked out, glowing when to reach out to), each drawn once

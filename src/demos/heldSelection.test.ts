@@ -13,7 +13,7 @@ import type { PersonRelationship, RelationshipsReport } from "../archive.ts";
 import { NOBODY, nameStyleStore } from "../names.ts";
 import { buildModel } from "./model.ts";
 import { emptyAt, focusLinksOf, focusOf, heldOnly, linksOf, OrbitMap } from "./Orbits.tsx";
-import { BACKGROUND, LINKED_FLOOR } from "./orbitsLayout.ts";
+import { BACKGROUND, TIER_FLOOR } from "./orbitsLayout.ts";
 
 
 describe("focusOf", () => {
@@ -243,14 +243,13 @@ describe("the map with someone held names everyone they share groups with", () =
     expect(shown).not.toContain("Lone");
   });
 
-  it("names everyone linked to the held person, those not named otherwise at the 40% linked floor", () => {
+  it("names everyone linked to the held person, those not named otherwise at the faintest name", () => {
     const markup = draw(200);
     const shown = named(markup);
     expect(shown).toEqual(expect.arrayContaining(["Hub", "Far", "Drift", "P001"]));
     expect(shown).not.toContain("Lone");
-    expect(LINKED_FLOOR).toBe(0.4);
-    expect(labelOpacity(markup, "Far")).toBe(LINKED_FLOOR);
-    expect(labelOpacity(markup, "Drift")).toBe(LINKED_FLOOR);
+    expect(labelOpacity(markup, "Far")).toBe(TIER_FLOOR);
+    expect(labelOpacity(markup, "Drift")).toBe(TIER_FLOOR);
     // Everyone else at one flat strength, whatever their tier: the 80th closest is no fainter than the second.
     expect(labelOpacity(markup, "P002")).toBe(BACKGROUND);
     expect(labelOpacity(markup, "P080")).toBe(BACKGROUND);

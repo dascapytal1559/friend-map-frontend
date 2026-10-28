@@ -62,7 +62,7 @@ afterAll(() => vi.unstubAllGlobals());
 // Two people, Person A to the right of the spider and Person B beyond them, and Person C below it.
 const frame = (r: number, angle = 0): Frame => ({ angle, r, size: 6, opacity: 1, glow: 0, silent: false } as Frame);
 const scene = (over: Partial<WebScene>): WebScene => ({
-  colour: "amber", webStrength: 0.5, reachGlow: 0, light: false, width: 1200, height: 800, top: 0, sun: { x: 600, y: 400 }, k: 1,
+  colour: "amber", webStrength: 0.5, shadow: true, reachGlow: 0, light: false, width: 1200, height: 800, top: 0, sun: { x: 600, y: 400 }, k: 1,
   inner: 60, outer: 380, shape: webShape({ inner: 60, outer: 380, count: 2, far: 2400 }),
   frames: new Map([[1, frame(150)], [2, frame(300)], [3, frame(200, Math.PI / 2)]]),
   people: [{ id: 1, colour: "#ff0000" }, { id: 2, colour: "#00ff00" }, { id: 3, colour: "#0000ff" }],

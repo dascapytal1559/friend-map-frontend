@@ -150,7 +150,7 @@ export function CityMap({ model, width, height, inset: top, hover, open, held = 
     focusId === null ? personOpacity(rank > 0 ? rank : null, reachOut.has(id), { lift: glow.lift }) : id === focusId ? 1 : linked.has(id) ? 0.7 : BACKGROUND;
   // How strongly a name is drawn: by how names fade (nameFade.ts), as its building until the Names settings are moved.
   const fade = useNameFade();
-  const nameStrength = (id: number, rank: number) => nameStrengthOf(id, rank > 0 ? rank : null, reachOut.has(id), focusId, linked, fade, glow.lift);
+  const nameStrength = (id: number, rank: number) => nameStrengthOf(id, rank > 0 ? rank : null, focusId, linked, fade);
   const rankOf = (id: number) => byId.get(id)?.rank[at] ?? 0;
 
   // The camera: where it is drawn from (`shown`), where it is heading (`goal`), and how quickly it follows.

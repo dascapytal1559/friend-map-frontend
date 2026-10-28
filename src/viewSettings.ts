@@ -21,6 +21,7 @@ import { reachGlowLabel, reachGlowStore } from "./demos/reachGlow.ts";
 import { ORBITS_PRESETS, orbitsCustomStore, orbitsThemeStore } from "./demos/orbitsTheme.ts";
 import type { Hex } from "./demos/themeColour.ts";
 import { COLOURS, webColourStore, webCustomStore, type WebColour } from "./demos/webColour.ts";
+import { webShadowStore } from "./demos/webShadow.ts";
 import { webStrengthStore } from "./demos/webStrength.ts";
 import { SPOKES, webCurveStore, webSpokesStore } from "./demos/webStyle.ts";
 import { NAME_PADDING, namePaddingStores, type MapView } from "./demos/namePadding.ts";
@@ -100,26 +101,15 @@ const shareOrHidden = (share: number) => (share === 0 ? "Hidden" : `${Math.round
 /**
  * The map views' Names group (nameFade.ts), one set for every view: where
  * names start to fade and where they are at their faintest, both at the guide
- * rings, how faint that is, and whether people to reach out to fade too; and,
- * where held people's links are named (`linked`; not the City), how strong
- * those names are.
+ * rings, and how faint that is, which is also how strong a held person's
+ * links' names are where those are named.
  */
-function nameFade({ linked = true } = {}): SettingGroup {
+function nameFade(): SettingGroup {
   const ranks = (about: (n: number) => string) => FADE_STOPS.map((n) => ({ value: n, title: String(n), about: about(n) }));
   return [
     { kind: "toggle", label: "Name fade from", choices: ranks((n) => `The closest ${n} named at full strength, names fainter ring by ring after them`), store: nameFadeStores.top } satisfies ToggleSetting<number>,
     { kind: "toggle", label: "Name fade to", choices: ranks((n) => `Names at their faintest past the closest ${n}`), store: nameFadeStores.bottom } satisfies ToggleSetting<number>,
     { kind: "slider", label: "Faintest name", min: 0, max: 1, step: 0.05, store: nameFadeStores.faintest, format: shareOrHidden },
-    {
-      kind: "toggle",
-      label: "Reach-out names",
-      choices: [
-        { value: true, title: "Stay bright", about: "Someone to reach out to is named at least as strongly as the last step before the faintest" },
-        { value: false, title: "Fade too", about: "Someone to reach out to fades by their place, as everyone does" },
-      ],
-      store: nameFadeStores.reachOut,
-    } satisfies ToggleSetting<boolean>,
-    ...(linked ? [{ kind: "slider", label: "Linked names", min: 0, max: 1, step: 0.05, store: nameFadeStores.linked, format: shareOrHidden } satisfies SliderSetting] : []),
   ];
 }
 
@@ -152,10 +142,19 @@ export const VIEW_SETTINGS: Readonly<Record<string, readonly SettingGroup[]>> = 
       { kind: "slider", label: "Strand curve", min: 0, max: 1, step: 0.05, store: webCurveStore },
       { kind: "slider", label: "Spokes", ...SPOKES, store: webSpokesStore, format: String },
       { kind: "slider", label: "Web strength", min: 0, max: 1, step: 0.05, store: webStrengthStore },
+      {
+        kind: "toggle",
+        label: "Spider shadow",
+        choices: [
+          { value: true, title: "On", about: "The spider casts its shadow on the web" },
+          { value: false, title: "Off", about: "The spider stands on the web without a shadow" },
+        ],
+        store: webShadowStore,
+      } satisfies ToggleSetting<boolean>,
     ],
     REACH_GLOW,
   ],
-  city: [[topNames("city")], nameFade({ linked: false }), REACH_GLOW],
+  city: [[topNames("city")], nameFade(), REACH_GLOW],
   calendar: [[
     {
       kind: "toggle",

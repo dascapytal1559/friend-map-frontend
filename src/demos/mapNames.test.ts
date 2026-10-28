@@ -43,12 +43,12 @@ describe("in the menu", () => {
   const labels = (html: string) => [...html.matchAll(/class="view-switcher__label"[^>]*>([^<]+)</g)].map((m) => m[1]);
 
   it("offers no choice of where names go: Name format, then each view's own, Show top names and the Names among them", () => {
-    const fade = ["Name fade from", "Name fade to", "Faintest name", "Reach-out names", "Linked names"];
+    const fade = ["Name fade from", "Name fade to", "Faintest name"];
     expect(labels(settings("orbits"))).toEqual(["Name format", "Look", "Theme", "Show top names", "Name padding", ...fade, "Reach-out glow"]);
-    expect(labels(settings("web"))).toEqual(["Name format", "Look", "Show top names", "Name padding", ...fade, "Colour", "Strand curve", "Spokes", "Web strength", "Reach-out glow"]);
+    expect(labels(settings("web"))).toEqual(["Name format", "Look", "Show top names", "Name padding", ...fade, "Colour", "Strand curve", "Spokes", "Web strength", "Spider shadow", "Reach-out glow"]);
     expect(labels(settings("orbits-3d"))).toEqual(["Name format", "Look", "Show top names", "Name padding", ...fade, "Reach-out glow"]);
     expect(labels(settings("circles"))).toEqual(["Name format", "Look", ...fade, "Reach-out glow"]);
-    expect(labels(settings("city"))).toEqual(["Name format", "Look", "Show top names", ...fade.slice(0, 4), "Reach-out glow"]);
+    expect(labels(settings("city"))).toEqual(["Name format", "Look", "Show top names", ...fade, "Reach-out glow"]);
     for (const view of ["orbits", "orbits-3d", "circles", "web", "city"]) expect(settings(view), view).not.toMatch(/Name placement|Next to|On icon|Name only/);
     // The demo's views offer the same.
     expect(labels(settings("orbits-3d", true))).toEqual(labels(settings("orbits-3d")));

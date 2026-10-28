@@ -75,6 +75,8 @@ export interface WebScene {
   colour: WebColour;
   /** How strongly the web is drawn, 0 to 1 (webStrength.ts). */
   webStrength: number;
+  /** Whether the spider casts its shadow on the web (webShadow.ts). */
+  shadow: boolean;
   /** How strongly everyone to reach out to glows, 0 (the usual) to 1 (reachGlow.ts). */
   reachGlow: number;
   /** Whether the web is drawn on paper, the light look (src/theme.ts): its theme as ink (webTheme.ts). */
@@ -632,7 +634,7 @@ export function drawWeb(ctx: Ctx, scene: WebScene, motion: WebMotion, now: numbe
   ctx.save();
   ctx.scale(grow, grow);
   ctx.globalAlpha = booted ? 1 : clamp01((t - 200) / 500);
-  drawSpider(ctx, spider.rig, size, spider.eyes, spiderInk, now, { reduced: scene.reduced, px: grow });
+  drawSpider(ctx, spider.rig, size, spider.eyes, spiderInk, now, { reduced: scene.reduced, px: grow, shadow: scene.shadow });
   ctx.restore();
   // The hold comes from the spider's mouth, the hover's beam from its eyes.
   const from = (on: BeamFrom) => {

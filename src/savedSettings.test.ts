@@ -9,8 +9,8 @@ import { cleanSaved, NAME_STYLE_VALUES, SAVED_SETTINGS, SAVED_SETTINGS_ID, saved
 describe("the saved settings", () => {
   it("are the Spider web's, with the names choice, the Reach-out glow and the map views' Names, named by their keys without friend-map.", () => {
     expect(SAVED_SETTINGS).toEqual([
-      "names", "web.colour", "web.curve", "web.spokes", "web.strength", "web.top-names", "web.name-padding", "reach-glow",
-      "name-fade.top", "name-fade.bottom", "name-fade.faintest", "name-fade.reach-out", "name-fade.linked",
+      "names", "web.colour", "web.curve", "web.spokes", "web.strength", "web.top-names", "web.name-padding", "web.shadow", "reach-glow",
+      "name-fade.top", "name-fade.bottom", "name-fade.faintest",
     ]);
     expect([savedName("friend-map.web.spokes"), savedName("friend-map.names"), savedName("friend-map.reach-glow"), savedName("friend-map.web.spokes@demo"), savedName("friend-map.orbits.top-names"), savedName("web.spokes")]).toEqual([
       "web.spokes", "names", "reach-glow", null, null, null,
@@ -30,9 +30,10 @@ describe("the saved settings", () => {
     expect(cleanSaved({ "reach-glow": "lots" })).toEqual({});
     expect(cleanSaved({ "web.colour": "Ada Sample", names: "Bruno" })).toEqual({});
     expect(cleanSaved({ "name-fade.top": "25", "name-fade.faintest": "0", "name-fade.reach-out": "fade", "name-fade.linked": "-0.4", "name-fade.bottom": "far" })).toEqual({
-      "name-fade.top": "25", "name-fade.faintest": "0", "name-fade.reach-out": "fade",
+      "name-fade.top": "25", "name-fade.faintest": "0",
     });
-    expect(cleanSaved({ "name-fade.reach-out": "true" })).toEqual({});
+    expect(cleanSaved({ "web.shadow": "off" })).toEqual({ "web.shadow": "off" });
+    expect(cleanSaved({ "web.shadow": "true" })).toEqual({});
     for (const junk of [null, "names", ["names"], 7]) expect(cleanSaved(junk)).toEqual({});
   });
 

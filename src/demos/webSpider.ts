@@ -321,8 +321,8 @@ function turn(p: XY, angle: number): XY {
  * palps. `px` is how many screen pixels a rig pixel is (the zoom's
  * growth), which decides how much fine detail is drawn.
  */
-export function drawSpider(ctx: Ctx, rig: Rig, s: number, eyes: Eyes, ink: SpiderInk, now: number, options: { reduced: boolean; px: number }): void {
-  const { reduced, px } = options;
+export function drawSpider(ctx: Ctx, rig: Rig, s: number, eyes: Eyes, ink: SpiderInk, now: number, options: { reduced: boolean; px: number; shadow: boolean }): void {
+  const { reduced, px, shadow } = options;
   const m = materialOf(ink);
   const b = s * BODY;
   const swell = 1 - 0.03 * rig.crouch;
@@ -338,30 +338,32 @@ export function drawSpider(ctx: Ctx, rig: Rig, s: number, eyes: Eyes, ink: Spide
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
 
-  // The shadows, on the web: the body's parts by the hips' height, and each leg's chain of joints by its own.
-  ctx.save();
-  ctx.globalAlpha = SHADOW_ALPHA;
-  ctx.fillStyle = "#000000";
-  ctx.strokeStyle = "#000000";
-  ctx.translate(rig.sway.x + height * SHADOW.x, rig.sway.y + height * SHADOW.y);
-  const bodyShadow = new Path2D();
-  bodyShadow.ellipse(pedicel.x, pedicel.y, 0.2 * b, 0.2 * b, 0, 0, Math.PI * 2);
-  const abdomenAt = bodyToWeb({ x: 0, y: 0.42 }, rig.abdomen, b);
-  bodyShadow.ellipse(pedicel.x + abdomenAt.x, pedicel.y + abdomenAt.y, 0.3 * b, 0.4 * b, rig.abdomen + Math.PI / 2, 0, Math.PI * 2);
-  const thoraxAt = bodyToWeb({ x: 0, y: -0.2 }, rig.chassis, b);
-  bodyShadow.ellipse(thoraxAt.x, thoraxAt.y, 0.22 * b, 0.26 * b, rig.chassis + Math.PI / 2, 0, Math.PI * 2);
-  const headAt = bodyToWeb({ x: 0, y: -0.14 }, rig.head, b);
-  bodyShadow.ellipse(neck.x + headAt.x, neck.y + headAt.y, 0.16 * b, 0.22 * b, rig.head + Math.PI / 2, 0, Math.PI * 2);
-  ctx.fill(bodyShadow);
-  ctx.restore();
-  ctx.globalAlpha = SHADOW_ALPHA;
-  ctx.strokeStyle = "#000000";
-  ctx.lineWidth = 0.036 * s;
-  for (const pose of poses) {
-    ctx.globalAlpha = SHADOW_ALPHA * Math.max(0.3, 1 - 0.35 * pose.up);
-    ctx.stroke(shadowOf([pose.hip, pose.trochanter, pose.knee, pose.patella, pose.ankle, pose.tarsus, pose.foot]));
+  // The shadows, on the web, unless turned off (webShadow.ts): the body's parts by the hips' height, and each leg's chain of joints by its own.
+  if (shadow) {
+    ctx.save();
+    ctx.globalAlpha = SHADOW_ALPHA;
+    ctx.fillStyle = "#000000";
+    ctx.strokeStyle = "#000000";
+    ctx.translate(rig.sway.x + height * SHADOW.x, rig.sway.y + height * SHADOW.y);
+    const bodyShadow = new Path2D();
+    bodyShadow.ellipse(pedicel.x, pedicel.y, 0.2 * b, 0.2 * b, 0, 0, Math.PI * 2);
+    const abdomenAt = bodyToWeb({ x: 0, y: 0.42 }, rig.abdomen, b);
+    bodyShadow.ellipse(pedicel.x + abdomenAt.x, pedicel.y + abdomenAt.y, 0.3 * b, 0.4 * b, rig.abdomen + Math.PI / 2, 0, Math.PI * 2);
+    const thoraxAt = bodyToWeb({ x: 0, y: -0.2 }, rig.chassis, b);
+    bodyShadow.ellipse(thoraxAt.x, thoraxAt.y, 0.22 * b, 0.26 * b, rig.chassis + Math.PI / 2, 0, Math.PI * 2);
+    const headAt = bodyToWeb({ x: 0, y: -0.14 }, rig.head, b);
+    bodyShadow.ellipse(neck.x + headAt.x, neck.y + headAt.y, 0.16 * b, 0.22 * b, rig.head + Math.PI / 2, 0, Math.PI * 2);
+    ctx.fill(bodyShadow);
+    ctx.restore();
+    ctx.globalAlpha = SHADOW_ALPHA;
+    ctx.strokeStyle = "#000000";
+    ctx.lineWidth = 0.036 * s;
+    for (const pose of poses) {
+      ctx.globalAlpha = SHADOW_ALPHA * Math.max(0.3, 1 - 0.35 * pose.up);
+      ctx.stroke(shadowOf([pose.hip, pose.trochanter, pose.knee, pose.patella, pose.ankle, pose.tarsus, pose.foot]));
+    }
+    ctx.globalAlpha = 1;
   }
-  ctx.globalAlpha = 1;
 
   // The legs, the rear pairs first.
   for (let i = rig.legs.length - 1; i >= 0; i--) drawLeg(ctx, poses[i], s, m, ink, px, rig.legs[i].side);

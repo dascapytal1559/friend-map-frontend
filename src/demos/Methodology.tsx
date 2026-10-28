@@ -20,7 +20,7 @@ import { Curve } from "./Curve.tsx";
 import { DECISIONS, type Decision } from "./decisions.ts";
 import type { DemoModel } from "./model.ts";
 import type { OrbitOrder } from "./Orbits.tsx";
-import { BACKGROUND, LINKED_FLOOR, rankFraction, rings, TIER_FLOOR, TIERS } from "./orbitsLayout.ts";
+import { BACKGROUND, rankFraction, rings, TIER_FLOOR, TIERS } from "./orbitsLayout.ts";
 import { ALL, DEFAULT_TOP_NAMES } from "./topNames.ts";
 import { windowLabel } from "./trend.ts";
 
@@ -302,7 +302,7 @@ export function Methodology({ model, onClose, demo = false, order = "name", name
             ? "friend circles: people who share group chats sit together, each circle an arc named by a common tag"
             : "A to Z clockwise from the top; the Circles page groups friend circles"],
           ["Names", <>{named === ALL ? "everyone with a closeness score" : `the ${named} closest`} (Show top names in the view&apos;s settings), everyone to reach out to, whoever is picked out (on a phone, only whoever is picked out); more as you zoom; each drawn in place of its person&apos;s icon{order === "circles" ? "" : ", turned a little round its orbit, never nearer the sun or further, so names cover each other as little as can be"}</>],
-          ["Picked out", <>under the pointer or panel open: full strength, their group chats&apos; people nearly, the rest {percent(BACKGROUND)}; with a panel open, those people all named, none under {percent(LINKED_FLOOR)}</>],
+          ["Picked out", <>under the pointer or panel open: full strength, their group chats&apos; people nearly, the rest {percent(BACKGROUND)}; with a panel open, those people all named, as faint as the faintest name (Names, in the view&apos;s settings)</>],
         ]} />
         <p className="method__note">
           Hover anyone for their score, rank and trail. Direction says nothing about closeness.{" "}

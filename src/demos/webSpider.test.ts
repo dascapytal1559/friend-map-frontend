@@ -55,12 +55,24 @@ describe("the spider", () => {
   it("draws its legs and body on a recording canvas, at the hub's size and grown by the zoom, moving and still", () => {
     for (const [px, reduced] of [[1, false], [3.5, false], [1, true]] as const) {
       const { ctx, counts } = fakeCanvas();
-      drawSpider(ctx, newRig(UP, 0, 40), 40, eyes, ink, 1000, { reduced, px });
+      drawSpider(ctx, newRig(UP, 0, 40), 40, eyes, ink, 1000, { reduced, px, shadow: true });
       // Six plates a leg, eight legs, a body: hundreds of fills, more strokes.
       expect(counts.fill).toBeGreaterThan(100);
       expect(counts.stroke).toBeGreaterThan(counts.fill / 2);
       expect(counts.image).toBeGreaterThan(8);
     }
+  });
+
+  it("casts its shadow, its body's and each leg's, only with the shadow on", () => {
+    const drawn = (shadow: boolean) => {
+      const { ctx, counts } = fakeCanvas();
+      drawSpider(ctx, newRig(UP, 0, 40), 40, eyes, ink, 1000, { reduced: true, px: 1, shadow });
+      return counts;
+    };
+    const on = drawn(true);
+    const off = drawn(false);
+    expect(on.fill - off.fill).toBe(1);
+    expect(on.stroke - off.stroke).toBe(8);
   });
 
   it("fires its beams from the head: the mouth ahead of the eyes, both ahead of the hub, turning with the head", () => {

@@ -528,12 +528,6 @@ export const TIERS: ReadonlyArray<{ closest: number; opacity: number }> = [
 export const TIER_FLOOR = 0.2;
 
 /**
- * The least strength anything drawn for someone linked to the held person has:
- * a name shown only for the link, so people far out stay readable while held.
- */
-export const LINKED_FLOOR = 0.4;
-
-/**
  * How strongly everyone else is drawn while someone is picked out: one flat
  * strength whatever their tier, so the picked-out person and their links stand
  * out from a quiet background.

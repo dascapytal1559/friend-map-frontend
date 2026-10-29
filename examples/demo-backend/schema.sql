@@ -78,13 +78,12 @@ CREATE INDEX messages_by_chat ON messages (chat_id, sent_at, id);
 CREATE INDEX messages_by_sender ON messages (sender_id, sent_at);
 CREATE INDEX messages_by_day ON messages (day);
 
--- Hangouts ("catch-ups" in the contract): time you spent with people, on a day, for some hours.
+-- Hangouts ("catch-ups" in the contract): time you spent with people in person, on a day, for some hours.
 CREATE TABLE catch_ups (
   id INTEGER PRIMARY KEY,
   day TEXT NOT NULL,                          -- YYYY-MM-DD, local
   time TEXT,                                  -- HH:MM, or NULL
   hours REAL NOT NULL,
-  by_call INTEGER NOT NULL DEFAULT 0,
   note TEXT NOT NULL DEFAULT '',
   others INTEGER NOT NULL DEFAULT 0           -- how many more were there, unnamed
 );

@@ -16,7 +16,7 @@ const ada = { id: 7, name: "Ada Sample", aliases: [] };
 const bruno = { id: 8, name: "Bruno Placeholder", aliases: [] };
 const away: Trip = { lastDay: "2026-10-06", endTime: "14:00", privateFrom: "00:00", privateTo: "10:00" };
 /** Left at 6 pm on 4 Oct, home at 2 pm on the 6th: 6 hours, then 14, then 4. */
-const trip: CatchUp = { id: 5, day: "2026-10-04", time: "18:00", trip: away, hours: 24, byCall: false, note: "Up the coast", people: [ada, bruno], others: 0 };
+const trip: CatchUp = { id: 5, day: "2026-10-04", time: "18:00", trip: away, hours: 24, note: "Up the coast", people: [ada, bruno], others: 0 };
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -85,7 +85,7 @@ describe("Add event's Several days", () => {
     expect(started.value).toBe("2026-10-04");
     expect(ended.getAttribute("min")).toBe("2026-10-05");
     await submit();
-    expect(api.addCatchUp).toHaveBeenCalledWith({ day: "2026-10-04", time: "18:00", trip: away, hours: 24, byCall: false, note: "", personIds: [7], others: 0 });
+    expect(api.addCatchUp).toHaveBeenCalledWith({ day: "2026-10-04", time: "18:00", trip: away, hours: 24, note: "", personIds: [7], others: 0 });
     expect(changeChip.get()).toMatchObject({ what: { kind: "event", done: "added", what: "hangout of 24 hours over 3 days on 4–6 Oct 2026 from 6:00 pm" }, changeset: 81 });
   });
 

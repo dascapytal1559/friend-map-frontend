@@ -192,11 +192,12 @@ describe("Methodology", () => {
     expect(text(html.replace(history, ""))).not.toMatch(/\bMet\b|\bLives\b|quick catch-up|phone catch-up|kind/i);
   });
 
-  it("says an older hangout by call and that day's calls count the longer, never both", () => {
+  it("says a call you log counts as any other, and one the call history brings in too counts once", () => {
     expect(text(page())).toContain("and the calls you log with Add event, which count as any other call, except that one with several people gives each their share of it, as a hangout does: an hour with three adds 40 minutes to each one's calls that day");
     expect(text(page())).toMatch(/a 1-hour call with 3 people\s*33.33 messages each/);
     expect(text(page())).toContain("Hangoutshours × ");
-    expect(text(page())).toContain("By callan older hangout ticked By call may be a call your phone has too, so on its day it and your calls with them count the longer, never both");
+    expect(text(page())).toContain("Logged twicea phone or FaceTime call you log with one person that your phone's call history brings in too counts once: on its day, the calls you logged with them and those from the call history count the longer, never both");
+    expect(text(page())).not.toMatch(/ticked By call/);
   });
 
   it("shares a group's time half by all, half split, at the setting now, against an equal split", () => {

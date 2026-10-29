@@ -134,7 +134,7 @@ describe("a day's totals", () => {
     expect(sumTotals([])).toEqual(NO_TOTALS);
     const panelDay: CalendarDay = {
       day: "2026-10-04",
-      catchUps: [{ id: 1, day: "2026-10-04", time: null, hours: 3, trip: null, byCall: false, note: "dinner", others: 0, people: [person(1), person(2)] }],
+      catchUps: [{ id: 1, day: "2026-10-04", time: null, hours: 3, trip: null, note: "dinner", others: 0, people: [person(1), person(2)] }],
       calls: [{ id: 1, platform: "phone", messageId: null, manual: false, accountId: 9, person: 1, at: Date.parse("2026-10-04T18:00:00+11:00"), durationSeconds: 1860, direction: "outgoing", answered: true, service: "phone", group: null, people: 1, others: 0, note: "" }],
       chats: [chat(11, "direct", [1], 40), chat(13, "group", [1, 2, 3], 300), chat(12, "direct", [3], 7)],
       people: [1, 2, 3].map((id) => ({ ...person(id), tags: id === 3 ? ["archive"] : [], identiconSeed: "a1b2", identiconHue: null })),
@@ -247,7 +247,7 @@ describe("a trip on the calendar", () => {
   // Ada and Bo away from 6 pm on 4 Oct to 2 pm on the 6th, private midnight to 10 am: 6 hours, then 14, then 4.
   const trip = {
     id: 9, day: "2026-10-04", time: "18:00", trip: { lastDay: "2026-10-06", endTime: "14:00", privateFrom: "00:00", privateTo: "10:00" },
-    hours: 24, byCall: false, note: "", others: 0, people: [person(1), person(2)],
+    hours: 24, note: "", others: 0, people: [person(1), person(2)],
   };
   const on = (day: string): CalendarDay => ({
     day, catchUps: [trip], calls: [], chats: [], people: [1, 2].map((id) => ({ ...person(id), tags: [], identiconSeed: "a1b2", identiconHue: null })),
@@ -278,7 +278,7 @@ describe("a trip on the calendar", () => {
 describe("the day panel as drawn", () => {
   const data: CalendarDay = {
     day: "2026-10-04",
-    catchUps: [{ id: 1, day: "2026-10-04", time: "19:30", hours: 3, trip: null, byCall: false, note: "Dinner at the noodle place", others: 2, people: [person(1), person(2)] }],
+    catchUps: [{ id: 1, day: "2026-10-04", time: "19:30", hours: 3, trip: null, note: "Dinner at the noodle place", others: 2, people: [person(1), person(2)] }],
     calls: [
       { id: 1, platform: "phone", messageId: null, manual: false, accountId: 9, person: 1, at: Date.parse("2026-10-04T18:05:00+11:00"), durationSeconds: 1860, direction: "outgoing", answered: true, service: "phone", group: null, people: 1, others: 0, note: "" },
       { id: 2, platform: "phone", messageId: null, manual: false, accountId: 8, person: 3, at: Date.parse("2026-10-04T19:00:00+11:00"), durationSeconds: 0, direction: "incoming", answered: false, service: "phone", group: null, people: 1, others: 0, note: "" },
@@ -343,12 +343,6 @@ describe("the day panel as drawn", () => {
     expect(html).toMatch(/Bo Example<\/button><span class="muted"> · on Phone, logged by you<\/span><\/span><span>Call · 10 min<\/span>/);
   });
 
-  it("says a catch-up by call was by call, after its hours", () => {
-    const html = renderToStaticMarkup(createElement(DayContent, {
-      data: { ...data, catchUps: [{ ...data.catchUps[0], byCall: true }] }, hide: {}, groups: false, onOpenPerson: () => {},
-    }));
-    expect(html).toContain("7:30 pm · <strong>3 hours</strong> by call with ");
-  });
 
   it("adds the group chats with group messages included, named by their people when untitled", () => {
     const html = draw(true);

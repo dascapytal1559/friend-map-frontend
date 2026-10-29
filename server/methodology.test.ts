@@ -27,7 +27,7 @@ const REPORT: ScoreReport = {
   generatedAt: 0,
   people: [{ id: ADA, months: [month(10, 10)] }, { id: CY, months: [] }, { id: WALT, months: [] }],
   groups: [],
-  catchUps: [{ id: 1, day: TODAY, hours: 2, time: null, trip: null, byCall: false, others: 0, personIds: [CY, WALT] }],
+  catchUps: [{ id: 1, day: TODAY, hours: 2, time: null, trip: null, others: 0, personIds: [CY, WALT] }],
   callDays: [],
 };
 

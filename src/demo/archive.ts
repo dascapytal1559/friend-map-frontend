@@ -542,8 +542,8 @@ export class DemoArchive {
     return this.data.catchUps
       .filter((c) => personId === undefined || c.personIds.includes(personId))
       .sort((a, b) => inOrder(b, a))
-      .map(({ id, day, time, trip, hours, byCall, note, personIds, others }) => ({
-        id, day, time, trip, hours, byCall, note, others,
+      .map(({ id, day, time, trip, hours, note, personIds, others }) => ({
+        id, day, time, trip, hours, note, others,
         people: personIds
           .map((pid) => this.personById.get(pid)!)
           .sort((a, b) => nocase(a.name, b.name) || a.id - b.id)
@@ -553,7 +553,7 @@ export class DemoArchive {
 
   /** The catch-ups for the closeness score, oldest first. */
   private scoredCatchUps() {
-    return this.data.catchUps.map(({ id, day, time, trip, hours, byCall, others, personIds }) => ({ id, day, time, trip, hours, byCall, others, personIds }));
+    return this.data.catchUps.map(({ id, day, time, trip, hours, others, personIds }) => ({ id, day, time, trip, hours, others, personIds }));
   }
 
   activity(id: number, settings: ClosenessSettings): PersonActivity | null {

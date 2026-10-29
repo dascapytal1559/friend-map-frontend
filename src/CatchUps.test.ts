@@ -17,14 +17,14 @@ const hangout = (fields: Partial<CatchUp> = {}, id?: number): EventStart =>
   id === undefined ? { ...newEvent(ada), kind: "hangout", hangout: { ...freshCatchUp(ada), ...fields } } : { kind: "hangout", id, hangout: { ...freshCatchUp(ada), ...fields } };
 
 describe("Add event's form", () => {
-  it("starts a hangout on today, no time, one hour, in person, with them; and a call on today with them, no time or length, on the phone", () => {
-    expect(freshCatchUp(ada)).toEqual({ day: dayKey(Date.now()), time: null, hours: 1, trip: null, byCall: false, note: "", people: [ada], others: 0 });
+  it("starts a hangout on today, no time, one hour, with them; and a call on today with them, no time or length, on the phone", () => {
+    expect(freshCatchUp(ada)).toEqual({ day: dayKey(Date.now()), time: null, hours: 1, trip: null, note: "", people: [ada], others: 0 });
     expect(newEvent(ada, "2026-10-04")).toEqual({
       kind: "hangout",
       hangout: { ...freshCatchUp(ada), day: "2026-10-04" },
-      call: { people: [{ person: ada, on: null }], day: "2026-10-04", time: "", length: "", note: "" },
+      call: { people: [{ person: ada, on: null }], day: "2026-10-04", time: "", length: "", note: "", others: 0 },
     });
-    expect(freshCall()).toEqual({ people: [], day: dayKey(Date.now()), time: "", length: "", note: "" });
+    expect(freshCall()).toEqual({ people: [], day: dayKey(Date.now()), time: "", length: "", note: "", others: 0 });
   });
 
   it("opens on Hangout with the toggle for Call and Hangout at its top, Message not offered yet", () => {
@@ -38,24 +38,24 @@ describe("Add event's form", () => {
   it("offers the toggle on a hangout or call being changed, the other kind making it one", () => {
     expect(form(hangout({}, 3))).toContain('<form class="catch-up-form" aria-label="Change this hangout"><div class="event-kind" role="group" aria-label="What kind of event: the other makes it one">'
       + '<button type="button" aria-pressed="false" title="Make it a call">Call</button><button type="button" aria-pressed="true">Hangout</button></div>');
-    const call = form({ kind: "call", id: 4, call: { people: [{ person: ada, on: { accountId: 11, platform: "imessage" } }], day: "2026-10-04", time: "19:30", length: "25", note: "" } }, async () => true);
+    const call = form({ kind: "call", id: 4, call: { people: [{ person: ada, on: { accountId: 11, platform: "imessage" } }], day: "2026-10-04", time: "19:30", length: "25", note: "", others: 0 } }, async () => true);
     expect(call).toContain('<button type="button" aria-pressed="true">Call</button><button type="button" aria-pressed="false" title="Make it a hangout">Hangout</button></div>');
     expect(call).toContain(">Save</button>");
     expect(call).toContain(">Delete</button>");
   });
 
-  it("makes a call a hangout with everyone on it, its date, time, length in hours and note, in person", () => {
-    const call: CallDraft = { people: [{ person: ada, on: { accountId: 11, platform: "imessage" } }, { person: bea, on: { accountId: null, app: "discord" } }], day: "2026-10-04", time: "19:30", length: "1:30", note: "Planned the trip" };
-    expect(hangoutOfCall(call)).toEqual({ day: "2026-10-04", time: "19:30", hours: 1.5, trip: null, byCall: false, note: "Planned the trip", people: [ada, bea], others: 0 });
+  it("makes a call a hangout with everyone on it, its date, time, length in hours, note and unnamed others", () => {
+    const call: CallDraft = { people: [{ person: ada, on: { accountId: 11, platform: "imessage" } }, { person: bea, on: { accountId: null, app: "discord" } }], day: "2026-10-04", time: "19:30", length: "1:30", note: "Planned the trip", others: 2 };
+    expect(hangoutOfCall(call)).toEqual({ day: "2026-10-04", time: "19:30", hours: 1.5, trip: null, note: "Planned the trip", people: [ada, bea], others: 2 });
     // To two places, as a hangout keeps them: 25 minutes is 0.42 hours, a minute 0.02; with no length yet, an hour.
     expect(hangoutOfCall({ ...call, length: "25" }).hours).toBe(0.42);
     expect(hangoutOfCall({ ...call, length: "1" }).hours).toBe(0.02);
     expect(hangoutOfCall({ ...call, length: "" }).hours).toBe(1);
   });
 
-  it("makes a hangout a call with everyone named at it on their usual account, its date, time (none to fill in without one), hours as minutes and note", () => {
-    const dinner = { day: "2026-10-04", time: null, hours: 2.5, trip: null, byCall: false, note: "Dinner", people: [ada, bea], others: 20 };
-    expect(callOfHangout(dinner)).toEqual({ people: [{ person: ada, on: null }, { person: bea, on: null }], day: "2026-10-04", time: "", length: "2:30", note: "Dinner" });
+  it("makes a hangout a call with everyone named at it on their usual account, its date, time (none to fill in without one), hours as minutes, note and unnamed others", () => {
+    const dinner = { day: "2026-10-04", time: null, hours: 2.5, trip: null, note: "Dinner", people: [ada, bea], others: 20 };
+    expect(callOfHangout(dinner)).toEqual({ people: [{ person: ada, on: null }, { person: bea, on: null }], day: "2026-10-04", time: "", length: "2:30", note: "Dinner", others: 20 });
     expect(callOfHangout({ ...dinner, time: "19:30", hours: 0.01 })).toMatchObject({ time: "19:30", length: "1" });
     expect(callOfHangout({ ...dinner, hours: 24 }).length).toBe("24:00");
   });
@@ -94,7 +94,7 @@ describe("Add event's form", () => {
   it("asks a call for its date, the time it started (needed), its length and everyone on it, each chip saying what it was on with them", () => {
     const draft: CallDraft = {
       people: [{ person: ada, on: { accountId: 11, platform: "imessage" } }, { person: bea, on: { accountId: null, app: "telegram" } }],
-      day: "2026-10-04", time: "19:30", length: "1:30", note: "",
+      day: "2026-10-04", time: "19:30", length: "1:30", note: "", others: 0,
     };
     const html = form({ kind: "call", id: 4, call: draft });
     expect(html).toContain('<div class="time-box" role="group" aria-label="Time it started"><input class="time-box__part" inputMode="numeric" aria-label="Hour" placeholder="--" maxLength="2" pattern="0?[1-9]|1[0-2]" required="" value="7"/>');
@@ -124,7 +124,7 @@ describe("Add event's form", () => {
     expect([25, 60, 90, 125].map(callLengthText)).toEqual(["25", "1:00", "1:30", "2:05"]);
     const draft: CallDraft = {
       people: [{ person: ada, on: { accountId: 11, platform: "imessage" } }, { person: bea, on: { accountId: null, app: "telegram" } }],
-      day: "2026-10-04", time: "19:30", length: "1:30", note: "",
+      day: "2026-10-04", time: "19:30", length: "1:30", note: "", others: 0,
     };
     expect(callInput(draft)).toEqual({
       people: [{ personId: ada.id, accountId: 11, app: null }, { personId: bea.id, accountId: null, app: "telegram" }],
@@ -165,14 +165,14 @@ describe("the people on a call, each with what it was on", () => {
     expect(usualCallOn([account(13, "x", "adasample")], [])).toEqual({ accountId: null, app: "phone" });
   });
 
-  it("opens a logged call's group to change it with everyone on it on what it was on", () => {
+  it("opens a logged call's group to change it with everyone on it on what it was on, and the others on it unnamed", () => {
     const draft = callDraftOf({
       at: Date.parse("2026-10-04T19:30:00+11:00"), durationSeconds: 5400, note: "",
       people: [{ callId: 5, person: ada, accountId: 11, platform: "imessage" }, { callId: 6, person: bea, accountId: null, platform: "wechat" }],
-    });
+    }, 2);
     expect(draft).toEqual({
       people: [{ person: ada, on: { accountId: 11, platform: "imessage" } }, { person: bea, on: { accountId: null, app: "wechat" } }],
-      day: "2026-10-04", time: "19:30", length: "1:30", note: "",
+      day: "2026-10-04", time: "19:30", length: "1:30", note: "", others: 2,
     });
   });
 
@@ -218,7 +218,7 @@ describe("the hangouts list", () => {
   const field = (catchUps: CatchUp[], open = true) => createElement(CatchUpsField, { person: ada, catchUps, open, onToggle: () => {}, onOpenPerson: () => {} });
 
   it("closed: the heading with the count, Add event beside it, and no list", () => {
-    const catchUps: CatchUp[] = [{ id: 1, day: "2026-09-27", time: null, hours: 1, trip: null, byCall: false, note: "", people: [ada], others: 0 }];
+    const catchUps: CatchUp[] = [{ id: 1, day: "2026-09-27", time: null, hours: 1, trip: null, note: "", people: [ada], others: 0 }];
     const html = renderToStaticMarkup(field(catchUps, false));
     expect(html).toBe('<div class="field"><span class="field__head"><button type="button" class="field__toggle" aria-expanded="false"><span aria-hidden="true">▸</span> Hangouts · 1</button><button type="button" class="link-button catch-ups__add">Add event</button></span></div>');
   });
@@ -228,21 +228,23 @@ describe("the hangouts list", () => {
     expect(html).not.toContain("Add event");
   });
 
-  it("names each by its hours, by call when it was, its date and its time when it has one", () => {
+  it("names each by its hours, its date and its time when it has one, never by call", () => {
     const catchUps: CatchUp[] = [
-      { id: 2, day: "2026-10-04", time: "19:30", hours: 2.5, trip: null, byCall: false, note: "dinner", people: [ada, bea], others: 0 },
-      { id: 1, day: "2026-09-27", time: null, hours: 1, trip: null, byCall: true, note: "", people: [ada], others: 0 },
+      { id: 2, day: "2026-10-04", time: "19:30", hours: 2.5, trip: null, note: "dinner", people: [ada, bea], others: 0 },
+      // One a backend still sends with byCall, from before calls were their own kind: a hangout like any other.
+      { id: 1, day: "2026-09-27", time: null, hours: 1, trip: null, byCall: true, note: "", people: [ada], others: 0 } as CatchUp,
     ];
     const html = renderToStaticMarkup(field(catchUps));
     expect(html).toContain("<strong>2.5 hours</strong> · 4 Oct 2026, 7:30 pm");
-    expect(html).toContain("<strong>1 hour by call</strong> · 27 Sept 2026");
+    expect(html).toContain("<strong>1 hour</strong> · 27 Sept 2026");
+    expect(html).not.toContain("by call");
   });
 
   it("says how many more were there unnamed, after anyone else, or alone", () => {
     const catchUps: CatchUp[] = [
-      { id: 3, day: "2026-10-05", time: null, hours: 5, trip: null, byCall: false, note: "", people: [ada, bea], others: 20 },
-      { id: 2, day: "2026-10-04", time: null, hours: 2, trip: null, byCall: false, note: "", people: [ada], others: 1 },
-      { id: 1, day: "2026-09-27", time: null, hours: 1, trip: null, byCall: false, note: "", people: [ada], others: 0 },
+      { id: 3, day: "2026-10-05", time: null, hours: 5, trip: null, note: "", people: [ada, bea], others: 20 },
+      { id: 2, day: "2026-10-04", time: null, hours: 2, trip: null, note: "", people: [ada], others: 1 },
+      { id: 1, day: "2026-09-27", time: null, hours: 1, trip: null, note: "", people: [ada], others: 0 },
     ];
     const html = renderToStaticMarkup(field(catchUps));
     expect(html).toMatch(/with <span><button[^>]*>Bea Sample<\/button><\/span> \+20 others<\/span>/);

@@ -61,9 +61,8 @@ describe("a hangout over several days", () => {
   });
 
   it("reads as its hours over its days and its dates as a range, the month and year said once where they are shared", () => {
-    expect(catchUpTitle(34, false, 3)).toBe("34 hours over 3 days");
-    expect(catchUpTitle(2, false)).toBe("2 hours");
-    expect(catchUpTitle(1, true)).toBe("1 hour by call");
+    expect(catchUpTitle(34, 3)).toBe("34 hours over 3 days");
+    expect(catchUpTitle(2)).toBe("2 hours");
     expect(catchUpWhen("2026-10-04")).toBe("4 Oct 2026");
     expect(catchUpWhen("2026-10-04", null)).toBe("4 Oct 2026");
     expect(catchUpWhen("2026-10-04", "2026-10-13")).toBe("4–13 Oct 2026");

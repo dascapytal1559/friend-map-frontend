@@ -12,7 +12,7 @@ import { machineTimeZone, setTimeZone } from "../time.ts";
 import { checkBackend, reportLines } from "./check.ts";
 import { contract, KNOWN_CAPABILITIES, majorOf, offers, preContract, refusal, takeContract, takesEdits } from "./handshake.ts";
 import { servedBy, type Backend } from "./routes.ts";
-import { ANSWERS, peopleListing, personSummary, relationshipsReport, strict, timelineMessage } from "./schema.ts";
+import { ANSWERS, catchUp, peopleListing, personSummary, relationshipsReport, scoredCatchUp, strict, timelineMessage } from "./schema.ts";
 import { problemsOf } from "./shape.ts";
 
 const NOW = Date.parse("2026-10-01T12:00:00+10:00");
@@ -65,6 +65,15 @@ describe("the shapes", () => {
     };
     for (const callAnswer of [undefined, null, "missed", "answered", "unknown"]) expect(problemsOf(strict(timelineMessage), { ...record, callAnswer })).toEqual([]);
     expect(problemsOf(timelineMessage, { ...record, callAnswer: "no" })).toEqual([{ path: "callAnswer", problem: expect.any(String) }]);
+  });
+
+  it("take a hangout with no byCall (1.2.0: a hangout is in person), and one a backend before it sends with byCall, passed over", () => {
+    const hangout = { id: 3, day: "2026-10-04", time: "19:30", trip: null, hours: 2, note: "", people: [{ id: 7, name: "Ada Sample", aliases: [] }], others: 0 };
+    const scored = { id: 3, day: "2026-10-04", time: "19:30", trip: null, hours: 2, personIds: [7], others: 0 };
+    for (const byCall of [undefined, false, true]) {
+      expect(problemsOf(strict(catchUp), { ...hangout, byCall })).toEqual([]);
+      expect(problemsOf(strict(scoredCatchUp), { ...scored, byCall })).toEqual([]);
+    }
   });
 
   it("hold every answer but the map's to every field (strict), and know every answer ROUTES names", () => {

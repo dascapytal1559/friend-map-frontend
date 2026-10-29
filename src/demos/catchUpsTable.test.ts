@@ -18,10 +18,10 @@ const ada = { id: 2, name: "Ada Sample", aliases: ["Addy"] };
 const bo = { id: 3, name: "Bo Example", aliases: [] };
 const cy = { id: 4, name: "Cy Placeholder", aliases: [] };
 const LIST: CatchUp[] = [
-  { id: 1, day: "2026-09-01", time: null, hours: 2, trip: null, byCall: false, note: "Dinner", people: [ada], others: 0 },
-  { id: 2, day: "2026-09-20", time: null, hours: 1, trip: null, byCall: false, note: "", people: [ada, bo, cy], others: 0 },
-  { id: 3, day: "2026-09-01", time: "19:30", hours: 3, trip: null, byCall: false, note: "Board games", people: [bo], others: 2 },
-  { id: 4, day: "2026-07-14", time: null, hours: 1, trip: null, byCall: true, note: "", people: [cy], others: 0 },
+  { id: 1, day: "2026-09-01", time: null, hours: 2, trip: null, note: "Dinner", people: [ada], others: 0 },
+  { id: 2, day: "2026-09-20", time: null, hours: 1, trip: null, note: "", people: [ada, bo, cy], others: 0 },
+  { id: 3, day: "2026-09-01", time: "19:30", hours: 3, trip: null, note: "Board games", people: [bo], others: 2 },
+  { id: 4, day: "2026-07-14", time: null, hours: 1, trip: null, note: "", people: [cy], others: 0 },
 ];
 const ids = (list: readonly CatchUp[]) => list.map((c) => c.id);
 const SETTINGS = { catchUpHourWorth: 50, groupSharedPart: 0.5, tripFullHours: 8 };
@@ -53,7 +53,7 @@ describe("the catch-ups' order", () => {
   });
 
   it("puts those on one date by their time before when they were added, those without one first in the day", () => {
-    const day = (id: number, time: string | null): CatchUp => ({ id, day: "2026-09-01", time, hours: 1, trip: null, byCall: false, note: "", people: [ada], others: 0 });
+    const day = (id: number, time: string | null): CatchUp => ({ id, day: "2026-09-01", time, hours: 1, trip: null, note: "", people: [ada], others: 0 });
     const list = [day(1, "19:30"), day(2, null), day(3, "08:00"), day(4, "19:30")];
     expect(ids(sortCatchUps(list, CATCH_UP_SORT, SETTINGS))).toEqual([4, 1, 3, 2]);
     expect(ids(sortCatchUps(list, { column: "day", descending: false }, SETTINGS))).toEqual([2, 3, 1, 4]);
@@ -74,7 +74,7 @@ describe("the catch-ups' order", () => {
     // 6 pm on 4 Oct to 2 pm on the 6th: 24 hours together, counting as 13.86, 692.8; a 14-hour day, 700.
     const trip: CatchUp = {
       id: 6, day: "2026-10-04", time: "18:00", trip: { lastDay: "2026-10-06", endTime: "14:00", privateFrom: "00:00", privateTo: "10:00" },
-      hours: 24, byCall: false, note: "", people: [ada], others: 0,
+      hours: 24, note: "", people: [ada], others: 0,
     };
     const day: CatchUp = { ...trip, id: 7, day: "2026-09-02", time: null, trip: null, hours: 14 };
     expect(ids(sortCatchUps([trip, day], { column: "weight", descending: true }, SETTINGS))).toEqual([7, 6]);
@@ -137,9 +137,8 @@ describe("the catch-ups' rows", () => {
     expect(html).toContain('title="3 hours × 50 messages × 67%, each one&#x27;s share with 3 people">100</td>');
     expect(html.match(/others</g)).toHaveLength(1);
     expect(html).toContain("Board games");
-    // The hour by call with Cy says so after its hours.
-    expect(html).toContain('title="1 hour by call">1<span class="people-table__secondary"> by call</span></td>');
-    expect(html.match(/by call</g)).toHaveLength(1);
+    // The hour with Cy is its hours alone.
+    expect(html).toContain('title="1 hour">1</td>');
     expect(html.match(/>Edit</g)).toHaveLength(4);
     // Bo's panel is open: the two with Bo are marked.
     expect(html.match(/people-table__open/g)).toHaveLength(2);
@@ -154,7 +153,7 @@ describe("the catch-ups' rows", () => {
   it("give a trip one row: its first to last day and when it started, its hours in all over its days, and what they count as", () => {
     const trip: CatchUp = {
       id: 5, day: "2026-10-04", time: "18:00", trip: { lastDay: "2026-10-06", endTime: "14:00", privateFrom: "00:00", privateTo: "10:00" },
-      hours: 24, byCall: false, note: "", people: [ada], others: 0,
+      hours: 24, note: "", people: [ada], others: 0,
     };
     const html = renderToStaticMarkup(createElement(CatchUpsTable, {
       rows: [trip], sort: CATCH_UP_SORT, onSort: () => {}, openId: null, onOpenAt: () => {}, navigate, editing: null, onEdit: () => {}, settings: SETTINGS, top: 0,

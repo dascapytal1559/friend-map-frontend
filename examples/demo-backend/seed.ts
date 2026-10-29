@@ -58,8 +58,8 @@ export function seed(db: Db, { now = Date.now(), crowd = {} }: { now?: number; c
     }
 
     for (const catchUp of data.catchUps) {
-      db.run("INSERT INTO catch_ups (id, day, time, hours, by_call, note, others) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        catchUp.id, catchUp.day, catchUp.time, catchUp.hours, catchUp.byCall ? 1 : 0, catchUp.note, catchUp.others);
+      db.run("INSERT INTO catch_ups (id, day, time, hours, note, others) VALUES (?, ?, ?, ?, ?, ?)",
+        catchUp.id, catchUp.day, catchUp.time, catchUp.hours, catchUp.note, catchUp.others);
       for (const person of catchUp.personIds) db.run("INSERT INTO catch_up_people (catch_up_id, person_id) VALUES (?, ?)", catchUp.id, person);
     }
   });

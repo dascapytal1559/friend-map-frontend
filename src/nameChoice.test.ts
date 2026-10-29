@@ -95,7 +95,7 @@ const changeset: ChangesetInfo = {
 
 /** A catch-up with two of them, its note naming the first. */
 const catchUp: CatchUp = {
-  id: 3, day: "2026-03-14", time: "19:30", hours: 2, trip: null, byCall: false, note: people[0].note, others: 0,
+  id: 3, day: "2026-03-14", time: "19:30", hours: 2, trip: null, note: people[0].note, others: 0,
   people: people.slice(0, 2).map(({ id, name, aliases }) => ({ id, name, aliases })),
 };
 

@@ -74,7 +74,7 @@ export type ChipSubject =
   | { kind: "tags"; created: readonly string[]; deleted: readonly string[]; emptied: boolean }
   /**
    * A hangout or a logged call added, changed or deleted, or one made the other kind ("converted", named as it is
-   * now), as the chip names it: "hangout of 2 hours on 4 Oct 2026" ("2 hours by call" by call, " at 7:30 pm" after
+   * now), as the chip names it: "hangout of 2 hours on 4 Oct 2026" (" at 7:30 pm" after
    * it with a time), "call of 25 min on FaceTime, 4 Oct 2026 at 7:30 pm".
    */
   | { kind: "event"; done: "added" | "changed" | "deleted" | "converted"; what: string }
@@ -316,10 +316,10 @@ export async function callToCatchUp(id: number, input: CatchUpInput): Promise<Ca
   return catchUpChange(await archiveApi.callToCatchUp(id, input), "converted", input);
 }
 
-function catchUpChange(done: CatchUpSaved, how: ChipEvent["done"], catchUp: Pick<CatchUp, "hours" | "byCall" | "day" | "time" | "trip">): CatchUpSaved {
+function catchUpChange(done: CatchUpSaved, how: ChipEvent["done"], catchUp: Pick<CatchUp, "hours" | "day" | "time" | "trip">): CatchUpSaved {
   // "hangout of 2 hours on 4 Oct 2026 at 7:30 pm"; a trip, "hangout of 24 hours over 3 days on 4–6 Oct 2026 from 6:00 pm".
   const when = catchUp.time ? ` ${catchUp.trip ? "from" : "at"} ${timeLabel(catchUp.time)}` : "";
-  const what = `${HANGOUT.one} of ${catchUpTitle(catchUp.hours, catchUp.byCall, catchUpDayCount(catchUp))} on ${catchUpWhen(catchUp.day, catchUp.trip?.lastDay)}${when}`;
+  const what = `${HANGOUT.one} of ${catchUpTitle(catchUp.hours, catchUpDayCount(catchUp))} on ${catchUpWhen(catchUp.day, catchUp.trip?.lastDay)}${when}`;
   if (done.changeset !== null) changeChip.show({ kind: "event", done: how, what }, done.changeset);
   return done;
 }

@@ -7,8 +7,7 @@
       "time": "10:00",
       "trip": null,
       "hours": 5.5,
-      "byCall": true,
-      "note": "By video call",
+      "note": "Farmers market",
       "others": 0,
       "people": [
         {
@@ -34,7 +33,6 @@
       "time": "20:30",
       "trip": null,
       "hours": 5.5,
-      "byCall": false,
       "note": "Walk along the river",
       "others": 0,
       "people": [
@@ -51,7 +49,6 @@
       "time": null,
       "trip": null,
       "hours": 1.5,
-      "byCall": false,
       "note": "Climbing at the gym",
       "others": 0,
       "people": [

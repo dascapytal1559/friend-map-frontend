@@ -1,6 +1,6 @@
 // The Time river's numbers (TimeRiver.tsx), as pure functions: its filters
 // (the bar on the page: what it measures, Messages, or Calls, Hangouts or both
-// as time together; the time it covers; the app, or for hangouts how they were had; and whether
+// as time together; the time it covers; the app; and whether
 // calls with no length show), kept per browser; each person's stream of the
 // measure month by month over that time; the calls that add no length
 // (missed, or with no length known), drawn as marks instead; and the hover
@@ -60,15 +60,6 @@ export const SPANS: ReadonlyArray<{ value: Span; title: string; months?: number 
   { value: "custom", title: "From… to…" },
 ];
 
-/** How a hangout was had, for its filter: either, in person, or by call. */
-export type Had = "all" | "in-person" | "by-call";
-
-export const HAD: ReadonlyArray<{ value: Had; title: string }> = [
-  { value: "all", title: "In person or by call" },
-  { value: "in-person", title: "In person" },
-  { value: "by-call", title: "By call" },
-];
-
 /** Every app, the App filter's first choice. */
 export const ALL_APPS = "all";
 
@@ -80,14 +71,13 @@ export interface Filters {
   to: string | null;
   /** The app (a platform) messages and calls are on, each its own; ALL_APPS for every one. */
   app: { messages: string; calls: string };
-  had: Had;
   /** Whether calls with no length (missed, or not known) count and show as marks. */
   missed: boolean;
 }
 
 /** Hangouts, all time, every app, missed calls shown. */
 export const DEFAULT_FILTERS: Filters = {
-  measure: "hangouts", span: "all", from: null, to: null, app: { messages: ALL_APPS, calls: ALL_APPS }, had: "all", missed: true,
+  measure: "hangouts", span: "all", from: null, to: null, app: { messages: ALL_APPS, calls: ALL_APPS }, missed: true,
 };
 
 export const FILTERS_KEY = "friend-map.timeRiver.filters";
@@ -111,7 +101,6 @@ export function parseFilters(kept: string | null): Filters {
     from: month(raw.from),
     to: month(raw.to),
     app: { messages: app(apps.messages), calls: app(apps.calls) },
-    had: one(HAD, raw.had, DEFAULT_FILTERS.had),
     missed: typeof raw.missed === "boolean" ? raw.missed : DEFAULT_FILTERS.missed,
   };
 }
@@ -177,7 +166,7 @@ export function flowsOf(filters: Filters, data: RiverData): Flows {
   const ids = new Set(data.people.map((p) => p.id));
   const calls = () =>
     callFlows(ids, data.calls.filter((call) => (filters.app.calls === ALL_APPS || call.platform === filters.app.calls) && (filters.missed || hasLength(call))), data.now);
-  const hangouts = () => hangoutFlows(ids, data.catchUps.filter((c) => filters.had === "all" || c.byCall === (filters.had === "by-call")), data.now);
+  const hangouts = () => hangoutFlows(ids, data.catchUps, data.now);
   const all = filters.measure === "messages"
     ? messageFlows(filters.app.messages === ALL_APPS ? data.people : appSeries(data.people, data.months, data.messageApps, filters.app.messages), data.months)
     : filters.measure === "calls" ? calls()

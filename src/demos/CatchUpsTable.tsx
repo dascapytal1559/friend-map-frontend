@@ -1,7 +1,7 @@
 // The Table's Hangouts (TablePage.tsx, with "Hangouts" picked at the top of
 // its header; catch-ups in the code, the word from eventWords.ts): one row per catch-up (src/catchUps.ts), the newest first to
 // start with: its date (and time, when it has one; it opens the Calendar at that day, WhenCell.tsx), or a trip's first
-// to last day (the first opens), hours ("by call" after them when it was; a trip's time together in all, over how
+// to last day (the first opens), hours (a trip's time together in all, over how
 // many days under them), who was there (a chip each, which opens their panel on their chat at the hangout, outlined
 // there, then "+20 others" for those not named), what it was worth to each of
 // them toward closeness, its Weight each (its hours times the hour's worth, times each one's share
@@ -154,8 +154,8 @@ function CatchUpRow({ catchUp, index, open, onOpenAt, navigate, onEdit, settings
         day={catchUp.day}
         navigate={navigate}
       />
-      <td className="people-table__numeric" title={catchUpTitle(catchUp.hours, catchUp.byCall, days)}>
-        {number(catchUp.hours)}{catchUp.byCall && <span className="people-table__secondary"> by call</span>}
+      <td className="people-table__numeric" title={catchUpTitle(catchUp.hours, days)}>
+        {number(catchUp.hours)}
         {catchUp.trip && <span className="people-table__secondary catch-ups-table__days">over {daysLabel(days)}</span>}
       </td>
       <td className="catch-ups-table__who">

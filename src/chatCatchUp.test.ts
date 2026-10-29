@@ -17,7 +17,7 @@ import { Call } from "./Timeline.tsx";
 
 const ada = { id: 7, name: "Ada Sample", aliases: [] };
 const bruno = { id: 8, name: "Bruno Placeholder", aliases: [] };
-const dinner: CatchUp = { id: 3, day: "2026-10-04", time: null, hours: 3, trip: null, byCall: false, note: "Dinner\nand a walk after", people: [ada, bruno], others: 2 };
+const dinner: CatchUp = { id: 3, day: "2026-10-04", time: null, hours: 3, trip: null, note: "Dinner\nand a walk after", people: [ada, bruno], others: 2 };
 
 const drawn = (catchUp: CatchUp, readOnly = false) =>
   renderToStaticMarkup(createElement(ReadOnly.Provider, { value: readOnly }, createElement(ChatCatchUp, { catchUp, personId: ada.id })));
@@ -34,9 +34,9 @@ describe("a hangout in the chat", () => {
     expect(html).not.toContain("and a walk after");
   });
 
-  it("says when it started, when it has a time, and by call when it was", () => {
+  it("says when it started, when it has a time; a backend's byCall from before calls were their own kind is passed over", () => {
     expect(drawn({ ...dinner, time: "19:30" })).toContain("<strong>Hangout</strong> · 7:30 pm · 3 hours</span>");
-    expect(drawn({ ...dinner, time: "19:30", byCall: true })).toContain("<strong>Hangout</strong> · 7:30 pm · 3 hours by call</span>");
+    expect(drawn({ ...dinner, time: "19:30", byCall: true } as CatchUp)).toContain("<strong>Hangout</strong> · 7:30 pm · 3 hours</span>");
   });
 
   it("only shows on a read-only page, and says nothing of who else when they were alone", () => {
@@ -140,7 +140,7 @@ describe("changing a hangout or a logged call from the chat", () => {
   });
 
   it("saves it, shows the chip and loads again, so its day is drawn anew; Undo takes it back", async () => {
-    const input = { day: dinner.day, time: "19:30", hours: 4, trip: null, byCall: false, note: dinner.note, personIds: [7, 8], others: 2 };
+    const input = { day: dinner.day, time: "19:30", hours: 4, trip: null, note: dinner.note, personIds: [7, 8], others: 2 };
     expect(await saveCatchUp(input, dinner.id)).toBe(true);
     expect(api.changeCatchUp).toHaveBeenCalledWith(3, input);
     expect(changeChip.get()).toMatchObject({ what: { kind: "event", done: "changed", what: "hangout of 4 hours on 4 Oct 2026 at 7:30 pm" }, changeset: 71 });
@@ -177,7 +177,7 @@ describe("changing a hangout or a logged call from the chat", () => {
   });
 
   it("makes a logged call a hangout and a hangout a call, each one change the chip names as it is now; Undo takes it back", async () => {
-    const asHangout = { day: "2026-10-04", time: "19:30", hours: 0.42, trip: null, byCall: false, note: "", personIds: [7], others: 0 };
+    const asHangout = { day: "2026-10-04", time: "19:30", hours: 0.42, trip: null, note: "", personIds: [7], others: 0 };
     expect(await convertToCatchUp(5, asHangout)).toBe(true);
     expect(api.callToCatchUp).toHaveBeenCalledWith(5, asHangout);
     expect(changeChip.get()).toMatchObject({ what: { kind: "event", done: "converted", what: "hangout of 0.42 hours on 4 Oct 2026 at 7:30 pm" }, changeset: 77 });
@@ -235,7 +235,7 @@ describe("changing a hangout or a logged call from the chat", () => {
   it("says it did not save when the archive refuses", async () => {
     api.changeCatchUp.mockRejectedValueOnce(new Error("no"));
     const reported = vi.spyOn(console, "error").mockImplementation(() => {});
-    expect(await saveCatchUp({ day: dinner.day, time: null, hours: 1, trip: null, byCall: false, note: "", personIds: [7], others: 0 }, dinner.id)).toBe(false);
+    expect(await saveCatchUp({ day: dinner.day, time: null, hours: 1, trip: null, note: "", personIds: [7], others: 0 }, dinner.id)).toBe(false);
     expect(changeChip.get()).toBeNull();
     reported.mockRestore();
   });

@@ -137,13 +137,13 @@ function groupChat(db: Db, id: number): GroupChat | undefined {
 /** Hangouts (`where` picks them), the latest first, each with everyone at it A to Z. */
 export function catchUps(db: Db, where: string, ...values: SQLInputValue[]): CatchUp[] {
   const named = groupPeople(db);
-  return db.all<{ id: number; day: string; time: string | null; hours: number; by_call: number; note: string; others: number; people: string }>(`
+  return db.all<{ id: number; day: string; time: string | null; hours: number; note: string; others: number; people: string }>(`
     SELECT catch_ups.*, json_group_array(catch_up_people.person_id) AS people
     FROM catch_ups LEFT JOIN catch_up_people ON catch_up_people.catch_up_id = catch_ups.id
     ${where}
     GROUP BY catch_ups.id ORDER BY catch_ups.day DESC, catch_ups.time DESC, catch_ups.id DESC`, ...values)
     .map((row) => ({
-      id: row.id, day: row.day, time: row.time, trip: null, hours: row.hours, byCall: row.by_call === 1, note: row.note, others: row.others,
+      id: row.id, day: row.day, time: row.time, trip: null, hours: row.hours, note: row.note, others: row.others,
       people: (JSON.parse(row.people) as Array<number | null>)
         .filter((id) => id !== null)
         .map((id) => named.get(id)!)

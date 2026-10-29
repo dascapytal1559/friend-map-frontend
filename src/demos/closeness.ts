@@ -37,15 +37,15 @@
 //
 // A day's answered calls with someone count the same way, by how many hours
 // they were connected in all (callHours in src/catchUps.ts; a day under
-// callMinimumMinutes counts nothing; callCatchUps), beside any catch-up in
-// person with them that day. A day with both a catch-up by call and calls with
-// someone counts whichever is longer, their share of those catch-ups or the
-// calls, not both, since you may have added that very call. A day's calls are the phone's call history's and the other
+// callMinimumMinutes counts nothing; callCatchUps), beside any catch-up with
+// them that day. A day's calls are the phone's call history's and the other
 // apps' in one-to-one chats whose length is known (Messenger's and
-// Instagram's, and any you gave a length), added up together (callDays
-// in server/archive/calls.ts); every call record in a one-to-one chat counts
-// as no message, so one whose length is not known counts nothing. A call
-// you logged with several people adds to each one's day their share of
+// Instagram's, and any you gave a length) and those you logged, added up
+// together, a phone call you logged that the call history brings in too
+// counted once (callDays in the life archive's server/archive/calls.ts); every
+// call record in a one-to-one chat counts as no message, so one whose length
+// is not known counts nothing. A call you logged with several people (and any
+// you did not name on it) adds to each one's day their share of
 // its time (groupShare: an hour with three, at half shared, 40 minutes each;
 // callDaySeconds), as a catch-up's worth is shared out, before the shortest
 // day that counts and the hour's worth apply.
@@ -320,7 +320,7 @@ export function personMonthPoints(report: ScoreReport, id: number, settings: Clo
     });
   }
 
-  for (const c of callCatchUps({ catchUps: report.catchUps.filter((c) => c.personIds.includes(id)), callDays: report.callDays.filter((c) => c.personId === id) }, settings)) {
+  for (const c of callCatchUps({ callDays: report.callDays.filter((c) => c.personId === id) }, settings)) {
     at(c.day.slice(0, 7)).calls += c.worth;
   }
   for (const c of hangoutWorths(report, settings)) {
@@ -331,20 +331,12 @@ export function personMonthPoints(report: ScoreReport, id: number, settings: Clo
 
 /**
  * The report's call days as hours caught up (callHours of callDaySeconds, a group call at their share), each with its
- * worth; a day too short to count is left out. A day with catch-ups by call with them too counts whichever is longer,
- * their share of those catch-ups (groupShare, the unnamed others counted) or the calls, never both: the calls add only the hours they run past them (you may
- * have added that very call). A catch-up in person is time apart from any call.
+ * worth; a day too short to count is left out. A hangout that day is time apart from any call: it counts beside them.
  */
-export function callCatchUps(report: Pick<ScoreReport, "catchUps" | "callDays">, settings: ClosenessSettings): Array<{ day: string; worth: number; personIds: number[] }> {
-  const byCall = new Map<string, number>();
-  for (const c of report.catchUps.filter((c) => c.byCall)) {
-    const hours = c.hours * groupShare(settings, c.personIds.length + c.others);
-    for (const id of c.personIds) byCall.set(`${id}:${c.day}`, (byCall.get(`${id}:${c.day}`) ?? 0) + hours);
-  }
+export function callCatchUps(report: Pick<ScoreReport, "callDays">, settings: ClosenessSettings): Array<{ day: string; worth: number; personIds: number[] }> {
   return report.callDays.flatMap((callDay) => {
-    const { personId, day } = callDay;
-    const more = callHours(settings, callDaySeconds(settings, callDay)) - (byCall.get(`${personId}:${day}`) ?? 0);
-    return more > 0 ? [{ day, personIds: [personId], worth: catchUpWorth(settings, more) }] : [];
+    const hours = callHours(settings, callDaySeconds(settings, callDay));
+    return hours > 0 ? [{ day: callDay.day, personIds: [callDay.personId], worth: catchUpWorth(settings, hours) }] : [];
   });
 }
 

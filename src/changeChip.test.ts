@@ -167,14 +167,14 @@ describe("the chip after a tag is made or deleted", () => {
 });
 
 describe("the chip after a catch-up is added, changed or deleted", () => {
-  const call = { day: "2026-09-27", time: null, hours: 1.5, trip: null, byCall: false, note: "", personIds: [7], others: 0 } as const;
+  const call = { day: "2026-09-27", time: null, hours: 1.5, trip: null, note: "", personIds: [7], others: 0 } as const;
 
   it("names the catch-up and undoes its changeset; a change that changed nothing shows none", async () => {
     const api = provide();
     await addCatchUp({ ...call, personIds: [7] });
     expect(changeChip.get()).toMatchObject({ what: { kind: "event", done: "added", what: "hangout of 1.5 hours on 27 Sept 2026" }, changeset: 70 });
-    await changeCatchUp(3, { ...call, hours: 1, time: null, trip: null, byCall: true, personIds: [7] });
-    expect(changeChip.get()).toMatchObject({ what: { done: "changed", what: "hangout of 1 hour by call on 27 Sept 2026" }, changeset: 71 });
+    await changeCatchUp(3, { ...call, hours: 1, time: null, trip: null, personIds: [7] });
+    expect(changeChip.get()).toMatchObject({ what: { done: "changed", what: "hangout of 1 hour on 27 Sept 2026" }, changeset: 71 });
     await deleteCatchUp({ id: 3, ...call, people: [] });
     expect(changeChip.get()).toMatchObject({ what: { done: "deleted" }, changeset: 72 });
     await changeChip.undo();

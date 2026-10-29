@@ -46,7 +46,7 @@ const REPORT: ScoreReport = {
   generatedAt: 0,
   people: [{ id: ADA, months: [month(20, 20)] }, { id: BEA, months: [] }, { id: CY, months: [] }],
   groups: [],
-  catchUps: [{ id: 1, day: "2026-03-01", hours: 2, time: null, trip: null, byCall: false, others: 3, personIds: [CY] }],
+  catchUps: [{ id: 1, day: "2026-03-01", hours: 2, time: null, trip: null, others: 3, personIds: [CY] }],
   callDays: [],
 };
 
@@ -92,7 +92,7 @@ describe("the shape of a map", () => {
 
   it("counts a trip as a hangout but leaves its hours out of how long they last, the demo's being on one day", () => {
     const trip = { lastDay: "2026-03-04", endTime: "14:00", privateFrom: "00:00", privateTo: "10:00" };
-    const withTrip = shapeOf(FACTS, { ...REPORT, catchUps: [...REPORT.catchUps, { id: 2, day: "2026-03-02", time: "18:00", trip, hours: 38, byCall: false, others: 0, personIds: [ADA] }] }, NOW);
+    const withTrip = shapeOf(FACTS, { ...REPORT, catchUps: [...REPORT.catchUps, { id: 2, day: "2026-03-02", time: "18:00", trip, hours: 38, others: 0, personIds: [ADA] }] }, NOW);
     expect(withTrip.hangouts && [withTrip.hangouts.count, sum(withTrip.hangouts.hours), bar(withTrip.hangouts.hours, 2)]).toEqual([2, 1, 1]);
   });
 

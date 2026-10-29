@@ -137,7 +137,7 @@ describe("withEvents: calls", () => {
 
 describe("withEvents: catch-ups", () => {
   const ada = { id: 7, name: "Ada Sample", aliases: [] };
-  const catchUp = (day: string, id: number, time: string | null = null): CatchUp => ({ id, day, time, hours: 2, trip: null, byCall: false, note: "", people: [ada], others: 0 });
+  const catchUp = (day: string, id: number, time: string | null = null): CatchUp => ({ id, day, time, hours: 2, trip: null, note: "", people: [ada], others: 0 });
   // One just after midnight, so the catch-up must still come first on its day.
   const messages = [at("2026-02-03T00:00:00+11:00", 4), at("2026-02-02T09:00:00+11:00", 2)];
   const call = (iso: string, id: number): PersonCall =>
@@ -188,7 +188,7 @@ describe("withEvents: catch-ups", () => {
 
 describe("opening a chat at a moment", () => {
   const ada = { id: 7, name: "Ada Sample", aliases: [] };
-  const dinner: CatchUp = { id: 4, day: "2026-02-03", time: "19:30", hours: 2, trip: null, byCall: false, note: "", people: [ada], others: 0 };
+  const dinner: CatchUp = { id: 4, day: "2026-02-03", time: "19:30", hours: 2, trip: null, note: "", people: [ada], others: 0 };
   const phoneCall: PersonCall = {
     id: 11, platform: "phone", messageId: null, manual: false, accountId: 9, at: Date.parse("2026-02-03T12:00:00+11:00"), durationSeconds: 60,
     direction: "incoming", answered: true, service: "phone", group: null, people: 1, others: 0, note: "",

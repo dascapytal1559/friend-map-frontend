@@ -22,7 +22,7 @@ function call(at: string, people: number[], { answered = true as boolean | null,
 const NAMES = ["Ada Sample", "Bruno Placeholder", "Cleo Example"];
 
 function hangout(day: string, people: number[], hours: number): CatchUp {
-  return { id: 1, day, time: null, hours, trip: null, byCall: false, note: "", people: people.map((id) => ({ id, name: NAMES[id % NAMES.length], aliases: [] })), others: 0 };
+  return { id: 1, day, time: null, hours, trip: null, note: "", people: people.map((id) => ({ id, name: NAMES[id % NAMES.length], aliases: [] })), others: 0 };
 }
 
 describe("Messages", () => {
@@ -153,7 +153,7 @@ const DATA: RiverData = {
     { ...call("2026-09-02T12:00:00+10:00", [2], { seconds: 1200 }), platform: "whatsapp" },
     call("2026-10-03T12:00:00+10:00", [1], { answered: false, seconds: 0 }),
   ],
-  catchUps: [hangout("2026-10-01", [1], 2), { ...hangout("2026-10-05", [1, 2], 1), byCall: true }],
+  catchUps: [hangout("2026-10-01", [1], 2), hangout("2026-10-05", [1, 2], 1)],
   now: NOW,
 };
 const filters = (change: Partial<Filters>): Filters => ({ ...DEFAULT_FILTERS, ...change });
@@ -166,9 +166,9 @@ describe("the filters", () => {
     expect(flowsOf(filters({ measure: "together" }), DATA).flows.map((f) => [f.id, f.series])).toEqual([[1, [0, 10 / 60 + 3]], [2, [20 / 60, 1]]]);
   });
 
-  it("together, apply the app and calls with no length to the calls and how they were had to the hangouts", () => {
-    const together = flowsOf(filters({ measure: "together", app: { messages: ALL_APPS, calls: "whatsapp" }, had: "by-call", missed: false }), DATA);
-    expect(together.flows.map((f) => [f.id, f.series])).toEqual([[2, [20 / 60, 1]], [1, [0, 1]]]);
+  it("together, apply the app and calls with no length to the calls alone, every hangout counted", () => {
+    const together = flowsOf(filters({ measure: "together", app: { messages: ALL_APPS, calls: "whatsapp" }, missed: false }), DATA);
+    expect(together.flows.map((f) => [f.id, f.series])).toEqual([[2, [20 / 60, 1]], [1, [0, 3]]]);
     expect(together.marks).toEqual([]);
     expect(flowsOf(filters({ measure: "together" }), DATA).marks.map((m) => m.day)).toEqual(["2026-10-03"]);
   });
@@ -188,11 +188,6 @@ describe("the filters", () => {
     const left = flowsOf(filters({ measure: "calls", missed: false }), DATA);
     expect(left.marks).toEqual([]);
     expect(left.flows.find((f) => f.id === 1)!.counts).toEqual([0, 1]);
-  });
-
-  it("count hangouts had in person or by call alone", () => {
-    expect(flowsOf(filters({ had: "in-person" }), DATA).flows.map((f) => [f.id, f.series])).toEqual([[1, [0, 2]]]);
-    expect(flowsOf(filters({ had: "by-call" }), DATA).flows.map((f) => [f.id, f.series])).toEqual([[1, [0, 1]], [2, [0, 1]]]);
   });
 
   it("cover the span chosen: the last months to now, all time, or from one month to another", () => {
@@ -227,11 +222,13 @@ describe("the filters", () => {
   it("are kept as they were chosen, anything unknown read as the default's", () => {
     expect(parseFilters(null)).toBe(DEFAULT_FILTERS);
     expect(parseFilters("not json")).toBe(DEFAULT_FILTERS);
-    const chosen = filters({ measure: "calls", span: "custom", from: "2025-01", to: "2026-03", app: { messages: "whatsapp", calls: "phone" }, had: "by-call", missed: false });
+    const chosen = filters({ measure: "calls", span: "custom", from: "2025-01", to: "2026-03", app: { messages: "whatsapp", calls: "phone" }, missed: false });
     expect(parseFilters(JSON.stringify(chosen))).toEqual(chosen);
     // Calls and Hangouts together; a single choice kept before reads as it was.
     expect(parseFilters(JSON.stringify({ ...chosen, measure: "together" })).measure).toBe("together");
     expect(parseFilters(JSON.stringify({ measure: "hangouts" }))).toEqual(DEFAULT_FILTERS);
+    // How hangouts were had, kept from when one could be by call: passed over, as every hangout is in person.
+    expect(parseFilters(JSON.stringify({ measure: "hangouts", had: "by-call" }))).toEqual(DEFAULT_FILTERS);
     expect(parseFilters(JSON.stringify({ measure: "letters", span: "forever", from: "2025-13", app: { calls: "" }, had: 3, missed: "no" }))).toEqual(DEFAULT_FILTERS);
   });
 

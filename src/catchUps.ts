@@ -1,10 +1,9 @@
 // Catch-ups, which the page calls hangouts (eventWords.ts): time you
-// spent with people, which the message archive cannot see. Each is on a local date (at a time, when you say: shown, and
+// spent with people in person, which the message archive cannot see. Each is on a local date (at a time, when you say: shown, and
 // where it sits in the chat, never in the score), with one or more people (and any
 // number of others you do not name, a crowd at a wedding, say), lasted
-// some hours, was in person or by a call (byCall: a Discord call, say, or one the phone's
-// call history has too; Add event no longer offers it, a call being its own kind
-// now, but those ticked before keep it), and may have a short note. In the closeness score
+// some hours, and may have a short note. A call is never one: it is logged as a
+// call (Add event's Call, ManualCallInput). In the closeness score
 // (src/demos/closeness.ts) each counts as its hours times the hour's worth
 // (catchUpHourWorth in data/settings.json, settings.ts) of direct messages on
 // its date, times each person's share of it (groupShare: with several people
@@ -12,11 +11,10 @@
 // split equally; 3 hours with one friend and 2 others at the default half
 // shared: 150 × (½ + ½ ÷ 3) = 100 for the friend). The server keeps them
 // (server/archive/catchUps.ts); this is what the page and the server share.
-// A day's answered calls with someone (the phone's call history) count the
-// same way, by how long they were (callHours), beside any catch-up in person
-// that day; a catch-up by call that day may be that very call, so the two
-// count the longer, never both (callCatchUps in src/demos/closeness.ts).
-// One may be over several days (trip: a trip away together, in person), from
+// A day's answered calls with someone count the same way, by how long they
+// were (callHours), beside any catch-up that day (callCatchUps in
+// src/demos/closeness.ts).
+// One may be over several days (trip: a trip away together), from
 // when it began (its day and time) to when it ended (the trip's last day and
 // end time), less a private window each day (asleep, time alone: midnight to
 // 10 am unless you say). Each of its days counts the time together it had,
@@ -42,9 +40,9 @@ export const DAYS_MOST = 366;
 export const PRIVATE_FROM = "00:00";
 export const PRIVATE_TO = "10:00";
 
-/** A new catch-up with `person` (or nobody yet, as the Calendar's day panel starts one), as Add event in their panel starts a hangout: today, no time, an hour, in person, nobody else. */
+/** A new catch-up with `person` (or nobody yet, as the Calendar's day panel starts one), as Add event in their panel starts a hangout: today, no time, an hour, nobody else. */
 export function freshCatchUp(person?: GroupPerson): Omit<CatchUp, "id"> {
-  return { day: dayKey(Date.now()), time: null, trip: null, hours: 1, byCall: false, note: "", people: person ? [person] : [], others: 0 };
+  return { day: dayKey(Date.now()), time: null, trip: null, hours: 1, note: "", people: person ? [person] : [], others: 0 };
 }
 
 /** Every local date a catch-up is on (YYYY-MM-DD), the first first: its day, to its trip's last day when it has one. */
@@ -169,12 +167,9 @@ export function hoursLabel(hours: number): string {
   return hours === 1 ? "1 hour" : `${hours.toLocaleString("en-AU", { maximumFractionDigits: 2 })} hours`;
 }
 
-/**
- * "2 hours", "1 hour by call", "34 hours over 3 days": how long a catch-up lasted, that it was by call when it was,
- * and over how many `days` when more than one (a trip).
- */
-export function catchUpTitle(hours: number, byCall: boolean, days = 1): string {
-  return `${hoursLabel(hours)}${days > 1 ? ` over ${days.toLocaleString("en-AU")} days` : ""}${byCall ? " by call" : ""}`;
+/** "2 hours", "34 hours over 3 days": how long a catch-up lasted, and over how many `days` when more than one (a trip). */
+export function catchUpTitle(hours: number, days = 1): string {
+  return `${hoursLabel(hours)}${days > 1 ? ` over ${days.toLocaleString("en-AU")} days` : ""}`;
 }
 
 /**

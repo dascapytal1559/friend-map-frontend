@@ -785,8 +785,7 @@ function catchUpsOf(data: DemoData, onMap: ReadonlySet<number>, scale: number, s
     // Two in three say when they started, between 10 am and 8:30 pm, from their place in the list.
     const time = i % 3 === 2 ? null : `${10 + ((i * 7) % 11)}:${i % 2 ? "30" : "00"}`;
     const note = CATCH_UP_NOTES[Math.floor(random() * CATCH_UP_NOTES.length)];
-    // By call when its note says so.
-    catchUps.push({ day: dayKey(at), trip: null, time, hours, byCall: note === "By video call", note, personIds: [...chosen].sort((a, b) => a - b), others });
+    catchUps.push({ day: dayKey(at), trip: null, time, hours, note, personIds: [...chosen].sort((a, b) => a - b), others });
   }
   for (const c of catchUps) for (const id of c.personIds) people[id - 1].edited = true;
   return catchUps.sort((a, b) => a.day.localeCompare(b.day) || (a.time ?? "").localeCompare(b.time ?? "")).map((c, i) => ({ id: i + 1, ...c }));

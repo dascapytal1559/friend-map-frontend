@@ -24,7 +24,7 @@
  * The contract's version, semver: a minor version adds an optional route, field or capability; a major one removes,
  * renames or changes the meaning of anything. The page refuses a backend of another major version.
  */
-export const CONTRACT_VERSION = "1.1.0";
+export const CONTRACT_VERSION = "1.2.0";
 
 /** What a backend serves, and what each part lights up in the app. Only `map` is required. */
 export const CAPABILITIES = {
@@ -740,8 +740,9 @@ export function connectedIds(group: Pick<GroupMembership, "id" | "memberIds">, u
 }
 
 /**
- * A catch-up (src/catchUps.ts): time you spent with people, on a date, for some hours, in person or by a
- * call; or in person over several days (a trip away together, `trip`). Your own record: imports never write one.
+ * A catch-up (src/catchUps.ts): time you spent with people in person, on a date, for some hours, or over several
+ * days (a trip away together, `trip`); a call is never one, but a call (ManualCallInput). Your own record: imports
+ * never write one.
  */
 export interface CatchUp {
   id: number;
@@ -749,7 +750,7 @@ export interface CatchUp {
   day: string;
   /** When it started on that date, local time, 19:30; null when not said (it then sits at the start of its day). Needed with a trip: when it began (when you left, say). */
   time: string | null;
-  /** How it ran over several days, when it did (a trip away together, in person, never by call); null for one on a single date. */
+  /** How it ran over several days, when it did (a trip away together); null for one on a single date. */
   trip: Trip | null;
   /**
    * How long it lasted: more than 0, at most HOURS_MOST, to two decimal places. With a trip, its time together in all:
@@ -757,8 +758,6 @@ export interface CatchUp {
    * 0, which the archive works out from them (whatever hours it is given).
    */
   hours: number;
-  /** Had by a call (phone, Discord…) rather than in person. */
-  byCall: boolean;
   /** Your note on it, free text; empty for none. */
   note: string;
   /** Everyone at it but you, A to Z. */
@@ -820,8 +819,8 @@ export interface CatchUpSaved {
   changeset: number | null;
 }
 
-/** A catch-up as the map's report has it, for the closeness score: when (and how it ran, over several days), how long, whether by call, and who. */
-export type ScoredCatchUp = Pick<CatchUp, "id" | "day" | "time" | "trip" | "hours" | "byCall" | "others"> & { personIds: number[] };
+/** A catch-up as the map's report has it, for the closeness score: when (and how it ran, over several days), how long, and who. */
+export type ScoredCatchUp = Pick<CatchUp, "id" | "day" | "time" | "trip" | "hours" | "others"> & { personIds: number[] };
 
 /**
  * A day's answered calls with one person (the phone's call history), for the closeness score: they count as hours
@@ -831,7 +830,7 @@ export interface CallDay {
   personId: number;
   /** The local day the calls started on, YYYY-MM-DD. */
   day: string;
-  /** How long the day's answered one-to-one calls with them were connected, in all. */
+  /** How long the day's answered one-to-one calls with them were connected, in all: a call held twice (one you logged that the phone's call history brings in too) counted once. */
   seconds: number;
   /**
    * The day's answered calls with them and others (logged by you, or an app's in no chat), each its whole
@@ -891,7 +890,7 @@ export interface PersonCall {
    * time), its unnamed `others` among them.
    */
   people: number;
-  /** How many of them its source could not name (an app's call in no chat with people it knows no account of); else 0. */
+  /** How many of them its source could not name (an app's call in no chat with people it knows no account of), or you did not (one you logged); else 0. */
   others: number;
   /** Your note on it (CallRef says where it is kept); empty for none. */
   note: string;

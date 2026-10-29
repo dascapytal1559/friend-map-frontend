@@ -9,8 +9,8 @@
 // 10 am to start), and it counts the time between less those; it is one
 // hangout, listed, changed and deleted whole. The
 // person's hangouts are listed under a heading that opens and closes them
-// (closed to start), the latest first, each with its hours (and "by call" for
-// an older one ticked so; a trip's in all, over how many days), its date and time (a trip's first to last), whoever else was there (a name
+// (closed to start), the latest first, each with its hours (a trip's in all,
+// over how many days), its date and time (a trip's first to last), whoever else was there (a name
 // opens their panel) and its note. A hangout can take more people by name and
 // say how many more were there unnamed (the wedding: "+ 20 others"), who take
 // a share of its worth. Adding, changing and deleting each show the change
@@ -57,7 +57,8 @@ export interface CallPick {
 
 /**
  * What the form edits for a call: everyone on it (a group call has several), its date and time (empty until given),
- * its length as typed, and its note.
+ * its length as typed, and its note; and how many more were on it unnamed, which the form does not change (the archive
+ * keeps a call's as they were) but carries to a hangout it is made.
  */
 export interface CallDraft {
   people: CallPick[];
@@ -65,16 +66,18 @@ export interface CallDraft {
   time: string;
   length: string;
   note: string;
+  others: number;
 }
 
 /** A new call with `person` (or nobody yet) on `day` (today unless said): no time or length yet, on their usual account. */
 export function freshCall(person?: GroupPerson, day = dayKey(Date.now())): CallDraft {
-  return { people: person ? [{ person, on: null }] : [], day, time: "", length: "", note: "" };
+  return { people: person ? [{ person, on: null }] : [], day, time: "", length: "", note: "", others: 0 };
 }
 
-/** A logged call's group (everyone on it) as the form edits it. */
-export function callDraftOf(call: LoggedCall): CallDraft {
+/** A logged call's group (everyone on it) as the form edits it, with the `others` on it unnamed (its PersonCall's). */
+export function callDraftOf(call: LoggedCall, others = 0): CallDraft {
   return {
+    others,
     people: call.people.map(({ person, accountId, platform }) => ({
       person,
       on: accountId !== null ? { accountId, platform }
@@ -129,25 +132,26 @@ export function callInput(draft: CallDraft): ManualCallInput | null {
 
 /**
  * A hangout as the form makes it from a call it changes into one: everyone on it, at its date and time, its length in
- * hours (to two places, as a hangout keeps them; 1 while the length says none), its note, in person, and no others.
+ * hours (to two places, as a hangout keeps them; 1 while the length says none), its note, and its unnamed others.
  */
 export function hangoutOfCall(call: CallDraft): HangoutDraft {
   const minutes = parseCallLength(call.length);
   return {
-    day: call.day, time: call.time || null, trip: null, hours: minutes === null ? 1 : Math.max(0.01, Math.round(minutes / 60 * 100) / 100), byCall: false, note: call.note,
-    people: call.people.map((p) => p.person), others: 0,
+    day: call.day, time: call.time || null, trip: null, hours: minutes === null ? 1 : Math.max(0.01, Math.round(minutes / 60 * 100) / 100), note: call.note,
+    people: call.people.map((p) => p.person), others: call.others,
   };
 }
 
 /**
  * A call as the form makes it from a hangout it changes into one: everyone named at it, each on their usual account
  * (their chip picks it, as for someone put on a new call), at its date and time (none to fill in, without one), its
- * hours as a length in whole minutes (at least 1), and its note. A call keeps no unnamed others.
+ * hours as a length in whole minutes (at least 1), its note, and its unnamed others, which the archive keeps on the call.
  */
 export function callOfHangout(hangout: HangoutDraft): CallDraft {
   return {
     people: hangout.people.map((person) => ({ person, on: null })), day: hangout.day, time: hangout.time ?? "",
     length: callLengthText(Math.min(CALL_LENGTH_MOST_MINUTES, Math.max(1, Math.round(hangout.hours * 60)))), note: hangout.note,
+    others: hangout.others,
   };
 }
 
@@ -263,7 +267,7 @@ function CatchUpRow({ catchUp, personId, onOpenPerson, onEdit }: {
   return (
     <li className="catch-ups__row">
       <span className="catch-ups__what">
-        <strong>{catchUpTitle(catchUp.hours, catchUp.byCall, catchUpDayCount(catchUp))}</strong> · {catchUpWhen(catchUp.day, catchUp.trip?.lastDay)}
+        <strong>{catchUpTitle(catchUp.hours, catchUpDayCount(catchUp))}</strong> · {catchUpWhen(catchUp.day, catchUp.trip?.lastDay)}
         {catchUp.time && `, ${timeLabel(catchUp.time)}`}{catchUp.trip && ` to ${timeLabel(catchUp.trip.endTime)}`}
       </span>
       <CatchUpWith catchUp={catchUp} personId={personId} onOpenPerson={onOpenPerson} />
@@ -307,7 +311,7 @@ function CatchUpWith({ catchUp, personId, onOpenPerson }: { catchUp: CatchUp; pe
 
 /**
  * A hangout in `personId`'s chat, at its time or the start of its day: "Hangout · 7:30 pm · 3 hours" ("Hangout ·
- * 3 hours" without a time, "3 hours by call" for an older one by call; a trip where it began, "Hangout · 6:00 pm ·
+ * 3 hours" without a time; a trip where it began, "Hangout · 6:00 pm ·
  * 24 hours over 3 days · until 6 Oct 2026, 2:00 pm"), who else was there, and its note's
  * first line (hidden with the names). A click opens the form in its place, with Delete; on a read-only page it only shows.
  */
@@ -326,7 +330,7 @@ export function ChatCatchUp({ catchUp, personId }: { catchUp: CatchUp; personId:
   const body = (
     <>
       <span className="message__catch-up-what">
-        <strong>{HANGOUT.One}</strong>{catchUp.time && ` · ${timeLabel(catchUp.time)}`} · {catchUpTitle(catchUp.hours, catchUp.byCall, catchUpDayCount(catchUp))}
+        <strong>{HANGOUT.One}</strong>{catchUp.time && ` · ${timeLabel(catchUp.time)}`} · {catchUpTitle(catchUp.hours, catchUpDayCount(catchUp))}
         {catchUp.trip && ` · until ${catchUpWhen(catchUp.trip.lastDay)}, ${timeLabel(catchUp.trip.endTime)}`}
       </span>
       <CatchUpWith catchUp={catchUp} personId={personId} />
@@ -357,7 +361,7 @@ export function ChatLoggedCall({ call }: { call: PersonCall }) {
     return (
       <div className="message message--catch-up message--editing">
         {group.data
-          ? <EventForm start={{ kind: "call", id: call.id, call: callDraftOf(group.data) }} onDone={() => setEditing(false)} onDelete={() => removeCall(call)} />
+          ? <EventForm start={{ kind: "call", id: call.id, call: callDraftOf(group.data, call.others) }} onDone={() => setEditing(false)} onDelete={() => removeCall(call)} />
           : <p className="muted">{group.error ?? "Loading the call…"}</p>}
       </div>
     );
@@ -471,9 +475,9 @@ export function EventForm({ start, onDone, onDelete }: {
   const shared = { day, setDay, time, setTime, toggle, actions, run, onDone, label };
   if (kind === "call") {
     const save = (input: ManualCallInput) => !changing ? saveCall(input) : start.kind === "call" ? saveCall(input, start.id) : convertToCall(start.id, input);
-    // A hangout's unnamed others, and a trip's days, have no place on a call: said, so it is no surprise they go.
+    // A trip's days have no place on a call: said, so it is no surprise they go. Its unnamed others stay on it, as said.
     const dropped = !converting ? null : [
-      ...(hangout.others > 0 ? [`The ${othersLabel(hangout.others).slice(1)} unnamed at the ${HANGOUT.one} ${hangout.others === 1 ? "is" : "are"} not kept on a call.`] : []),
+      ...(hangout.others > 0 ? [`The ${othersLabel(hangout.others).slice(1)} unnamed at the ${HANGOUT.one} stay on the call.`] : []),
       ...(hangout.trip ? [`A call is on one day: the trip's days after its first are not kept.`] : []),
     ].join(" ") || null;
     return <CallFields key="call" draft={call} save={save} dropped={dropped} {...shared} />;
@@ -635,9 +639,8 @@ function HangoutFields({ draft, save: saveIt, day, setDay, time, setTime, toggle
   const trip = severalDays ? tripOf(day, time, { lastDay, endTime, privateFrom, privateTo }) : null;
   const together = trip ? tripHours(day, time, trip) : 0;
   const valid = people.length > 0 && !!day && (severalDays ? together > 0 : Number(hours) > 0) && Number.isInteger(othersCount) && othersCount >= 0;
-  // A hangout's by call is kept as it was: one ticked before calls were their own kind stays so, and a new one is in person.
   const save = () => saveIt({
-    day, time: time || null, trip, hours: trip ? together : Number(hours), byCall: draft.byCall, note, personIds: people.map((p) => p.id), others: othersCount,
+    day, time: time || null, trip, hours: trip ? together : Number(hours), note, personIds: people.map((p) => p.id), others: othersCount,
   });
   return (
     <FormFrame label={label} onSubmit={() => valid && void run(save)} onCancel={onDone}>
@@ -719,7 +722,7 @@ export function tripOf(day: string, time: string, fields: Trip): Trip | null {
 function CallFields({ draft: start, save: saveIt, dropped, day, setDay, time, setTime, toggle, actions, run, onDone, label }: Shared & {
   draft: CallDraft;
   save: (input: ManualCallInput) => Promise<boolean>;
-  /** What the event it is made from has that a call keeps no place for, said under its people; null for nothing. */
+  /** What becomes of what the hangout it is made from has that the call shows no field for, said under its people; null for nothing. */
   dropped: string | null;
 }) {
   const [draft, setDraft] = useState<CallDraft>(start);

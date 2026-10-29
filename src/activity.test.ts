@@ -16,7 +16,7 @@ describe("personActivity", () => {
     generatedAt: Date.parse("2026-03-15T12:00:00+11:00"),
     people: [{ id: 1, months: [month("2026-01", 18, 42)] }],
     groups: [],
-    catchUps: [{ id: 1, day: "2026-03-05", hours: 2, time: null, trip: null, byCall: false, others: 0, personIds: [1] }],
+    catchUps: [{ id: 1, day: "2026-03-05", hours: 2, time: null, trip: null, others: 0, personIds: [1] }],
     callDays: [{ personId: 1, day: "2026-02-01", seconds: 30 * 60 }, { personId: 1, day: "2026-02-20", seconds: 3 * 60 }, { personId: 1, day: "2026-02-25", seconds: 0, groupCalls: [{ seconds: 30 * 60, people: 2 }] }, { personId: 2, day: "2026-02-01", seconds: 600 }],
   };
 
@@ -34,7 +34,7 @@ describe("personActivity", () => {
   it("counts a trip as one hangout, in the month it began, its points in the months of its days", () => {
     // 6 pm on 27 Feb to 2 pm on 1 Mar, private midnight to 10 am: 6 and 14 hours in February, 4 in March, 24 in all,
     // counting as 8 × √3 hours (tripCountedHours), at 50 an hour 692.82: 20/24 of it in February, 4/24 in March.
-    const trip = { id: 2, day: "2026-02-27", time: "18:00", trip: { lastDay: "2026-03-01", endTime: "14:00", privateFrom: "00:00", privateTo: "10:00" }, hours: 24, byCall: false, others: 0, personIds: [1] };
+    const trip = { id: 2, day: "2026-02-27", time: "18:00", trip: { lastDay: "2026-03-01", endTime: "14:00", privateFrom: "00:00", privateTo: "10:00" }, hours: 24, others: 0, personIds: [1] };
     const activity = personActivity({ ...report, catchUps: [trip], callDays: [] }, 1, DEFAULT_SETTINGS);
     const months = activity.points.filter((p) => p.hangouts > 0);
     expect(months.map((p) => [p.month, p.hangoutCount])).toEqual([["2026-02", 1], ["2026-03", 0]]);

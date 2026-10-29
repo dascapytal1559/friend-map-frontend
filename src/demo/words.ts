@@ -115,7 +115,7 @@ export const NOTES: readonly string[] = [
 /** Notes on your catch-ups (empty for none, as most are). */
 export const CATCH_UP_NOTES: readonly string[] = [
   "Dinner", "Coffee", "Brunch", "Climbing at the gym", "Walk along the river", "Birthday drinks", "Board games",
-  "By video call", "Helped move house", "Picnic in the park", "", "", "", "", "",
+  "Farmers market", "Helped move house", "Picnic in the park", "", "", "", "", "",
 ];
 
 /** Nicknames a person may go by, made from their first name. */

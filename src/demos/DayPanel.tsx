@@ -128,7 +128,7 @@ export function DayContent({ data, hide, groups, onOpenPerson }: {
                 <span>
                   {catchUp.time && catchUp.day === data.day && `${timeLabel(catchUp.time)} · `}
                   {catchUp.trip?.lastDay === data.day && `until ${timeLabel(catchUp.trip.endTime)} · `}
-                  <strong>{hoursLabel(Math.round(catchUpHoursOn(catchUp, data.day) * 100) / 100)}</strong>{catchUp.byCall && " by call"} with {catchUp.people.map((p, i) => (
+                  <strong>{hoursLabel(Math.round(catchUpHoursOn(catchUp, data.day) * 100) / 100)}</strong> with {catchUp.people.map((p, i) => (
                     <span key={p.id}>{i > 0 && (i === catchUp.people.length - 1 ? " and " : ", ")}{person(p)}</span>
                   ))}
                   {catchUp.others > 0 && <span className="muted"> {othersLabel(catchUp.others)}</span>}

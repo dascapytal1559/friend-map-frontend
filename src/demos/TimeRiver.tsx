@@ -2,7 +2,7 @@
 // whose geometry, riverLayout.ts, it shares unchanged) over hangouts, calls,
 // both together or messages, chosen on the filter bar under the header
 // (FilterBar: Messages on its own, or Calls and Hangouts toggled, with the
-// time it covers, the app or how hangouts were had, and for calls whether
+// time it covers, the app, and for calls whether
 // those with no length show; timeRiver.ts keeps them in this browser).
 // Messages: each stream as wide as that month's messages, as the river has
 // them; Calls: as long as that month's answered calls (a missed call, or one
@@ -31,8 +31,8 @@ import { useMedia } from "./orbitsSky.ts";
 import { COLORS, communityColor } from "./palette.ts";
 import { layoutRiver, niceBar, placeLabels, streamAt } from "./riverLayout.ts";
 import {
-  ALL_APPS, appChoices, flowRows, flowsOf, HAD, inSpan, kindOn, KINDS, markAt, setFilters, spanMonths, SPANS, toggleKind, useFilters, widthLabel,
-  type Filters, type Flow, type Had, type Mark, type Span,
+  ALL_APPS, appChoices, flowRows, flowsOf, inSpan, kindOn, KINDS, markAt, setFilters, spanMonths, SPANS, toggleKind, useFilters, widthLabel,
+  type Filters, type Flow, type Mark, type Span,
 } from "./timeRiver.ts";
 import "./timeRiver.css";
 import { Legend, Swatch, tipAt, useSize, type Demo, type ViewProps } from "./view.tsx";
@@ -337,8 +337,8 @@ function TimeRiver({ model, width, height, inset, hover, open, held = null }: Vi
 
 /**
  * The bar under the header: what the river shows (Messages on its own, or Calls, Hangouts or both, toggled apart), the
- * time it covers (a span, or from one month to another of those with any), the app calls or messages were on, how
- * hangouts were had, and for calls whether those with no length show. Every choice is kept in this browser
+ * time it covers (a span, or from one month to another of those with any), the app calls or messages were on, and for
+ * calls whether those with no length show. Every choice is kept in this browser
  * (timeRiver.ts).
  */
 function FilterBar({ ref, top, filters, months, apps }: {
@@ -403,14 +403,6 @@ function FilterBar({ ref, top, filters, months, apps }: {
           <select value={app} onChange={(event) => setFilters({ app: { ...filters.app, [appOf]: event.target.value } })}>
             <option value={ALL_APPS}>All apps</option>
             {appOptions.map((a) => <option key={a.value} value={a.value}>{a.title}</option>)}
-          </select>
-        </label>
-      )}
-      {kindOn(measure, "hangouts") && (
-        <label className="time-river-bar__field">
-          <span>Had</span>
-          <select value={filters.had} onChange={(event) => setFilters({ had: event.target.value as Had })}>
-            {HAD.map((h) => <option key={h.value} value={h.value}>{h.title}</option>)}
           </select>
         </label>
       )}

@@ -183,12 +183,12 @@ describe("catch-ups", () => {
     expect(caughtUp("2026-03-01", 0).get(1)).toBeUndefined();
   });
 
-  it("goes by its hours times the settings' worth of an hour, in person or by call alike, and starts the months at the first catch-up", () => {
-    const at = (day: string, hours: number, byCall: boolean, id: number): ScoredCatchUp => ({ id, day, hours, time: null, trip: null, byCall, personIds: [id], others: 0 });
+  it("goes by its hours times the settings' worth of an hour, and starts the months at the first catch-up", () => {
+    const at = (day: string, hours: number, id: number): ScoredCatchUp => ({ id, day, hours, time: null, trip: null, personIds: [id], others: 0 });
     const report = {
       generatedAt: NOW, groups: [],
       people: [1, 2, 3, 4, 5].map((id) => ({ id, months: id === 5 ? [{ month: "2026-02", directFromMe: 1, directFromThem: 1, directFromMeSelfOnly: 0, groupFromMe: 0, groupFromThem: 0 }] : [] })),
-      catchUps: [at("2026-03-15", 3, false, 1), at("2026-03-15", 3, true, 2), at("2026-03-15", 0.5, false, 3), at("2025-11-20", 1, true, 4)],
+      catchUps: [at("2026-03-15", 3, 1), at("2026-03-15", 3, 2), at("2026-03-15", 0.5, 3), at("2025-11-20", 1, 4)],
       callDays: [],
     };
     // Before anyone's first message, so the months start there.
@@ -255,7 +255,7 @@ describe("reciprocity", () => {
     const selfOnly: GroupMembership = { ...group(11, [1, 2], 20, {}), selfOnly: true };
     const base = {
       ...report({ 1: [month("2026-01", 0, 0)], 2: [month("2026-01", 0, 0)] }, [g, selfOnly]),
-      catchUps: [{ id: 1, day: "2026-02-10", time: null, trip: null, hours: 2, personIds: [1], others: 0, byCall: false }] as ScoredCatchUp[],
+      catchUps: [{ id: 1, day: "2026-02-10", time: null, trip: null, hours: 2, personIds: [1], others: 0 }] as ScoredCatchUp[],
       callDays: [{ personId: 2, day: "2026-03-02", seconds: 3600 }] as CallDay[],
     };
     const balanced = reportScores(base, MONTHS, DEFAULT_SETTINGS);
@@ -303,7 +303,7 @@ describe("chats where only your side is known", () => {
 
 describe("a catch-up's share", () => {
   it("gives each at it their share of its worth: half shared by all, half split equally", () => {
-    const people = (n: number): ScoredCatchUp => ({ id: n, day: "2026-03-15", hours: 2, time: null, trip: null, byCall: false, personIds: Array.from({ length: n }, (_, i) => n * 10 + i), others: 0 });
+    const people = (n: number): ScoredCatchUp => ({ id: n, day: "2026-03-15", hours: 2, time: null, trip: null, personIds: Array.from({ length: n }, (_, i) => n * 10 + i), others: 0 });
     const report = {
       generatedAt: NOW, groups: [], callDays: [], catchUps: [people(1), people(2), people(5)],
       people: [10, 20, 21, 50, 51, 52, 53, 54].map((id) => ({ id, months: [] })),
@@ -323,8 +323,8 @@ describe("a catch-up's share", () => {
     const report = {
       generatedAt: NOW, groups: [], callDays: [],
       catchUps: [
-        { id: 1, day: "2026-03-15", hours: 3, time: null, trip: null, byCall: false, personIds: [1], others: 2 },
-        { id: 2, day: "2026-03-15", hours: 2, time: null, trip: null, byCall: false, personIds: [2, 3], others: 18 },
+        { id: 1, day: "2026-03-15", hours: 3, time: null, trip: null, personIds: [1], others: 2 },
+        { id: 2, day: "2026-03-15", hours: 2, time: null, trip: null, personIds: [2, 3], others: 18 },
       ],
       people: [1, 2, 3].map((id) => ({ id, months: [] })),
     };
@@ -343,10 +343,10 @@ describe("a trip", () => {
   // Away with one friend from 6 pm on 4 Mar to 2 pm on 6 Mar, private midnight to 10 am: 6 hours, then 14, then 4.
   const trip: ScoredCatchUp = {
     id: 1, day: "2026-03-04", time: "18:00", trip: { lastDay: "2026-03-06", endTime: "14:00", privateFrom: "00:00", privateTo: "10:00" },
-    hours: 24, byCall: false, personIds: [1], others: 0,
+    hours: 24, personIds: [1], others: 0,
   };
   const days = (hours: Array<[string, number]>): ScoredCatchUp[] =>
-    hours.map(([day, h], i) => ({ id: 10 + i, day, time: null, trip: null, hours: h, byCall: false, personIds: [2], others: 0 }));
+    hours.map(([day, h], i) => ({ id: 10 + i, day, time: null, trip: null, hours: h, personIds: [2], others: 0 }));
   const report = (catchUps: ScoredCatchUp[]) => ({ generatedAt: NOW, groups: [], callDays: [], catchUps, people: [1, 2].map((id) => ({ id, months: [] })) });
 
   it("counts each of its days on its own date, its part of the hours its time together counts as", () => {
@@ -414,44 +414,24 @@ describe("calls", () => {
     expect(reportMonths(report([minutes(1, "2025-12-01", 30)]))).toEqual(["2025-12", "2026-01", "2026-02", "2026-03"]);
   });
 
-  it("counts the longer of a day's calls and the catch-ups by call added with them that day, never both", () => {
-    // Split equally (nothing shared), so the shares are easy to follow. An hour's call with 1, and an hour and a half by call with 1 and 2 added: 1's share, 45 minutes, is the shorter,
-    // so the calls add the 15 minutes more.
-    const byCall: ScoredCatchUp = { id: 7, day: "2026-03-15", hours: 1.5, time: null, trip: null, byCall: true, personIds: [1, 2], others: 0 };
-    // 30 minutes added for 4, who was on the phone for two hours: the calls add the hour and a half more.
-    const shorter: ScoredCatchUp = { id: 8, day: "2026-03-15", hours: 0.5, time: null, trip: null, byCall: true, personIds: [4], others: 0 };
-    // In person with 3, then a call the same day: both count.
-    const inPerson: ScoredCatchUp = { id: 9, day: "2026-03-15", hours: 2, time: null, trip: null, byCall: false, personIds: [3], others: 0 };
-    // Two hours by call with 5 and two others unnamed: 5's share is 40 minutes, so an hour's call adds 20 more.
-    const crowd: ScoredCatchUp = { id: 10, day: "2026-03-15", hours: 2, time: null, trip: null, byCall: true, personIds: [5], others: 2 };
-    const calls = [minutes(1, "2026-03-15", 60), minutes(1, "2026-03-10", 60), minutes(3, "2026-03-15", 60), minutes(4, "2026-03-15", 120), minutes(5, "2026-03-15", 60)];
-    const catchUps = [byCall, shorter, inPerson, crowd];
-    const equal = { ...DEFAULT_SETTINGS, groupSharedPart: 0 };
-    const counted = callCatchUps(report(calls, catchUps), equal);
-    expect(counted.slice(0, 4)).toEqual([
-      { day: "2026-03-15", personIds: [1], worth: 12.5 },
-      { day: "2026-03-10", personIds: [1], worth: 50 },
-      { day: "2026-03-15", personIds: [3], worth: 50 },
-      { day: "2026-03-15", personIds: [4], worth: 75 },
-    ]);
-    expect(counted[4]).toMatchObject({ day: "2026-03-15", personIds: [5] });
-    expect(counted[4].worth).toBeCloseTo(50 / 3);
-    const now = closenessNow(report(calls, catchUps), equal);
-    expect(now.get(1)).toBeCloseTo(50 + 50 * half(5));
-    expect(now.get(2)).toBeCloseTo(37.5);
-    expect(now.get(3)).toBeCloseTo(150);
-    expect(now.get(4)).toBeCloseTo(100);
-    expect(now.get(5)).toBeCloseTo(50);
-
-    // Half shared, 1's share by call is 67.5 minutes and 5's 80, each longer than their hour's call, which adds nothing.
+  it("counts a day's calls in full beside any hangout with them that day, a backend's byCall passed over", () => {
+    // In person with 3 for two hours, then an hour's call the same day: both count.
+    const inPerson: ScoredCatchUp = { id: 9, day: "2026-03-15", hours: 2, time: null, trip: null, personIds: [3], others: 0 };
+    // One a backend still sends with byCall, from before calls were their own kind (the life archive's repair makes it the
+    // call it was): a hangout like any other, and the day's calls with 1 count whole beside it.
+    const older = { id: 7, day: "2026-03-15", hours: 1.5, time: null, trip: null, byCall: true, personIds: [1, 2], others: 0 } as ScoredCatchUp;
+    const calls = [minutes(1, "2026-03-15", 60), minutes(1, "2026-03-10", 60), minutes(3, "2026-03-15", 60)];
+    const catchUps = [older, inPerson];
     expect(callCatchUps(report(calls, catchUps), DEFAULT_SETTINGS)).toEqual([
+      { day: "2026-03-15", personIds: [1], worth: 50 },
       { day: "2026-03-10", personIds: [1], worth: 50 },
       { day: "2026-03-15", personIds: [3], worth: 50 },
-      { day: "2026-03-15", personIds: [4], worth: 75 },
     ]);
-    const shared = closenessNow(report(calls, catchUps), DEFAULT_SETTINGS);
-    expect(shared.get(1)).toBeCloseTo(56.25 + 50 * half(5));
-    expect(shared.get(5)).toBeCloseTo(200 / 3);
+    const now = closenessNow(report(calls, catchUps), DEFAULT_SETTINGS);
+    // 1: the day's hour of calls and their share of the hour and a half with 2 (½ + ½ ÷ 2 of 75), and the hour five days before.
+    expect(now.get(1)).toBeCloseTo(50 + 56.25 + 50 * half(5));
+    expect(now.get(2)).toBeCloseTo(56.25);
+    expect(now.get(3)).toBeCloseTo(150);
   });
 
   it("gives each on a call logged with several people their share of it, before the shortest day that counts", () => {
@@ -526,8 +506,8 @@ describe("scoreLabel", () => {
 describe("personMonthPoints", () => {
   const counts = (month: string, directFromMe: number, directFromThem: number, directFromMeSelfOnly = 0) =>
     ({ month, directFromMe, directFromThem, directFromMeSelfOnly, groupFromMe: 0, groupFromThem: 0 });
-  const catchUp = (id: number, day: string, hours: number, personIds: number[], others = 0, byCall = false): ScoredCatchUp =>
-    ({ id, day, time: null, trip: null, hours, personIds, others, byCall });
+  const catchUp = (id: number, day: string, hours: number, personIds: number[], others = 0): ScoredCatchUp =>
+    ({ id, day, time: null, trip: null, hours, personIds, others });
   const report = {
     generatedAt: NOW,
     people: [

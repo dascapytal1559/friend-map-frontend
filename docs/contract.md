@@ -1,6 +1,6 @@
 # The data contract: building a backend for friend-map
 
-friend-map is a front end. It draws the map, scores closeness and lets you change people, but it keeps none of their data. The people, their accounts and their messages live in a **backend**: another program, in any language, that answers a set of HTTP routes under `/api/archive`. This page is that set of routes, **contract 1.1.0**: what a backend holds, what it must serve, what it may serve, and how to build one, starting with four routes.
+friend-map is a front end. It draws the map, scores closeness and lets you change people, but it keeps none of their data. The people, their accounts and their messages live in a **backend**: another program, in any language, that answers a set of HTTP routes under `/api/archive`. This page is that set of routes, **contract 1.2.0**: what a backend holds, what it must serve, what it may serve, and how to build one, starting with four routes.
 
 The contract in code is `src/archive.ts`: every answer's type, the version (`CONTRACT_VERSION`), the capabilities (`CAPABILITIES`) and every route (`ROUTES`). Beside this page:
 
@@ -171,7 +171,7 @@ Some payloads, as a write sends them:
 { "name": "Ada Sample", "location": "Lisbon", "tags": ["climbing"], "note": "", "anyway": false }
 
 // POST /api/archive/catch-ups (CatchUpInput): a hangout
-{ "day": "2026-09-02", "time": "19:30", "trip": null, "hours": 3, "byCall": false, "note": "", "personIds": [101, 102], "others": 0 }
+{ "day": "2026-09-02", "time": "19:30", "trip": null, "hours": 3, "note": "", "personIds": [101, 102], "others": 0 }
 
 // POST /api/archive/calls (ManualCallInput): a call you log
 { "people": [{ "personId": 101, "accountId": null, "app": "phone" }], "day": "2026-09-03", "time": "18:00", "minutes": 40, "note": "" }
@@ -192,6 +192,7 @@ Some payloads, as a write sends them:
 What each minor version added:
 
 - **1.1.0**: `callAnswer` on a call record in the chat (TimelineMessage), whether you said it was answered (`PUT /call-answered`), so the chat can show a call you said had no answer, and take it back. A backend before it leaves it out, and the chat reads that as no answer of yours.
+- **1.2.0**: a hangout is time in person, and a call is logged as a call (`POST /calls`): `byCall` is gone from CatchUp, ScoredCatchUp and CatchUpInput. It took nothing away a 1.x backend relies on: one may still send `byCall`, which the page passes over, and the page no longer sends it, which 1.0 already read as in person (its default, false). A day's calls (CallDay) count in full in the closeness score, so a backend that may hold one call twice (one you logged that an import brings in too) counts it once. A hangout made a call (`POST /catch-ups/:id/call`) keeps its unnamed others on the call, and a logged call's PersonCall says them in `others`, so making it a hangout again keeps them too.
 
 friend-map reads any 1.x backend. A capability name it does not know is passed over. A backend with **no handshake at all** (`GET /contract` answers 404) is taken to be one from before contract 1.0: it is assumed to serve every capability, in friend-map's own time zone. That covers the author's backend until it serves a handshake; contract 2.0 drops it, and `contract-check` already fails such a backend.
 

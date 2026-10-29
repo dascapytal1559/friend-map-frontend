@@ -183,7 +183,6 @@ export const scoredCatchUp = object<ScoredCatchUp>("ScoredCatchUp", {
   personIds: ids,
   time: optional(nullable(clock), () => null, "null"),
   trip: optional(nullable(trip), () => null, "null"),
-  byCall: optional(boolean, () => false, "false"),
   others: optional(number, () => 0, "0"),
 });
 
@@ -301,7 +300,6 @@ export const catchUp = object<CatchUp>("CatchUp", {
   time: nullable(clock),
   trip: nullable(trip),
   hours: number,
-  byCall: boolean,
   note: string,
   people: array(groupPerson),
   others: number,

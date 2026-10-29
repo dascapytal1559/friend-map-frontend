@@ -160,7 +160,7 @@ describe("closeness in the model", () => {
     const withHangout = (others = 0): RelationshipsReport => ({
       ...report,
       people: [...report.people, person(4, "Walt")],
-      catchUps: [{ id: 1, day: "2026-03-15", hours: 2, time: null, trip: null, byCall: false, others, personIds: [3, 4] }],
+      catchUps: [{ id: 1, day: "2026-03-15", hours: 2, time: null, trip: null, others, personIds: [3, 4] }],
     });
     const closeness = (others = 0, settings = DEFAULT_SETTINGS) =>
       new Map(buildModel(withHangout(others), { settings }).people.map((p) => [p.id, p.closeness.at(-1)!]));

@@ -12,8 +12,8 @@ import { DEMO_CONTRACT, DemoArchive } from "./archive.ts";
 import { generateDemo } from "./generate.ts";
 
 // The static demo's entry (npm run build:demo; src/main.tsx is the app's): the
-// app's demo, the very pages /demo shows in the app, at the root of a site of
-// its own, read-only and marked as the demo. Its archive is the made-up crowd,
+// demo, the only one (the public demo, PUBLIC_DEMO in views.ts), at the root of
+// a site of its own, read-only and marked as the demo. Its archive is the made-up crowd,
 // made in the page as it opens (half a second or so) and held in it: there is
 // no server behind these files. The page says what it is doing first
 // (index.html), and the crowd is made once that has been drawn.

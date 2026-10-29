@@ -25,8 +25,8 @@
 // (glowsOf in demos/reachGlow.ts). Each view's own rule for whom it names
 // still holds (Show top names on the map; while someone is held, everyone linked to
 // them), so it only ever leaves names out. Pages read the choice
-// through useNames, so anything labelled that way follows it. The demo (/demo,
-// demoMode.ts), whose people are all made up and stored by their full names,
+// through useNames, so anything labelled that way follows it. The demo (the static
+// demo, demoMode.ts), whose people are all made up and stored by their full names,
 // offers the first four for its map, starting at your choice where it
 // shows names (First L. as the real app starts), and keeps its visitor's choice
 // apart from the real app's; off the map it names everyone, and their

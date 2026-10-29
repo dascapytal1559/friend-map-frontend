@@ -6,7 +6,7 @@ It opens on the **Spider web**; **Orbits** draws the same map as a 3D solar syst
 
 ![The Spider web view, on the demo's made-up crowd](docs/screenshot.jpg)
 
-**Demo:** there is no public site yet. To see it, build and serve the static demo (below), or open `/demo` in a running app. Everyone in it is made up.
+**Demo:** <https://friend-map-demo.pages.dev/spider>, also opened by Demo in the app's view switcher. Everyone in it is made up.
 
 ## Quick start
 

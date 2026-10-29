@@ -23,6 +23,7 @@ import { archiveProxy } from "./archiveProxy.ts";
 import { BASE_PATH, serveAtBase } from "./basePath.ts";
 import { archiveUrl, dataHome } from "./dataHome.ts";
 import { createMethodologyHandler } from "./methodology.ts";
+import { redirectOldDemo } from "./oldDemo.ts";
 import { savedSettingsPlugin } from "./savedSettingsPlugin.ts";
 
 const PORT = Number(process.env.PORT ?? 4600);
@@ -54,7 +55,8 @@ guardHosts(server, extraHosts);
 serveAtBase(server, {
   archive: (req, res) => void archiveApi(req, res),
   api: (req, res) => void api(req, res),
-  page: (req, res) => vite.middlewares(req, res),
+  // An old /demo link leads to the public demo (server/oldDemo.ts); the app no longer holds one.
+  page: (req, res) => void (redirectOldDemo(req, res) || vite.middlewares(req, res)),
 });
 
 server.listen(PORT, HOST, () => {

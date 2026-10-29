@@ -4,20 +4,20 @@
 // views: the main views first (Orbits, the Spider web and the City; Orbits 2D is hidden for now), then
 // Circles, the Table and the Calendar, then the frozen views, then the open view's settings, if it has any, in a section set apart
 // (ViewSettings.tsx, viewSettings.ts; on a page that shows names, Name format, which
-// names it shows, comes first in it), then, under About the app, the Demo
-// (src/views.ts); Esc, a click elsewhere or moving focus
+// names it shows, comes first in it), then, under About the app, the Demo,
+// which opens the public demo in a tab of its own (PUBLIC_DEMO in
+// src/views.ts); Esc, a click elsewhere or moving focus
 // out closes it. Links are real links, so a view can open in a new tab;
-// `navigate` lets the map views switch between themselves in place, and a page
-// (the Demo) always loads as its own. In the demo (demoMode.ts) the
-// demo's views are listed (DEMO_VIEWS in views.ts) at their places in it (under
-// /demo in the app, at the root of the static demo's site), the main views first
-// as ever, and nothing else: no Demo, and no way into the real map.
+// `navigate` lets the map views switch between themselves in place. In the
+// demo (demoMode.ts) the demo's views are listed (DEMO_VIEWS in views.ts), the
+// main views first as ever, and nothing else: no Demo, and no way into the
+// real map.
 
 import { useEffect, useId, useRef, useState } from "react";
-import { demoMode, demoRoot } from "./demoMode.ts";
+import { demoMode } from "./demoMode.ts";
 import { ViewSettings } from "./ViewSettings.tsx";
 import { address } from "./mount.ts";
-import { DEMO_PAGE, MAIN_VIEWS, VIEWS, viewPath, viewsFor, type ViewInfo } from "./views.ts";
+import { MAIN_VIEWS, PUBLIC_DEMO, VIEWS, viewsFor, type ViewInfo } from "./views.ts";
 import "./viewSwitcher.css";
 
 export type Navigate = (to: string) => (event: React.MouseEvent) => void;
@@ -91,10 +91,10 @@ export function ViewSwitcher({ current, crumb, navigate, names = false, look = f
 
 /**
  * The list the switcher opens: the main views, Circles, the Table and the Calendar, the frozen views, the current
- * view's settings if it has any (with `names`, Name format first among them), then the Demo; in the demo
- * (`demo`), its own views alone, none of them frozen, at their places under `root`, and the current one's settings.
+ * view's settings if it has any (with `names`, Name format first among them), then the Demo (the public demo, in a
+ * new tab); in the demo (`demo`), its own views alone, none of them frozen, and the current one's settings.
  */
-export function ViewList({ id, current, navigate, onPick, names = false, look = false, demo = demoMode, root = demoRoot }: {
+export function ViewList({ id, current, navigate, onPick, names = false, look = false, demo = demoMode }: {
   id?: string;
   current: string;
   navigate?: Navigate;
@@ -102,8 +102,6 @@ export function ViewList({ id, current, navigate, onPick, names = false, look = 
   names?: boolean;
   look?: boolean;
   demo?: boolean;
-  /** Where the demo's views are (demoRoot). */
-  root?: string;
 }) {
   const offered = viewsFor(demo);
   // A hidden view is not listed, but opened by its address it keeps its settings here.
@@ -111,23 +109,19 @@ export function ViewList({ id, current, navigate, onPick, names = false, look = 
   const main = views.filter((view) => MAIN_VIEWS.includes(view.slug));
   const others = views.filter((view) => !MAIN_VIEWS.includes(view.slug));
   const shown = offered.find((view) => view.slug === current);
-  const link = (view: Pick<ViewInfo, "slug" | "path" | "title">, go?: Navigate, title?: string) => {
-    const path = viewPath(view, demo, root);
-    return (
-      <a
-        key={view.slug}
-        href={address(path)}
-        title={title}
-        aria-current={view.slug === current ? "page" : undefined}
-        onClick={(event) => {
-          onPick();
-          go?.(path)(event);
-        }}
-      >
-        {view.title}
-      </a>
-    );
-  };
+  const link = (view: Pick<ViewInfo, "slug" | "path" | "title">, go?: Navigate) => (
+    <a
+      key={view.slug}
+      href={address(view.path)}
+      aria-current={view.slug === current ? "page" : undefined}
+      onClick={(event) => {
+        onPick();
+        go?.(view.path)(event);
+      }}
+    >
+      {view.title}
+    </a>
+  );
   return (
     <nav className="view-switcher__menu" id={id} aria-label="Views">
       <span className="view-switcher__group">Main views</span>
@@ -144,7 +138,15 @@ export function ViewList({ id, current, navigate, onPick, names = false, look = 
       {!demo && (
         <>
           <span className="view-switcher__group">About the app</span>
-          {link(DEMO_PAGE, undefined, "The map views on a made-up crowd, for showing friend-map to someone, as the public demo shows them: nothing of yours is in it")}
+          <a
+            href={PUBLIC_DEMO}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="The public demo, in a new tab: the map views on a made-up crowd, for showing friend-map to someone; nothing of yours is in it"
+            onClick={onPick}
+          >
+            Demo
+          </a>
         </>
       )}
     </nav>

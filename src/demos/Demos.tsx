@@ -19,8 +19,8 @@
 // hover card, the person panel (docked beside the live views, or over the ones
 // that keep their size, Orbits, Circles and the Spider web; floating over the
 // frozen ones, which also open the People list); Circles has everything the main view has, following changes to people made
-// elsewhere (the CLI), and the usage record. On the demo's pages (/demo in the
-// app, and the static demo's, demoMode.ts) the archive is the made-up crowd's,
+// elsewhere (the CLI), and the usage record. On the demo's pages (the static
+// demo's, demoMode.ts) the archive is the made-up crowd's,
 // only the demo's views are offered (DEMO_VIEWS in views.ts: Orbits, the solar
 // system at /orbits-3d, and the Spider web), the name choice is the demo's own
 // (First L. to start with, and no No name except…), and the Query bar's box offers examples. Each view lives in its own
@@ -31,7 +31,7 @@ import "../app.css";
 import { SHOWN_LIMIT } from "../archive.ts";
 import { EXAMPLES } from "../demo/examples.ts";
 import { DemoModeMark } from "../DemoMode.tsx";
-import { demoMode, staticDemo } from "../demoMode.ts";
+import { demoMode } from "../demoMode.ts";
 import { PeoplePanel } from "../PeoplePanel.tsx";
 import { useShownNames } from "../shownNames.ts";
 import { followArchive } from "../useArchive.ts";
@@ -75,9 +75,9 @@ export type OwnPages = Partial<Record<"table" | "calendar", ComponentType<{ navi
 
 /**
  * Every view, or on the static demo's site its own alone (DEMO_VIEWS in views.ts), so its files carry no other view's
- * code: the build knows it is the static demo (staticDemo), and leaves the rest out.
+ * code: the build knows it is the static demo (demoMode), and leaves the rest out.
  */
-export const DEMOS: Demo[] = staticDemo ? [orbits3d, web] : [orbits, orbits3d, circles, web, city, timeRiver, river, reciprocity];
+export const DEMOS: Demo[] = demoMode ? [orbits3d, web] : [orbits, orbits3d, circles, web, city, timeRiver, river, reciprocity];
 /** Orbits, Orbits 3D, Circles and the Spider web: one sky, each with Methodology (which explains its marks); the City has everything else of the main view's. */
 const MAIN: Demo[] = [orbits, orbits3d, circles, web];
 

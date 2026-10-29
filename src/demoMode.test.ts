@@ -1,9 +1,9 @@
-// The demo (demoMode.ts): its own app at /demo, the map views of the real app's
-// again under it (DEMO_VIEWS), chosen by the address alone (the old Demo
-// switch's stored choice is cleared, never read), and the same pages as the
-// static demo; on its pages nothing of yours is asked of the server
-// (every archive call, its live updates and the usage record stay in the page),
-// and every view draws the made-up crowd.
+// The demo (demoMode.ts): the static demo alone, its own app on a site of its
+// own, the map views of the real app's again (DEMO_VIEWS), chosen by how the
+// page was built (the old Demo switch's stored choice is cleared, never read);
+// the app holds none. On its pages nothing is asked of a server (every archive
+// call, its live updates and the usage record stay in the page), and every view
+// draws the made-up crowd.
 
 import { readFileSync, readdirSync } from "node:fs";
 import { join, relative } from "node:path";
@@ -12,42 +12,20 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import type { ArchiveApi } from "./archiveApi.ts";
 import { httpArchive } from "./archiveHttp.ts";
+import { demoApp } from "./demo/app.ts";
 import { generateDemo, SMALL_CROWD } from "./demo/generate.ts";
-import { demoRoot, forgetOldDemoMode, keptAs, OLD_DEMO_MODE_KEY, staticDemo } from "./demoMode.ts";
+import { demoMode, forgetOldDemoMode, keptAs, OLD_DEMO_MODE_KEY } from "./demoMode.ts";
 import { DEMOS } from "./demos/Demos.tsx";
 import { Orbits3DMap } from "./demos/Orbits3D.tsx";
 import { Methodology } from "./demos/Methodology.tsx";
 import { buildModel } from "./demos/model.ts";
 import { httpApp } from "./appHttp.ts";
-import { pageApp, pageArchive } from "./pageArchive.ts";
 import { DEFAULT_SETTINGS } from "./settings.ts";
-import { DEMO_ROOT, DEMO_VIEWS, inDemo, viewAt, viewPath, VIEWS, viewsFor } from "./views.ts";
+import { DEMO_VIEWS } from "./views.ts";
 
 const NOW = Date.parse("2026-10-01T12:00:00+10:00");
 
-describe("the demo's address", () => {
-  it("is /demo/<view> for each of its views, from the one list of views, and in the app it is not the static demo", () => {
-    expect([staticDemo, demoRoot]).toEqual([false, DEMO_ROOT]);
-    const views = viewsFor(true);
-    for (const view of views) {
-      const path = viewPath(view, true);
-      expect(path.startsWith(DEMO_ROOT)).toBe(true);
-      expect([path, inDemo(path), viewAt(path, views)?.slug, viewAt(`${path}/`, views)?.slug]).toEqual([path, true, view.slug, view.slug]);
-      expect([view.path, inDemo(view.path), viewAt(view.path)?.slug]).toEqual([view.path, false, view.slug]);
-    }
-    expect(views.map((view) => viewPath(view, true))).toEqual(["/demo/orbits-3d", "/demo/spider"]);
-    // The rest are the real app's alone.
-    for (const slug of ["orbits", "table", "calendar", "circles", "city", "time-river", "river", "reciprocity"]) {
-      expect([slug, viewAt(viewPath(VIEWS.find((v) => v.slug === slug)!, true), views)?.slug]).toEqual([slug, undefined]);
-    }
-  });
-
-  it("is only /demo and under it: not the real app's pages, nor an address that merely starts alike", () => {
-    for (const path of ["/", "/table", "/demos", "/demos/orbits", "/demonstration"]) expect([path, inDemo(path)]).toEqual([path, false]);
-    // An address the demo does not have is no view, so the demo's page shows its Spider web.
-    expect(viewAt("/demo/nowhere")).toBeUndefined();
-  });
-
+describe("which page is the demo's", () => {
   it("lists, on the static demo's site, its own views alone, so its files carry no other view", async () => {
     vi.resetModules();
     vi.stubEnv("MODE", "static-demo");
@@ -57,14 +35,18 @@ describe("the demo's address", () => {
     vi.resetModules();
   });
 
-  it("decides the page as it opens, from the address alone", async () => {
-    for (const [path, demo] of [["/demo", true], ["/demo/city", true], ["/demo/table/", true], ["/", false], ["/city", false]] as const) {
+  it("is the static demo's alone, from how it was built: the app is never the demo, an old /demo address included", async () => {
+    expect(demoMode).toBe(false);
+    for (const path of ["/demo", "/demo/spider", "/friend-map/demo/city", "/"]) {
       vi.resetModules();
       vi.stubGlobal("location", { pathname: path });
-      vi.stubGlobal("localStorage", { getItem: () => "on", setItem: () => {}, removeItem: () => {} });
-      const { demoMode } = await import("./demoMode.ts");
-      expect([path, demoMode]).toEqual([path, demo]);
+      const { demoMode: opened } = await import("./demoMode.ts");
+      expect([path, opened]).toEqual([path, false]);
     }
+    vi.resetModules();
+    vi.stubEnv("MODE", "static-demo");
+    expect((await import("./demoMode.ts")).demoMode).toBe(true);
+    vi.unstubAllEnvs();
     vi.unstubAllGlobals();
     vi.resetModules();
   });
@@ -114,7 +96,7 @@ function callEverything(api: ArchiveApi, person: number, group: number): Promise
   ];
 }
 
-describe("on the demo's pages the page asks the server for nothing", () => {
+describe("on the demo's pages the page asks a server for nothing", () => {
   const fetch = vi.fn(() => Promise.reject(new Error("no server here")));
   const EventSource = vi.fn(function () {
     return { addEventListener: () => {}, close: () => {} };
@@ -128,13 +110,11 @@ describe("on the demo's pages the page asks the server for nothing", () => {
     EventSource.mockClear();
   });
 
-  it("answers every archive call, writes refused, from the page itself, on every view's page", async () => {
-    // Every page under /demo is the demo's, so takes the same archive: the made-up crowd's, never the server's.
-    for (const view of VIEWS) expect([view.slug, inDemo(viewPath(view, true))]).toEqual([view.slug, true]);
-    const api = await pageArchive(true);
-    expect(api).not.toBe(httpArchive);
-    const app = pageApp(true);
-    expect(app).not.toBe(httpApp);
+  it("answers every archive call, writes refused, from the page itself", async () => {
+    // The static demo's entry gives every page the made-up crowd's archive and the demo's own app (src/demo/main.tsx).
+    const { DemoArchive } = await import("./demo/archive.ts");
+    const api = new DemoArchive(generateDemo(NOW, SMALL_CROWD)).api;
+    const app = demoApp;
     const own = await Promise.allSettled([app.settings(), app.mePhoto(), app.setMePhoto(new Blob([new Uint8Array([0xff, 0xd8, 0xff])])), app.removeMePhoto()]);
     expect(own.map((a) => a.status)).toEqual(["fulfilled", "fulfilled", "rejected", "rejected"]);
     const someone = (await api.people()).people[0].id;
@@ -152,12 +132,10 @@ describe("on the demo's pages the page asks the server for nothing", () => {
   });
 
   it("and in the real app the same calls go to the server, so the check above would see them", async () => {
-    const api = await pageArchive(inDemo("/table"));
-    expect(api).toBe(httpArchive);
-    expect(pageApp(inDemo("/table"))).toBe(httpApp);
-    await Promise.allSettled(callEverything(api, 1, 1));
+    const api = httpArchive;
+    await Promise.allSettled([...callEverything(api, 1, 1), httpApp.settings()]);
     api.follow(() => {})();
-    expect(fetch.mock.calls.length).toBeGreaterThan(45);
+    expect(fetch.mock.calls.length).toBeGreaterThan(46);
     expect(EventSource).toHaveBeenCalledOnce();
   });
 });
@@ -187,16 +165,17 @@ describe("what reaches the network", () => {
   });
 
   it("saves no view settings from the demo: only the real app's page starts saving", () => {
-    const main = readFileSync(join(src, "main.tsx"), "utf8");
-    expect(main).toContain("if (!demoMode) startSaving();");
+    expect(readFileSync(join(src, "main.tsx"), "utf8")).toContain("startSaving();");
     expect(readFileSync(join(src, "demo", "main.tsx"), "utf8")).not.toContain("startSaving");
   });
 
-  it("the app's page takes its archive from its address, before anything draws", () => {
+  it("the app's page takes the server's archive before anything draws, and holds no demo of its own", () => {
     const main = readFileSync(join(src, "main.tsx"), "utf8");
-    expect(main).toContain("provideArchive(await pageArchive());");
+    expect(main).toContain("provideArchive(httpArchive);");
+    expect(main).toContain("provideApp(httpApp);");
     expect(main.indexOf("provideArchive(")).toBeLessThan(main.indexOf("createRoot("));
-    expect(main).not.toContain("httpArchive");
+    // Nothing of the made-up crowd is in the app's page (the captain's ask: "let's not even house a local demo").
+    expect(main).not.toMatch(/from "\.\/demo\/|\bdemoMode\b(?!\.ts)/);
     expect(main).toContain("forgetOldDemoMode();");
   });
 });
@@ -209,7 +188,7 @@ describe("the static demo's page", () => {
     expect(demo).toContain("provideArchive(new DemoArchive(generateDemo()).api);");
     expect(demo.indexOf("provideArchive(")).toBeLessThan(demo.indexOf("createRoot("));
     expect(demo).toMatch(/<ReadOnly\.Provider value=\{true\}>\s*<Demos \/>/);
-    expect(demo).not.toMatch(/archiveHttp|pageArchive|TablePage|CalendarPage/);
+    expect(demo).not.toMatch(/archiveHttp|appHttp|TablePage|CalendarPage/);
   });
 
   it("is marked as the demo in the map, so the note is centred on the map beside the person panel", () => {

@@ -1,6 +1,6 @@
 // Where the page was opened (mount.ts): at the root, or under /friend-map (Tailscale Serve's path mount, see
 // server/basePath.ts). Opened under it, every request to the server, every link of the view switcher and every
-// history entry stays under it, and the views and the demo read the address as at the root.
+// history entry stays under it, and the views read the address as at the root.
 
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -11,7 +11,7 @@ describe("mountOf", () => {
   it("is the base for an address under it, and the root for any other", () => {
     expect(mountOf("/friend-map", "/friend-map")).toBe("/friend-map");
     expect(mountOf("/friend-map/", "/friend-map")).toBe("/friend-map");
-    expect(mountOf("/friend-map/demo/city", "/friend-map")).toBe("/friend-map");
+    expect(mountOf("/friend-map/city", "/friend-map")).toBe("/friend-map");
     for (const pathname of ["/", "/spider", "/friend-mapx", "/demo/friend-map"]) expect(mountOf(pathname, "/friend-map"), pathname).toBe("");
   });
 
@@ -25,7 +25,7 @@ describe("appPath and address", () => {
     expect(appPath("/friend-map/spider", "/friend-map")).toBe("/spider");
     expect(appPath("/friend-map/", "/friend-map")).toBe("/");
     expect(appPath("/friend-map", "/friend-map")).toBe("/");
-    expect(appPath("/friend-map/demo/city", "/friend-map")).toBe("/demo/city");
+    expect(appPath("/friend-map/city", "/friend-map")).toBe("/city");
     expect(address("/spider", "/friend-map")).toBe("/friend-map/spider");
     expect(address("/", "/friend-map")).toBe("/friend-map/");
     expect(address("/api/archive/events", "/friend-map")).toBe("/friend-map/api/archive/events");
@@ -88,12 +88,13 @@ describe("a page opened under /friend-map", () => {
     const html = renderToStaticMarkup(createElement(ViewList, { current: "web", onPick: () => {}, demo: false }));
     expect(html).toContain('href="/friend-map/orbits-3d"');
     expect(html).toContain('href="/friend-map/spider"');
-    expect(html).toContain('href="/friend-map/demo"');
+    // The Demo is the public demo, on a site of its own, so not under it.
+    expect(html).toContain('href="https://friend-map-demo.pages.dev/spider"');
     expect(html).not.toMatch(/href="\/(?!friend-map\/)/);
   });
 
-  it("is the demo at /friend-map/demo, and the real app elsewhere under it", async () => {
-    expect((await openedAt("/friend-map/demo/city")).demoMode).toBe(true);
+  it("is the real app at any address, an old /demo one included: the app holds no demo of its own", async () => {
+    expect((await openedAt("/friend-map/demo/city")).demoMode).toBe(false);
     expect((await openedAt("/friend-map/spider")).demoMode).toBe(false);
   });
 });

@@ -8,7 +8,7 @@
 // hour or more counts as a new visit, so a tab left open for days still
 // shows when the view was really last opened.
 //
-// The demo (/demo, demoMode.ts) is not your use of a view: nothing is recorded.
+// The demo (the static demo, demoMode.ts) is not your use of a view: nothing is recorded.
 
 import { useEffect } from "react";
 import { demoMode } from "./demoMode.ts";

@@ -18,9 +18,10 @@
 // where the backend's handshake says it serves that (src/contract/handshake.ts).
 //
 // The demo (demoMode.ts) is two of this list's views again, on a made-up
-// crowd: Orbits (at /orbits-3d) and the Spider web; under /demo in the app
-// (/demo/orbits-3d, /demo/spider, /demo itself leading to its Spider web), and
-// at the root of the static demo's own site.
+// crowd: Orbits (at /orbits-3d) and the Spider web, at the root of the static
+// demo's own site, the public demo (PUBLIC_DEMO). The app does not hold it: its
+// switcher's Demo opens the public demo, and an old /demo address leads there
+// (server/oldDemo.ts).
 // It offers the views in DEMO_VIEWS, so a view added here is in the demo only
 // once it is added there too.
 
@@ -73,41 +74,36 @@ export function viewsFor(demo: boolean, offered: (capability: Capability) => boo
   return (demo ? VIEWS.filter((view) => DEMO_VIEWS.includes(view.slug)) : VIEWS).filter((view) => (view.needs ?? []).every(offered));
 }
 
-/** Where the demo is in the app: its Orbits, and every other view under it. The static demo's are at the root of its own site. */
-export const DEMO_ROOT = "/demo";
-
-/** The demo's page in the real app's switcher, opened as a page of its own; the demo's switcher has none. */
-export const DEMO_PAGE: Pick<ViewInfo, "slug" | "path" | "title"> = { slug: "demo", path: DEMO_ROOT, title: "Demo" };
-
-/** Whether `pathname` is one of the demo's pages. */
-export function inDemo(pathname: string): boolean {
-  return pathname === DEMO_ROOT || pathname.startsWith(`${DEMO_ROOT}/`);
-}
+/**
+ * The public demo, the static demo published on Cloudflare Pages (docs/demo.md), at its Spider web: where the Demo in
+ * the real app's switcher opens, in a tab of its own (the demo's switcher has none), and an old /demo address leads.
+ */
+export const PUBLIC_DEMO = "https://friend-map-demo.pages.dev/spider";
 
 /**
- * A view's address in the demo (`demo` true) or in the real app: in the app's demo /demo/orbits for Orbits and
- * /demo/city for the City; with `root` "" (the static demo's own site), /orbits and /city, as in the app.
+ * Where an address the app's demo once had leads, now the demo is only the public one: /demo to its Spider web, and
+ * /demo/<view> to the same address on its site (/demo/orbits-3d to its Orbits; one it has not, to its Spider web, as
+ * its site shows any address that names none of its views), the query kept. Null for any other address.
  */
-export function viewPath(view: Pick<ViewInfo, "path">, demo: boolean, root: string = DEMO_ROOT): string {
-  return demo ? `${root}${view.path}` : view.path;
+export function oldDemoAddress(url: string): string | null {
+  const match = /^\/demo(\/[^?#]*)?\/?([?#].*)?$/.exec(url);
+  if (!match) return null;
+  const rest = match[1]?.replace(/\/+$/, "");
+  return `${rest ? new URL(rest, PUBLIC_DEMO).href : PUBLIC_DEMO}${match[2] ?? ""}`;
 }
 
-/**
- * The view at `pathname` among `views` (every view, unless a page offers fewer), in the real app or the demo; undefined
- * for an address that names none.
- */
+/** The view at `pathname` among `views` (every view, unless a page offers fewer); undefined for an address that names none. */
 export function viewAt(pathname: string, views: readonly ViewInfo[] = VIEWS): ViewInfo | undefined {
-  const trimmed = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
-  const path = inDemo(trimmed) ? trimmed.slice(DEMO_ROOT.length) || "/" : trimmed;
+  const path = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
   return views.find((view) => view.path === path);
 }
 
 /**
- * Where an address that is no view's own leads: the bare address, /, and the
- * demo's, /demo, to the view the app opens on (DEFAULT_VIEW); the demos moved
+ * Where an address that is no view's own leads: the bare address, /, to the
+ * view the app opens on (DEFAULT_VIEW); the demos moved
  * from /demos/<slug> to /<slug>, and the list of demos gave way to the
- * switcher; the Web is now the Spider web, so /web leads to /spider (and
- * /demo/web to /demo/spider; its slug is still "web", the name its usage is
+ * switcher; the Web is now the Spider web, so /web leads to /spider (its slug
+ * is still "web", the name its usage is
  * kept under); the canvas (/canvas), the Time machine (/time-machine),
  * Constellations (/constellations) and Friend galaxies (/galaxies) are
  * retired, so their addresses lead to the default view.
@@ -115,11 +111,9 @@ export function viewAt(pathname: string, views: readonly ViewInfo[] = VIEWS): Vi
  */
 export function movedPath(pathname: string): string | null {
   const home = VIEWS.find((view) => view.slug === DEFAULT_VIEW)!.path;
-  const root = /^(\/demo)?\/?$/.exec(pathname);
-  if (root) return `${root[1] ?? ""}${home}`;
+  if (/^\/?$/.test(pathname)) return home;
   if (/^\/(canvas|time-machine|constellations|galaxies)\/?$/.test(pathname)) return home;
-  const web = /^(\/demo)?\/web\/?$/.exec(pathname);
-  if (web) return `${web[1] ?? ""}/spider`;
+  if (/^\/web\/?$/.test(pathname)) return "/spider";
   const match = /^\/demos(?:\/([^/]*))?\/?$/.exec(pathname);
   if (!match) return null;
   return VIEWS.find((view) => view.slug === match[1])?.path ?? home;

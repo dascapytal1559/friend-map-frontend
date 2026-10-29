@@ -1,8 +1,7 @@
 // The backend as the page sees it: the data contract (archive.ts, docs/contract.md) bound to the page. Every view and
 // panel reaches the backend only through `archiveApi`, so where the data comes from is one choice, made once at the
 // page's entry: the server's routes (archiveHttp.ts, which src/main.tsx provides), or the static demo's made-up crowd,
-// held in the page itself (src/demo/archive.ts, which src/demo/main.tsx provides, and src/main.tsx in demo mode, see
-// demoMode.ts). Nothing in between knows which, so the demo is the same views and panels over another source, not a
+// held in the page itself (src/demo/archive.ts, which src/demo/main.tsx provides; see demoMode.ts). Nothing in between knows which, so the demo is the same views and panels over another source, not a
 // copy of them. A method of a capability the backend does not serve (its handshake, contract()) answers
 // ArchiveUnavailable, as a route it does not have answers 404. friend-map's own server, apart from any backend, is
 // AppApi (appApi.ts).

@@ -7,8 +7,8 @@
 // device shows there too. The demo keeps its visitor's choices in the browser,
 // apart (keptAs), as it keeps its other settings, and asks the server for
 // nothing: until its visitor chooses, each is the demo's own choice
-// (DEMO_SAVED in src/demo/defaults.ts), else your saved choice, as the page
-// was served it (live at /demo, or built into the static demo), else the
+// (DEMO_SAVED in src/demo/defaults.ts), else your saved choice, as it was
+// built into the static demo, else the
 // setting's own default.
 
 import { DEMO_SAVED } from "./demo/defaults.ts";

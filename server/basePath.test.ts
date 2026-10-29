@@ -92,7 +92,7 @@ describe("serveAtBase", () => {
     expect(await get("/friend-map/spider?colour=3dff9a")).toBe("page /friend-map/spider?colour=3dff9a");
     expect(await get("/friend-map/@vite/client")).toBe("page /friend-map/@vite/client");
     expect(await get("/@vite/client")).toBe("page /friend-map/@vite/client");
-    expect(await get("/demo/city")).toBe("page /friend-map/demo/city");
+    expect(await get("/city")).toBe("page /friend-map/city");
   });
 
   it("puts a websocket upgrade under the base before the hot reload hears it", async () => {

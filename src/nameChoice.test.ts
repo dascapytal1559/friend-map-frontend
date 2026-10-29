@@ -394,7 +394,8 @@ describe("Name format in the menu", () => {
     for (const [file, names] of [["demos/Demos.tsx", "names={live} look />"], ["demos/TablePage.tsx", "names />"], ["demos/CalendarPage.tsx", "names />"]]) {
       const source = readFileSync(new URL(file, import.meta.url), "utf8");
       expect([file, source.includes(names), source.includes("NameStylePicker")]).toEqual([file, true, false]);
-      expect([file, source.includes("useShownNames(!demoMode);")]).toEqual([file, true]);
+      // The demo has a map page alone (no Table or Calendar), so only it asks whether this is the demo.
+      expect([file, source.includes(file === "demos/Demos.tsx" ? "useShownNames(!demoMode);" : "useShownNames(true);")]).toEqual([file, true]);
     }
   });
 });

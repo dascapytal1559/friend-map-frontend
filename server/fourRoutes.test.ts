@@ -3,7 +3,7 @@
 // the page's own binding (archiveHttp.ts) reads it through that server: the handshake taken, its time zone counted in,
 // the views it cannot serve not offered, every field it leaves out filled in, the query language run in the page and
 // the Events chart scored from its map's report. Then the Spider web and Orbits draw its people. And with no backend
-// behind friend-map's server, the handshake says so, and the page in place of the app points at the demo.
+// behind friend-map's server, the handshake says so, and the page in place of the app points at the public demo.
 
 import { once } from "node:events";
 import { createServer, type Server } from "node:http";
@@ -135,7 +135,7 @@ describe("friend-map on a backend of four routes", () => {
 });
 
 describe("friend-map with no backend", () => {
-  it("says so at the handshake, in friend-map's server's words, and the page points at the demo and the demo backend", async () => {
+  it("says so at the handshake, in friend-map's server's words, and the page points at the public demo and the demo backend", async () => {
     // A port nothing listens on: taken, then let go.
     const gone = createServer();
     const goneUrl = await listen(gone);
@@ -151,7 +151,7 @@ describe("friend-map with no backend", () => {
       expect(shaken).toEqual({ down: `the archive is not available: nothing answers at ${goneUrl} (ECONNREFUSED)` });
       const html = renderToStaticMarkup(createElement(NoBackend, { why: (shaken as { down: string }).down }));
       expect(html).toContain("friend-map has no backend running");
-      expect(html).toContain('<a href="/demo">Open the demo</a>');
+      expect(html).toContain('<a href="https://friend-map-demo.pages.dev/spider" target="_blank" rel="noopener noreferrer">Open the public demo</a>');
       expect(html).toContain("<code>npm run demo-backend</code>");
       expect(html).toContain("<code>FRIEND_MAP_ARCHIVE_URL=http://127.0.0.1:4700 npm start</code>");
       expect(html).toContain(`nothing answers at ${goneUrl}`);

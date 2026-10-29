@@ -1,6 +1,6 @@
 // The demo's own defaults, where they are not the app's: as they were chosen
 // on the demo before it went public. Each holds until its visitor chooses
-// otherwise, at /demo in the app and in the static demo alike.
+// otherwise.
 
 import type { SavedSettings } from "../savedSettings.ts";
 

@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { expect, it } from "vitest";
-import { DEFAULT_VIEW, DEMO_VIEWS, movedAddress, movedPath, viewAt, viewPath, VIEWS, viewsFor } from "./views.ts";
+import { DEFAULT_VIEW, DEMO_VIEWS, movedAddress, movedPath, viewAt, VIEWS, viewsFor } from "./views.ts";
 
 it("lists the main view first, then Orbits 3D, Circles, the Spider web, the City, the Table, the Calendar and the Time river, then the frozen views", () => {
   expect(VIEWS.filter((v) => !v.frozen).map((v) => v.slug)).toEqual(["orbits", "orbits-3d", "circles", "web", "city", "table", "calendar", "time-river"]);
@@ -18,24 +18,25 @@ it("lists the main view first, then Orbits 3D, Circles, the Spider web, the City
   expect(viewAt("/orbits-3d")?.slug).toBe("orbits-3d");
   expect(viewAt("/circles")?.slug).toBe("circles");
   expect(viewAt("/spider")?.slug).toBe("web");
-  expect(viewAt("/demo/spider")?.slug).toBe("web");
+  // The app holds no demo, so an old /demo address is no view (the server sends it to the public demo, server/oldDemo.ts).
+  expect(viewAt("/demo/spider")).toBeUndefined();
   expect(viewAt("/table")?.slug).toBe("table");
   expect(viewAt("/city")?.slug).toBe("city");
   expect(viewAt("/calendar")?.slug).toBe("calendar");
   expect(viewAt("/time-river")?.slug).toBe("time-river");
-  // Not in the demo, whose /demo/time-river is no view of its own.
-  expect(viewAt("/demo/time-river", viewsFor(true))).toBeUndefined();
+  // Not in the demo, which has no Time river.
+  expect(viewAt("/time-river", viewsFor(true))).toBeUndefined();
   expect(viewAt("/nowhere")).toBeUndefined();
 });
 
-it("opens on the Spider web at the bare address, in the app and its demo, keeping the query asked for", () => {
+it("opens on the Spider web at the bare address, keeping the query asked for", () => {
   expect(DEFAULT_VIEW).toBe("web");
   expect(movedPath("/")).toBe("/spider");
-  expect(movedPath("/demo")).toBe("/demo/spider");
-  expect(movedPath("/demo/")).toBe("/demo/spider");
   expect(movedAddress({ pathname: "/", search: "?colour=amber", hash: "" })).toBe("/spider?colour=amber");
   // An address that names a view still opens it.
-  for (const path of ["/orbits", "/demo/orbits", "/city", "/demo/city", "/spider"]) expect([path, movedPath(path)]).toEqual([path, null]);
+  for (const path of ["/orbits", "/city", "/spider"]) expect([path, movedPath(path)]).toEqual([path, null]);
+  // An old /demo address is the server's to send on (server/oldDemo.ts), not the page's.
+  for (const path of ["/demo", "/demo/spider"]) expect([path, movedPath(path)]).toEqual([path, null]);
 });
 
 it("sends the old demo addresses, and the retired canvas, Time machine, Constellations and Friend galaxies, to where the views are now", () => {
@@ -55,16 +56,14 @@ it("sends the old demo addresses, and the retired canvas, Time machine, Constell
   expect(movedPath("/river")).toBeNull();
 });
 
-it("sends the Web's old addresses to the Spider web, in the app and its demo, keeping the colour asked for", () => {
+it("sends the Web's old addresses to the Spider web, keeping the colour asked for", () => {
   expect(movedPath("/web")).toBe("/spider");
   expect(movedPath("/web/")).toBe("/spider");
-  expect(movedPath("/demo/web")).toBe("/demo/spider");
   expect(movedPath("/demos/web")).toBe("/spider");
   expect(movedPath("/spider")).toBeNull();
-  expect(movedPath("/demo/spider")).toBeNull();
   expect(movedPath("/webs")).toBeNull();
   expect(movedAddress({ pathname: "/web", search: "?colour=3dff9a", hash: "" })).toBe("/spider?colour=3dff9a");
-  expect(movedAddress({ pathname: "/demo/web/", search: "?colour=3dff9a", hash: "#x" })).toBe("/demo/spider?colour=3dff9a#x");
+  expect(movedAddress({ pathname: "/web/", search: "?colour=3dff9a", hash: "#x" })).toBe("/spider?colour=3dff9a#x");
   expect(movedAddress({ pathname: "/spider", search: "?colour=3dff9a", hash: "" })).toBeNull();
   expect(viewAt(movedPath("/web")!)?.title).toBe("Spider web");
 });
@@ -78,18 +77,17 @@ it("has the static demo's site send /web and /demo/web to /spider before any oth
   expect(first("/demo/city")).toEqual(["/demo/*", "/:splat", "301"]);
 });
 
-it("offers in the demo Orbits (the solar system, at /orbits-3d) and the Spider web, at /demo in the app and at the root of the static demo's site", () => {
+it("offers in the demo Orbits (the solar system, at /orbits-3d) and the Spider web, at the root of the static demo's site", () => {
   const demo = viewsFor(true);
   expect(demo.map((v) => [v.slug, v.title])).toEqual([["orbits-3d", "Orbits"], ["web", "Spider web"]]);
   expect(DEMO_VIEWS.every((slug) => VIEWS.some((v) => v.slug === slug))).toBe(true);
   expect(viewsFor(false)).toEqual(VIEWS);
-  expect(demo.map((v) => viewPath(v, true))).toEqual(["/demo/orbits-3d", "/demo/spider"]);
-  expect(demo.map((v) => viewPath(v, true, ""))).toEqual(["/orbits-3d", "/spider"]);
-  expect(viewAt("/demo/orbits-3d/", demo)?.slug).toBe("orbits-3d");
+  expect(demo.map((v) => v.path)).toEqual(["/orbits-3d", "/spider"]);
+  expect(viewAt("/orbits-3d/", demo)?.slug).toBe("orbits-3d");
   expect(viewAt("/spider", demo)?.slug).toBe("web");
   // The views it does not offer are no view there, so its page shows the Spider web.
   for (const view of ["orbits", "table", "calendar", "circles", "city", "river", "reciprocity", "time-river"]) {
-    for (const path of [`/demo/${view}`, `/${view}`]) expect([path, viewAt(path, demo)]).toEqual([path, undefined]);
+    expect([view, viewAt(`/${view}`, demo)]).toEqual([view, undefined]);
   }
 });
 

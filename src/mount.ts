@@ -1,6 +1,6 @@
 // Where the page was opened: at the root of its host (http://localhost:4600/spider), or under friend-map's own path
 // (https://<host>/friend-map/spider, Tailscale Serve's mount beside other apps; server/basePath.ts), read once from the
-// address as it opens. The views, the demo and the usage record go by the app's own paths (/spider, /demo), which
+// address as it opens. The views and the usage record go by the app's own paths (/spider, /orbits-3d), which
 // appPath reads from the address; every link, history entry and request to the server goes through address, so it
 // stays under the mount the page was opened at. The static demo is built for the root of its own site, so it never
 // has one.

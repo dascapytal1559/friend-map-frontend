@@ -31,7 +31,9 @@ describe("the view switcher", () => {
     expect(html).toMatch(/<a href="\/orbits-3d">Orbits<\/a>/);
     expect(html).not.toContain('href="/orbits"');
     expect(html).toMatch(/<a href="\/spider">Spider web<\/a>/);
-    expect(html).toMatch(/<a href="\/demo" title="[^"]*made-up crowd[^"]*">Demo<\/a>/);
+    // The Demo is the public demo's Spider web, in a tab of its own (the captain's ask: "The demo button on spider web
+    // on the friend map should just lead to the public cloudflare spiderweb").
+    expect(html).toMatch(/<a href="https:\/\/friend-map-demo\.pages\.dev\/spider" target="_blank" rel="noopener noreferrer" title="[^"]*made-up crowd[^"]*">Demo<\/a>/);
     expect(html).toMatch(/<a href="\/table" aria-current="page">Table<\/a>/);
     expect(html).toMatch(/<a href="\/calendar">Calendar<\/a>/);
     expect(html).toMatch(/<a href="\/time-river">Time river<\/a>/);
@@ -40,13 +42,13 @@ describe("the view switcher", () => {
     expect(html).not.toContain("Time machine");
   });
 
-  it("in the demo lists its own views, none of them frozen, every one under /demo, and no Demo or way into the real map", () => {
-    const html = renderToStaticMarkup(createElement(ViewList, { current: "orbits-3d", onPick: () => {}, demo: true, root: "/demo" }));
+  it("in the demo lists its own views, none of them frozen, at the root of its site, and no Demo or way into the real map", () => {
+    const html = renderToStaticMarkup(createElement(ViewList, { current: "orbits-3d", onPick: () => {}, demo: true }));
     // Orbits (the solar system) and the Spider web.
     expect(links(html)).toEqual(["Orbits", "Spider web"]);
     const hrefs = [...html.matchAll(/href="([^"]*)"/g)].map((m) => m[1]);
-    expect(hrefs).toEqual(["/demo/orbits-3d", "/demo/spider"]);
-    expect(html).toMatch(/<a href="\/demo\/orbits-3d" aria-current="page">Orbits<\/a>/);
+    expect(hrefs).toEqual(["/orbits-3d", "/spider"]);
+    expect(html).toMatch(/<a href="\/orbits-3d" aria-current="page">Orbits<\/a>/);
     expect(html).not.toMatch(/About the app|>Demo<|Frozen|Table|Calendar|Circles|Time river|City|river|Reciprocity|3D</);
     // Both are main views, so there is no group of others.
     expect(groups(html)).toEqual(["Main views", "Orbits settings"]);
@@ -60,12 +62,5 @@ describe("the view switcher", () => {
 
   it("titles the solar system Orbits, in the demo and the app alike", () => {
     for (const demo of [true, false]) expect(renderToStaticMarkup(createElement(ViewSwitcher, { current: "orbits-3d", crumb: "Friend map", demo }))).toMatch(/<h1><button[^>]*>Orbits<svg/);
-  });
-
-  it("in the static demo lists the same views at the root of its own site", () => {
-    const html = renderToStaticMarkup(createElement(ViewList, { current: "orbits-3d", onPick: () => {}, demo: true, root: "" }));
-    const hrefs = [...html.matchAll(/href="([^"]*)"/g)].map((m) => m[1]);
-    expect(hrefs).toEqual(["/orbits-3d", "/spider"]);
-    expect(html).toMatch(/<a href="\/orbits-3d" aria-current="page">Orbits<\/a>/);
   });
 });

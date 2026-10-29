@@ -21,9 +21,8 @@
 // changes.
 // "Changes" opens the change log (ChangesPanel.tsx): every edit to people, hangouts and calls, here
 // or from the CLI, who it touched, and Undo. Name format is the name choice, as on
-// the map. In the demo (/demo/table, demoMode.ts) the
-// rows are the made-up crowd's, the Query bar offers examples, and neither
-// Add person, Add hangout, Add call, Tags nor Changes is there, nor the location editing, since nothing can be changed.
+// the map. The demo has no Table (demoMode.ts). On a read-only page (readOnly.ts, a backend that takes no edits)
+// neither Add person, Add hangout, Add call, Tags nor Changes is there, nor the location editing, since nothing can be changed.
 //
 // Tabs just right of the title (tableRows.ts, in the address) pick what it lists, and the header shows only what
 // acts on that list, each tab keeping its own find box's words:
@@ -41,8 +40,6 @@ import { type KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState }
 import "../app.css";
 import { appApi } from "../appApi.ts";
 import { archiveApi } from "../archiveApi.ts";
-import { EXAMPLES } from "../demo/examples.ts";
-import { demoMode } from "../demoMode.ts";
 import { useNames } from "../names.ts";
 import { saveLocation } from "../changeChip.ts";
 import type { ChatMoment } from "../chatDays.ts";
@@ -107,7 +104,7 @@ export function TablePage({ navigate }: { navigate: Navigate }) {
   const { panel, setPanel, shown, closed } = useSidePanel<{ person: number | null; moment?: ChatMoment }>(true);
   useUsage("table");
   useHideNamesKey(true);
-  useShownNames(!demoMode);
+  useShownNames(true);
   useEffect(() => followArchive(), []);
 
   // Closeness is scored at the settings' half-life, as on Orbits.
@@ -270,7 +267,7 @@ export function TablePage({ navigate }: { navigate: Navigate }) {
           {status && <p className="demos__status">{status}</p>}
         </div>
         <header className="demos__header" ref={headerRef}>
-          <ViewSwitcher current="table" crumb={demoMode ? "Friend map · demo" : "Friend map"} navigate={navigate} names />
+          <ViewSwitcher current="table" crumb="Friend map" navigate={navigate} names />
           <TableTabs rows={listing} onChange={setListing} />
           <div className="demos__controls">
             {listing === "people" && view && (
@@ -316,7 +313,6 @@ export function TablePage({ navigate }: { navigate: Navigate }) {
           </div>
           {!catchUpsShown && <QueryBar
             bar={queryBar}
-            examples={demoMode ? EXAMPLES : undefined}
             hide={callsShown ? callView && (
               <>
                 <AppPicker apps={apps} app={app} onChange={setApp} />

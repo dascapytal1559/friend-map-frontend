@@ -10,11 +10,10 @@
 // One-to-one chats only, until Messages "With groups" in the Calendar's
 // settings in the menu (viewSettings.ts) adds group chats, to the calendar's
 // counts and shading too (remembered in this browser; calendar.ts). The header has a Hide of its own (its choices kept
-// apart from the map's and the Table's), Name format (the name choice, the demo's own
-// at /demo/calendar) and People; the h key hides names. The month and the open day are kept in the address
+// apart from the map's and the Table's), Name format (the name choice) and People; the h key hides names. The month and the open day are kept in the address
 // (?month=2026-10, ?day=2026-10-04), so a reload stays where it was. Reads
 // GET /api/archive/calendar/:month and :day, and a chat's day from the content
-// path, through archiveApi, so the demo draws the made-up crowd's days.
+// path, through archiveApi, so a backend of made-up people (the demo backend) draws its days.
 
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 import "../app.css";
@@ -22,7 +21,6 @@ import type { CalendarMonth } from "../archive.ts";
 import { archiveApi } from "../archiveApi.ts";
 import { callDuration } from "../calls.ts";
 import { hoursLabel } from "../catchUps.ts";
-import { demoMode } from "../demoMode.ts";
 import { PeoplePanel } from "../PeoplePanel.tsx";
 import { addDays, addMonths, dayKey } from "../time.ts";
 import { useShownNames } from "../shownNames.ts";
@@ -55,7 +53,7 @@ export function CalendarPage({ navigate }: { navigate: Navigate }) {
   const { panel, setPanel, shown, closed } = useSidePanel<CalendarPanel>(true);
   useUsage("calendar");
   useHideNamesKey(true);
-  useShownNames(!demoMode);
+  useShownNames(true);
   useEffect(() => followArchive(), []);
   useEffect(() => {
     if (initial.day) setPanel({ day: initial.day });
@@ -103,7 +101,7 @@ export function CalendarPage({ navigate }: { navigate: Navigate }) {
           </div>
         </div>
         <header className="demos__header" ref={headerRef}>
-          <ViewSwitcher current="calendar" crumb={demoMode ? "Friend map · demo" : "Friend map"} navigate={navigate} names />
+          <ViewSwitcher current="calendar" crumb="Friend map" navigate={navigate} names />
           <div className="demos__controls">
             <HidePanel entries={entries} choices={hide} onChange={setHide} />
             <button type="button" className="demos__people" onClick={() => setPanel(panel?.person === null ? null : { day: panel?.day ?? null, person: null })}>

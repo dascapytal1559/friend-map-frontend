@@ -7,16 +7,31 @@
 // the sun's glow and the cool trails, and the ground and the spider's dark
 // faintly tinted with it. The beam, the eyes and the scan line are the
 // Spider web's teal in every colour, a teal custom colour included. On paper
-// (the light look, src/theme.ts) the web is drawn in ink rather than light:
-// PAPER_AMBER by hand, and a custom colour worked out as ink (paperCustomTheme),
-// the ground white, the haze white toward the edges in place of black, the
-// scanlines all but gone, and the spider the same dark it was.
+// (the light look, src/theme.ts) the web is drawn in ink rather than light,
+// keeping the night's own balance: the names the strongest marks, the web
+// under them, and the spider weighing no more than the names. PAPER_AMBER by
+// hand, and a custom colour worked out as ink (paperCustomTheme): the ground
+// a paper faintly tinted with the colour, the grid and the strands drawn
+// heavier than on the night (weight), since ink at an alpha reads fainter on
+// white than light does on the night, the haze a shade deeper toward the
+// edges in place of the night's black, the scanlines all but gone, the
+// spider's chitin pale, so that its ink lines and seams draw it as its lit
+// edges do on the night, its shadow light, and whatever flashes white on the
+// night flashing the darkest ink (bright).
 
-import { oklchHex } from "../identicon.ts";
+import { mix, oklchHex } from "../identicon.ts";
 import type { LookPalette } from "./orbitsTheme.ts";
+import { PAPER } from "./palette.ts";
 import { oklch } from "./themeColour.ts";
 import type { WebColour } from "./webColour.ts";
 import { rgba } from "./webDraw.ts";
+
+/** The spider's chitin: the dark of its depths and its joints, its plates, and their faces toward the light. */
+export interface Chitin {
+  deep: string;
+  shell: string;
+  lit: string;
+}
 
 /** A colour's inks for the canvas. */
 export interface Ink {
@@ -34,8 +49,13 @@ export interface Ink {
   split: [string, string];
   /** The haze over the ground: at the sun, and at the edges. */
   haze: [string, string];
-  /** The dark the spider is made of. */
-  dark: string;
+  /** What the spider is made of, and how dark its shadow falls on the web, 0 to 1. */
+  chitin: Chitin;
+  shadow: number;
+  /** The brightest a thing is drawn, as a beam's head and a flash: white on the night; the darkest ink on paper, where white is the ground. */
+  bright: string;
+  /** How much heavier every strand is drawn than on the night, where it is 1: ink at an alpha reads fainter on white than light does on the night. */
+  weight: number;
   /** The scanlines over the ground: black on the night, next to nothing on paper. */
   scanline: string;
 }
@@ -61,11 +81,33 @@ const AMBER = "#ffb347";
 export const PAPER_TEAL = "#0891b2";
 const NIGHT_SCANLINE = "rgba(0, 0, 0, 0.22)";
 const PAPER_SCANLINE = "rgba(0, 0, 0, 0.03)";
+/** How dark the spider's shadow falls: plain on the night, where it is lost in the ground anyway; light on paper, where it would weigh as much as the spider. */
+const NIGHT_SHADOW = 0.3;
+const PAPER_SHADOW = 0.1;
+const NIGHT_BRIGHT = "#ffffff";
+const PAPER_BRIGHT = PAPER.star;
+/** How much heavier every strand is drawn on paper than on the night. */
+export const PAPER_WEIGHT = 2;
+
+/** The chitin of a spider on the night, made of its dark: plates a shade toward the strands, faces lit toward white. */
+function nightChitin(dark: string, strand: string): Chitin {
+  return { deep: dark, shell: mix(dark, strand, 0.14), lit: mix(dark, "#ffffff", 0.3) };
+}
+
+/** The chitin of a spider on paper, faintly tinted with a hue: pale plates, paler faces, depths of a mid tone, so that its ink lines draw it. */
+function paperChitin(hue: number): Chitin {
+  return { deep: oklchHex(0.56, 0.045, hue), shell: oklchHex(0.86, 0.025, hue), lit: oklchHex(0.95, 0.01, hue) };
+}
+
+/** Paper faintly tinted with a hue: the ground, and the shade it deepens to toward the edges (the haze). */
+function paper(hue: number): { ground: string; edge: string } {
+  return { ground: oklchHex(0.99, 0.004, hue), edge: oklchHex(0.95, 0.01, hue) };
+}
 
 const AMBER_THEME: WebTheme = {
   ink: {
     background: "#030812", grid: "rgba(57, 216, 255, 0.07)", strand: AMBER, rings: TEAL, accent: AMBER, beam: TEAL, scan: TEAL, eye: TEAL,
-    split: ["#ff3b6b", TEAL], haze: ["rgba(0, 0, 0, 0)", "rgba(0, 0, 0, 0.45)"], dark: "#070c17", scanline: NIGHT_SCANLINE,
+    split: ["#ff3b6b", TEAL], haze: ["rgba(0, 0, 0, 0)", "rgba(0, 0, 0, 0.45)"], chitin: nightChitin("#070c17", AMBER), shadow: NIGHT_SHADOW, bright: NIGHT_BRIGHT, weight: 1, scanline: NIGHT_SCANLINE,
   },
   palette: {
     sun: [[0, TEAL, 0.22], [0.5, TEAL, 0.06], [1, TEAL, 0]],
@@ -87,7 +129,7 @@ export function customTheme(colour: string): WebTheme {
   return {
     ink: {
       background, grid: rgba(partner, 0.07), strand, rings: partner, accent, beam: TEAL, scan: TEAL, eye: TEAL,
-      split: ["#ff3b6b", partner], haze: ["rgba(0, 0, 0, 0)", "rgba(0, 0, 0, 0.5)"], dark: oklchHex(0.17, 0.035, hue), scanline: NIGHT_SCANLINE,
+      split: ["#ff3b6b", partner], haze: ["rgba(0, 0, 0, 0)", "rgba(0, 0, 0, 0.5)"], chitin: nightChitin(oklchHex(0.17, 0.035, hue), strand), shadow: NIGHT_SHADOW, bright: NIGHT_BRIGHT, weight: 1, scanline: NIGHT_SCANLINE,
     },
     palette: {
       sun: [[0, partner, 0.22], [0.5, partner, 0.06], [1, partner, 0]],
@@ -128,10 +170,13 @@ function paperTheme(ink: Ink): WebTheme {
   };
 }
 
-/** Amber on paper: its amber and teal as inks on white. */
+/** The hue of the night the spider's dark is: its chitin on paper is a slate of the same hue. */
+const NIGHT_HUE = 260;
+
+/** Amber on paper: its amber and teal as inks on a warm paper, the spider in slate. */
 const PAPER_AMBER: WebTheme = paperTheme({
-  background: "#ffffff", grid: "rgba(15, 15, 15, 0.05)", strand: "#b45309", rings: "#0e7490", accent: "#b45309", beam: PAPER_TEAL, scan: PAPER_TEAL, eye: PAPER_TEAL,
-  split: ["#e11d48", PAPER_TEAL], haze: ["rgba(255, 255, 255, 0)", "rgba(255, 255, 255, 0.55)"], dark: "#1f2937", scanline: PAPER_SCANLINE,
+  background: paper(oklch(AMBER)[2]).ground, grid: rgba("#0e7490", 0.09), strand: "#b45309", rings: "#0e7490", accent: "#b45309", beam: PAPER_TEAL, scan: PAPER_TEAL, eye: PAPER_TEAL,
+  split: ["#e11d48", PAPER_TEAL], haze: [rgba(paper(oklch(AMBER)[2]).edge, 0), rgba(paper(oklch(AMBER)[2]).edge, 0.5)], chitin: paperChitin(NIGHT_HUE), shadow: PAPER_SHADOW, bright: PAPER_BRIGHT, weight: PAPER_WEIGHT, scanline: PAPER_SCANLINE,
 });
 
 /** The whole theme on paper worked out from one colour (#rrggbb), as customTheme does for the night, every colour as ink. */
@@ -141,9 +186,10 @@ export function paperCustomTheme(colour: string): WebTheme {
   const strand = oklchHex(0.5, c, hue);
   const accent = oklchHex(0.48, Math.max(c, Math.min(0.18, chroma * 1.2)), hue + 35);
   const partner = oklchHex(0.5, Math.max(0.1, Math.min(0.14, c)), hue + 150);
+  const { ground, edge } = paper(hue);
   return paperTheme({
-    background: "#ffffff", grid: rgba(partner, 0.06), strand, rings: partner, accent, beam: PAPER_TEAL, scan: PAPER_TEAL, eye: PAPER_TEAL,
-    split: ["#e11d48", partner], haze: ["rgba(255, 255, 255, 0)", "rgba(255, 255, 255, 0.55)"], dark: oklchHex(0.22, 0.03, hue), scanline: PAPER_SCANLINE,
+    background: ground, grid: rgba(partner, 0.09), strand, rings: partner, accent, beam: PAPER_TEAL, scan: PAPER_TEAL, eye: PAPER_TEAL,
+    split: ["#e11d48", partner], haze: [rgba(edge, 0), rgba(edge, 0.5)], chitin: paperChitin(hue), shadow: PAPER_SHADOW, bright: PAPER_BRIGHT, weight: PAPER_WEIGHT, scanline: PAPER_SCANLINE,
   });
 }
 

@@ -47,7 +47,7 @@ beforeAll(() => {
 });
 afterAll(() => vi.unstubAllGlobals());
 
-const ink = { line: "#ffb347", accent: "#ffb347", beam: "#39d8ff", eye: "#39d8ff", dark: "#070c17" };
+const ink = { line: "#ffb347", accent: "#ffb347", beam: "#39d8ff", eye: "#39d8ff", chitin: { deep: "#070c17", shell: "#232022", lit: "#454a54" }, shadow: 0.3 };
 const eyes = { open: 1, gaze: { x: 0, y: 0 }, glow: 1 };
 const UP = -Math.PI / 2;
 

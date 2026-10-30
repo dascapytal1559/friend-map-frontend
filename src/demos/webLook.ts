@@ -273,17 +273,17 @@ function letGo(scene: WebScene, state: LookState, now: number, gone: LetGo): voi
   state.unmarking = state.unmarking.filter((left) => !scene.reduced && now - left.left < MARK_TIMING.off);
 }
 
-/** A line held energised from `origin` to `to` along `path`: `flash` (1 to 0) as it locks, and light running down it. */
+/** A line held energised from `origin` to `to` along `path`: `flash` (1 to 0) as it locks, and light (the ink's bright) running down it. */
 function energised(ctx: Ctx, ink: Ink, now: number, reduced: boolean, origin: XY, to: XY, path: Path2D, flash: number): void {
   const dx = to.x - origin.x;
   const dy = to.y - origin.y;
   const d = Math.hypot(dx, dy) || 1;
   const pulse = 0.5 + 0.5 * Math.sin(now / 260);
-  glowStroke(ctx, path, mix(ink.beam, "#ffffff", flash), lerp(1.6, 2.2, flash), 8 + 10 * flash + 2 * pulse, 0.85, 0.22 + 0.4 * flash + 0.08 * pulse);
+  glowStroke(ctx, path, mix(ink.beam, ink.bright, flash), lerp(1.6, 2.2, flash), 8 + 10 * flash + 2 * pulse, 0.85, 0.22 + 0.4 * flash + 0.08 * pulse);
   if (!reduced) {
     for (let j = 0; j < 3; j++) {
       const along = (now / 420 + j / 3) % 1;
-      glowDot(ctx, origin.x + dx * along, origin.y + dy * along, 1.8, "#ffffff", 5, 0.85 * Math.min(1, along * d / 30));
+      glowDot(ctx, origin.x + dx * along, origin.y + dy * along, 1.8, ink.bright, 5, 0.85 * Math.min(1, along * d / 30));
     }
   }
 }
@@ -325,7 +325,7 @@ function hoverBeam(ctx: Ctx, scene: WebScene, ink: Ink, state: LookState, now: n
     const e = travelEase(since / T.travel);
     const tip = { x: origin.x + dx * e, y: origin.y + dy * e };
     glowStroke(ctx, strandPath(origin, tip), ink.beam, 1.2, 0, 0.85);
-    glowDot(ctx, tip.x, tip.y, 2, "#ffffff", 6, 0.95);
+    glowDot(ctx, tip.x, tip.y, 2, ink.bright, 6, 0.95);
   } else if (since < T.travel + T.reach) {
     // Locking: the beam flickers until it holds.
     glowStroke(ctx, strandPath(origin, focus), ink.beam, 1.2, 0, 0.7 + 0.3 * random());
@@ -373,7 +373,7 @@ function hoverReticle(ctx: Ctx, scene: WebScene, ink: Ink, state: LookState, now
   const beam = state.hold.beam;
   const flash = beam?.id === mark.id ? beamFlash(beam, now, scene.reduced) : 0;
   const grow = lerp(16, 2 * pulse, easeOutBack(p));
-  glowStroke(ctx, brackets(at, mark.id, grow, (1 - p) * Math.PI / 4), flash > 0 ? mix(ink.accent, "#ffffff", flash) : ink.accent, 1.4, 6 * flash, 0.95 * Math.min(1, 0.4 + p), 0.5 * flash);
+  glowStroke(ctx, brackets(at, mark.id, grow, (1 - p) * Math.PI / 4), flash > 0 ? mix(ink.accent, ink.bright, flash) : ink.accent, 1.4, 6 * flash, 0.95 * Math.min(1, 0.4 + p), 0.5 * flash);
 }
 
 /** How slack the hold's line is as it is laid out, a share of its length; its twang as it snaps taut, the most it shakes, px, how fast that dies away, ms, and how fast it shakes, Hz. */
@@ -413,7 +413,7 @@ function twangPath(a: XY, b: XY, amp: number, phase: number): Path2D {
  */
 function holdLine(ctx: Ctx, scene: WebScene, ink: Ink, state: LookState, now: number, origin: XY, random: () => number): void {
   const T = HOLD_TIMING;
-  const silk = mix(ink.beam, "#ffffff", 0.5);
+  const silk = mix(ink.beam, ink.bright, 0.5);
   for (const gone of state.reeling) {
     const p = clamp01((now - gone.left) / T.reel);
     const e = p * p;
@@ -435,7 +435,7 @@ function holdLine(ctx: Ctx, scene: WebScene, ink: Ink, state: LookState, now: nu
     const e = travelEase(p);
     const tip = { x: origin.x + (to.x - origin.x) * e, y: origin.y + (to.y - origin.y) * e };
     glowStroke(ctx, strandPath(origin, tip, side * SLACK * d * e), silk, 0.9, 5, 0.9, 0.25);
-    glowDot(ctx, tip.x, tip.y, 1.8, "#ffffff", 6, 0.95);
+    glowDot(ctx, tip.x, tip.y, 1.8, ink.bright, 6, 0.95);
   } else if (phase === "reach") {
     // Reaching: the line draws its slack in, flickering.
     glowStroke(ctx, strandPath(origin, to, side * SLACK * d * (1 - easeCubicOut(p))), silk, 0.9, 5, 0.75 + 0.25 * random(), 0.25);
@@ -449,7 +449,7 @@ function holdLine(ctx: Ctx, scene: WebScene, ink: Ink, state: LookState, now: nu
   ctx.restore();
 }
 
-/** How bright the web's rank rings are at the least, whatever the Web strength: as plain as the dashed guide rings they stand in for, so the bands keep their meaning with the web gone. */
+/** How bright the web's rank rings are at the least on the night, whatever the Web strength (heavier on paper, as every strand is, by the ink's weight): as plain as the dashed guide rings they stand in for, so the bands keep their meaning with the web gone. */
 export const RANK_FLOOR = 0.14;
 
 /** How wide a rank ring's label is, px a character (orbits.css: 9.5px monospace, letter-spaced 0.2em), and how far its ring stays clear of it each side and above and below. */
@@ -476,12 +476,14 @@ export function labelBoxes(shape: WebShape, k: number): Array<{ x: number; y: nu
 /**
  * The web's strands, relative to the sun: over a chromatic split `split` px
  * wide, as strong as the Web strength says (1 is as strong as the web is drawn at
- * all): its spokes, its thinner rings (fainter past the people) and its rank
- * rings, the strongest, never fainter than RANK_FLOOR, every strand broken
- * where a rank ring's label sits.
+ * all), and as much heavier as the ink's weight says (on paper): its spokes,
+ * its thinner rings (fainter past the people) and its rank rings, the
+ * strongest, never fainter than RANK_FLOOR, every strand broken where a rank
+ * ring's label sits.
  */
 function webStrands(ctx: Ctx, scene: WebScene, ink: Ink, split: number): void {
-  const { shape, k, webStrength: strength } = scene;
+  const { shape, k } = scene;
+  const strength = scene.webStrength * ink.weight;
   const spokes = spokesPath(shape, k);
   ctx.save();
   ctx.beginPath();
@@ -502,7 +504,7 @@ function webStrands(ctx: Ctx, scene: WebScene, ink: Ink, split: number): void {
   glowStroke(ctx, spokes, ink.strand, 0.8, 0, 0.46 * strength);
   glowStroke(ctx, within, ink.rings, 0.5, 0, 0.26 * strength);
   glowStroke(ctx, beyond, ink.rings, 0.5, 0, 0.2 * strength);
-  glowStroke(ctx, ranks, ink.rings, 1, 4, Math.max(RANK_FLOOR, 0.62 * strength), 0.08 * strength);
+  glowStroke(ctx, ranks, ink.rings, 1, 4, Math.max(RANK_FLOOR * ink.weight, 0.62 * strength), 0.08 * strength);
   ctx.restore();
 }
 
@@ -630,7 +632,7 @@ export function drawWeb(ctx: Ctx, scene: WebScene, motion: WebMotion, now: numbe
   const size = scene.inner * 0.7;
   const grow = spiderGrowth(k);
   const spider = spiderPose(scene, now, state, size, focus, looks.heldId !== null);
-  const spiderInk: SpiderInk = { line: ink.strand, accent: ink.accent, beam: ink.beam, eye: ink.eye, dark: ink.dark };
+  const spiderInk: SpiderInk = { line: ink.strand, accent: ink.accent, beam: ink.beam, eye: ink.eye, chitin: ink.chitin, shadow: ink.shadow };
   ctx.save();
   ctx.scale(grow, grow);
   ctx.globalAlpha = booted ? 1 : clamp01((t - 200) / 500);

@@ -382,6 +382,8 @@
 }
 
 .demos--light .orbits--web .orbits__name {
+  /* A hair heavier than on the night: ink on paper reads thinner than the same letters lit on the dark. */
+  font-weight: 500;
   stroke: color-mix(in srgb, var(--night) 92%, transparent);
 }
 

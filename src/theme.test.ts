@@ -1,8 +1,10 @@
 // The page's look (theme.ts): Auto, Light or Dark, kept in this browser;
 // the device followed under Auto; the address's ?theme= and the embedding
 // page's message winning while the page is open; a night scene staying dark;
-// and the Look choice in the menu.
+// and the Look choice in the menu. And the page's first paint (index.html):
+// its colour scheme set before anything loads, so it never opens white.
 
+import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   askedTheme, choiceOf, currentTheme, DEFAULT_THEME_CHOICE, forcedThemeStore, listenToEmbedder, lookOf, lookSetting, resolveTheme, THEME_CHOICES, THEME_COLOR, THEME_KEY,
@@ -124,5 +126,34 @@ describe("the look a view is drawn in", () => {
     showLook("dark", doc);
     expect(doc.documentElement.style.colorScheme).toBe("dark");
     expect(meta.content).toBe("#030812");
+  });
+});
+
+describe("the first paint (index.html)", () => {
+  const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+  const early = /<script>([\s\S]*?)<\/script>/.exec(html)?.[1] ?? "";
+
+  /** The scheme index.html's early script gives a page opened at `search` with `kept` kept (null for none; "throws" for storage that refuses). */
+  const firstScheme = (search: string, kept: string | null | "throws"): string => {
+    const root = { style: { colorScheme: "" } };
+    const storage = { getItem: (key: string) => (kept === "throws" ? (() => { throw new Error("refused"); })() : key === THEME_KEY ? kept : null) };
+    new Function("document", "location", "localStorage", early)({ documentElement: root }, { search }, storage);
+    return root.style.colorScheme;
+  };
+
+  it("declares both schemes, so with nothing asked it follows the device (in a frame, the embedder's)", () => {
+    expect(html).toMatch(/<meta name="color-scheme" content="dark light" \/>/);
+    expect(firstScheme("", null)).toBe("");
+  });
+
+  it("takes the address's ?theme= first, then the choice kept in this browser", () => {
+    expect(firstScheme("?theme=dark", "light")).toBe("dark");
+    expect(firstScheme("?theme=light", null)).toBe("light");
+    expect(firstScheme("", "dark")).toBe("dark");
+    expect(firstScheme("?theme=sepia", "auto")).toBe("");
+  });
+
+  it("opens when storage refuses", () => {
+    expect(firstScheme("?theme=light", "throws")).toBe("light");
   });
 });

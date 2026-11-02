@@ -10,6 +10,24 @@
     <meta name="apple-mobile-web-app-title" content="Friend map" />
     <meta name="theme-color" content="#030812" />
     <title>Friend map</title>
+    <!-- The page's colour scheme from its first paint, before any script or stylesheet has loaded (they take a moment
+         under Vite): a page with none is drawn light, and in a frame whose page is dark (the life archive's console at
+         night) the browser paints it an opaque white until the app's own look arrives. With its scheme the embedder's,
+         the frame stays clear and shows the embedder's own ground until the app draws; alone, the browser's ground in
+         that scheme. The look until the app sets it (src/theme.ts, showLook): the address's ?theme=, else the choice
+         kept in this browser, else the device's, which in a frame is the embedder's (its frame's color-scheme). -->
+    <meta name="color-scheme" content="dark light" />
+    <script>
+      (() => {
+        const look = (value) => (value === "light" || value === "dark" ? value : null);
+        let kept = null;
+        try {
+          kept = localStorage.getItem("friend-map.theme");
+        } catch {}
+        const theme = look(new URLSearchParams(location.search).get("theme")) ?? look(kept);
+        if (theme) document.documentElement.style.colorScheme = theme;
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

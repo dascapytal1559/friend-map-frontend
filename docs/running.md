@@ -36,12 +36,7 @@ On the phone the page is laid out for it (media queries for a narrow screen, a s
 
 ## Inside the console
 
-The life archive's console embeds friend-map whole, as it runs, in a frame (its Social aspect; `viewer/console/SocialView.tsx` there), and friend-map takes the console's look, light or dark, so one switch, the console's, rules inside it (see [Look](settings.md#look)). Any page that embeds friend-map can do the same, two ways, both read by `src/theme.ts`:
-
-- **On the address**: `?theme=light` or `?theme=dark` on the page's address (`http://127.0.0.1:4600/friend-map/?theme=light`) sets the look for as long as the page is open, whatever is chosen in friend-map's own menu. The address of a view switched to inside the page carries no query, so the parameter is read once as the page opens, not again at every view.
-- **By a message**, as the embedder's look flips, with no reload: the embedding page posts `{ type: "friend-map:theme", theme: "light" }` (or `"dark"`) to the frame's window (`frame.contentWindow.postMessage(message, friendMapOrigin)`), and friend-map takes it from its parent page alone; any other message, or one from anywhere else, is ignored.
-
-Opened on its own, friend-map hears nothing and follows its own Look choice, the device's setting until one is made. Orbits 3D and the City, night scenes, stay dark under either look.
+The life archive's console embeds friend-map whole, as it runs, in a frame (its Friend Map aspect; `viewer/console/FriendMapView.tsx` there). friend-map is dark only (see [Look](settings.md#look)), so it stays dark inside the console by day as by night. The console still opens the frame with `?theme=light` or `?theme=dark` and posts `{ type: "friend-map:theme", theme }` to it as its own look flips; friend-map reads neither, and nothing else in the embedding changes. Its page declares the dark colour scheme before anything loads (`index.html`): in the console at night the frame stays clear over the console's own black until the map draws, and by day the browser paints the frame dark, never white, until then.
 
 ## Tests, and trying it without real data
 

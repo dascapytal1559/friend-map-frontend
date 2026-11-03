@@ -11,7 +11,6 @@ import { forgetOldDemoMode } from "./demoMode.ts";
 import { address, appPath } from "./mount.ts";
 import { ReadOnly } from "./readOnly.ts";
 import { startSaving } from "./savedStore.ts";
-import { listenToEmbedder } from "./theme.ts";
 import { movedAddress } from "./views.ts";
 
 // The app's page, on the server's archive (src/demo/main.tsx is the static
@@ -41,8 +40,6 @@ const shaken = await shakeHands(archiveApi);
 forgetOldDemoMode();
 // The Spider web's settings are kept on the server (the static demo keeps its visitor's in the browser).
 startSaving();
-// Embedded in the console, the page takes the console's look (theme.ts).
-listenToEmbedder();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

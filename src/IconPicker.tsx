@@ -10,27 +10,22 @@
 import { useEffect, useRef, useState } from "react";
 import type { PersonSummary } from "./archive.ts";
 import { drafted, draftHue, newColour, newPicture, recolour, saveDraft, startDraft, type IconDraft } from "./iconDraft.ts";
-import { identiconLook, pickedColour, type IdenticonLook } from "./identicon.ts";
+import { pickedColour } from "./identicon.ts";
 import { Identicon } from "./Identicon.tsx";
-import { useLook } from "./theme.ts";
 import { change } from "./PersonParts.tsx";
 import { useReadOnly } from "./readOnly.ts";
 
 /** The picker's colours: twelve hues a twelfth of the way round from each other, starting at a warm red. */
 export const SWATCH_HUES = Array.from({ length: 12 }, (_, i) => 15 + 30 * i);
 
-/** The slider's track: the colours a picked hue gives all the way round, in a look (src/theme.ts). */
-function trackOf(look: IdenticonLook): string {
-  return `linear-gradient(to right, ${Array.from({ length: 13 }, (_, i) => pickedColour((30 * i) % 360, look)).join(", ")})`;
-}
+/** The slider's track: the colours a picked hue gives all the way round. */
+const TRACK = `linear-gradient(to right, ${Array.from({ length: 13 }, (_, i) => pickedColour((30 * i) % 360)).join(", ")})`;
 
 /** How big the draft is drawn. */
 const DRAFT_SIZE = 64;
 
 export function IconPicker({ person, size = 32 }: { person: PersonSummary; size?: number }) {
   const readOnly = useReadOnly();
-  // The swatches and the track in the page's look (src/theme.ts), as the identicon they colour is drawn.
-  const look = identiconLook(useLook());
   // The draft while the picker is open; null while it is closed.
   const [draft, setDraft] = useState<IconDraft | null>(null);
   const [saving, setSaving] = useState(false);
@@ -99,7 +94,7 @@ export function IconPicker({ person, size = 32 }: { person: PersonSummary; size?
                 key={h}
                 type="button"
                 className={h === draft.hue ? "icon-picker__swatch icon-picker__swatch--on" : "icon-picker__swatch"}
-                style={{ background: pickedColour(h, look) }}
+                style={{ background: pickedColour(h) }}
                 aria-label={`Colour ${h}°`}
                 aria-pressed={h === draft.hue}
                 disabled={saving}
@@ -114,7 +109,7 @@ export function IconPicker({ person, size = 32 }: { person: PersonSummary; size?
             min={0}
             max={359}
             value={draftHue(draft)}
-            style={{ background: trackOf(look) }}
+            style={{ background: TRACK }}
             disabled={saving}
             onChange={(e) => {
               const hue = Number(e.target.value);

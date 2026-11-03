@@ -11,9 +11,8 @@
 import { oklchHex } from "../identicon.ts";
 import { keptAs } from "../demoMode.ts";
 import { keptSetting, useStore } from "../keptSetting.ts";
-import { COLORS, PAPER } from "./palette.ts";
-import { hexIn, inkOf, oklch, turned, type Hex } from "./themeColour.ts";
-import { rgba } from "./webDraw.ts";
+import { COLORS } from "./palette.ts";
+import { hexIn, oklch, turned, type Hex } from "./themeColour.ts";
 
 /** A look's colours for Orbits' own SVG marks. */
 export interface LookPalette {
@@ -38,23 +37,8 @@ function nightPalette(sun: string): LookPalette {
   };
 }
 
-/** Orbits' look on paper for a sun of colour `sun`: a solid disc in its hue with a pale halo, rims in ink (the plain one its person's own), Paper's warm and cool trails. */
-function paperPalette(sun: string): LookPalette {
-  const [, c, h] = oklch(sun);
-  const core = oklchHex(0.7, Math.max(c, 0.16), h);
-  const halo = oklchHex(0.84, Math.max(c * 0.8, 0.1), h);
-  return {
-    sun: [[0, core, 1], [0.3, core, 1], [0.42, halo, 0.9], [0.7, halo, 0.22], [1, halo, 0]],
-    body: { lit: PAPER.star, silent: PAPER.dim, plain: (main) => rgba(inkOf(main), 0.55), width: { lit: 1.6, silent: 1, plain: 0.8 } },
-    trail: { warm: PAPER.warm, cool: PAPER.cool },
-  };
-}
-
 /** Orbits' own look, in the sun's orange. */
 export const NIGHT_PALETTE: LookPalette = nightPalette(COLORS.me);
-
-/** Orbits' look on paper, in the sun's orange. */
-export const PAPER_PALETTE: LookPalette = paperPalette(COLORS.me);
 
 /** The theme until another is chosen: the sun's orange. */
 export const ORANGE = COLORS.me as Hex;
@@ -75,18 +59,17 @@ export function themeSun(chosen: string): string {
   return kept === l ? chosen : oklchHex(kept, c, h);
 }
 
-const palettes = { night: new Map<string, LookPalette>([[ORANGE, NIGHT_PALETTE]]), paper: new Map<string, LookPalette>([[ORANGE, PAPER_PALETTE]]) };
+const palettes = new Map<string, LookPalette>([[ORANGE, NIGHT_PALETTE]]);
 
-/** Orbits' look in a theme colour: the sun's gradient in it, the rest as Orbits' own; on paper (`light`), paperPalette's. */
-export function orbitsPalette(chosen: string, light = false): LookPalette {
+/** Orbits' look in a theme colour: the sun's gradient in it, the rest as Orbits' own. */
+export function orbitsPalette(chosen: string): LookPalette {
   const sun = themeSun(chosen);
-  const kept = light ? palettes.paper : palettes.night;
-  let palette = kept.get(sun);
+  let palette = palettes.get(sun);
   if (!palette) {
     // A colour picker dragged makes a new one every step; keep only the latest few.
-    if (kept.size > 32) kept.clear();
-    palette = light ? paperPalette(sun) : nightPalette(sun);
-    kept.set(sun, palette);
+    if (palettes.size > 32) palettes.clear();
+    palette = nightPalette(sun);
+    palettes.set(sun, palette);
   }
   return palette;
 }

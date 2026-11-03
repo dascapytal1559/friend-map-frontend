@@ -6,9 +6,7 @@
 // of the screen: a lit face toward it, a specular line along its lit edge, a
 // rim of the web's own glow along its far edge, and an emissive seam of the
 // Spider web's accent down its middle, like a circuit trace; a joint is a dark disc
-// in a glowing ring with a bright core. On paper (the light look; the inks
-// are webTheme.ts's) the chitin is pale and its shadow light, so the same
-// rims, seams and outlines draw the spider in ink, no heavier than the names. Each joint of each leg keeps its
+// in a glowing ring with a bright core. Each joint of each leg keeps its
 // height above the web (the rig solves the legs in three dimensions), so a
 // steep segment is drawn darker than a flat one, and the whole spider casts a
 // shadow on the web: each joint's shadow lies down and to the right of it by
@@ -42,21 +40,15 @@
 import { mix } from "../identicon.ts";
 import { drawHalo, glowStroke, lerp, rgba, type Ctx, type XY } from "./webDraw.ts";
 import type { Eyes } from "./webEyes.ts";
-import type { Chitin } from "./webTheme.ts";
 import { BODY, BODY_HEIGHT, bodyToWeb, CROUCH, legPose, wrapAngle, type LegPose, type Rig, type XYZ } from "./webRig.ts";
 
-/**
- * The spider's inks (webTheme.ts): its lines and plates' rims, its accents (joints and seams), its glowing beams, its
- * eyes, the chitin it is made of, and how dark its shadow falls. On the night the chitin is dark and the lit edges draw
- * the spider; on paper it is pale and the same lines draw it in ink.
- */
+/** The spider's inks: its lines and plates' rims, its accents (joints and seams), its glowing beams, its eyes, and the dark it is made of. */
 export interface SpiderInk {
   line: string;
   accent: string;
   beam: string;
   eye: string;
-  chitin: Chitin;
-  shadow: number;
+  dark: string;
 }
 
 /** The spider's materials, mixed once from its inks. */
@@ -78,22 +70,21 @@ interface Material {
 const materials = new Map<string, Material>();
 
 function materialOf(ink: SpiderInk): Material {
-  const { deep, shell, lit } = ink.chitin;
-  const key = `${deep}|${shell}|${lit}|${ink.line}|${ink.accent}|${ink.beam}|${ink.eye}`;
+  const key = `${ink.dark}|${ink.line}|${ink.accent}|${ink.beam}|${ink.eye}`;
   let m = materials.get(key);
   if (!m) {
     // A colour picker dragged makes a new one every step; keep only the latest few.
     if (materials.size > 32) materials.clear();
     m = {
-      shell,
-      lit,
-      deep,
+      shell: mix(ink.dark, ink.line, 0.14),
+      lit: mix(ink.dark, "#ffffff", 0.3),
+      deep: ink.dark,
       spec: mix("#ffffff", ink.beam, 0.25),
       rim: ink.line,
       core: ink.accent,
       coreBright: mix(ink.accent, "#ffffff", 0.55),
       eye: ink.eye,
-      glass: mix(deep, ink.eye, 0.14),
+      glass: mix(ink.dark, ink.eye, 0.14),
       line: ink.line,
     };
     materials.set(key, m);
@@ -105,6 +96,7 @@ function materialOf(ink: SpiderInk): Material {
 const LIGHT: XY = { x: -0.6, y: -0.8 };
 /** Where a point's shadow falls on the web, per pixel of its height: down and to the right. */
 const SHADOW: XY = { x: 0.3, y: 0.42 };
+const SHADOW_ALPHA = 0.3;
 
 /** Where the head's neck sits on the chassis, and where on the head the beams come from, in the body's frame (shares of the rig's length, forward -y): the mouth, between the fangs, and the eyes, the middle of their cluster on the visor. */
 const NECK: XY = { x: 0, y: -0.44 * BODY };
@@ -346,10 +338,10 @@ export function drawSpider(ctx: Ctx, rig: Rig, s: number, eyes: Eyes, ink: Spide
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
 
-  // The shadows, on the web, unless turned off (webShadow.ts), as dark as the ink says: the body's parts by the hips' height, and each leg's chain of joints by its own.
+  // The shadows, on the web, unless turned off (webShadow.ts): the body's parts by the hips' height, and each leg's chain of joints by its own.
   if (shadow) {
     ctx.save();
-    ctx.globalAlpha = ink.shadow;
+    ctx.globalAlpha = SHADOW_ALPHA;
     ctx.fillStyle = "#000000";
     ctx.strokeStyle = "#000000";
     ctx.translate(rig.sway.x + height * SHADOW.x, rig.sway.y + height * SHADOW.y);
@@ -363,11 +355,11 @@ export function drawSpider(ctx: Ctx, rig: Rig, s: number, eyes: Eyes, ink: Spide
     bodyShadow.ellipse(neck.x + headAt.x, neck.y + headAt.y, 0.16 * b, 0.22 * b, rig.head + Math.PI / 2, 0, Math.PI * 2);
     ctx.fill(bodyShadow);
     ctx.restore();
-    ctx.globalAlpha = ink.shadow;
+    ctx.globalAlpha = SHADOW_ALPHA;
     ctx.strokeStyle = "#000000";
     ctx.lineWidth = 0.036 * s;
     for (const pose of poses) {
-      ctx.globalAlpha = ink.shadow * Math.max(0.3, 1 - 0.35 * pose.up);
+      ctx.globalAlpha = SHADOW_ALPHA * Math.max(0.3, 1 - 0.35 * pose.up);
       ctx.stroke(shadowOf([pose.hip, pose.trochanter, pose.knee, pose.patella, pose.ankle, pose.tarsus, pose.foot]));
     }
     ctx.globalAlpha = 1;

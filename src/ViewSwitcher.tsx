@@ -22,7 +22,7 @@ import "./viewSwitcher.css";
 
 export type Navigate = (to: string) => (event: React.MouseEvent) => void;
 
-export function ViewSwitcher({ current, crumb, navigate, names = false, look = false, demo = demoMode }: {
+export function ViewSwitcher({ current, crumb, navigate, names = false, demo = demoMode }: {
   /** The slug of the view shown, in VIEWS. */
   current: string;
   /** The small line over the title. */
@@ -30,8 +30,6 @@ export function ViewSwitcher({ current, crumb, navigate, names = false, look = f
   navigate?: Navigate;
   /** Whether the settings offer Name format, the choice of which names the page shows. */
   names?: boolean;
-  /** Whether the settings offer Look, the page's theme (theme.ts): on the map page's views, not the Table's or the Calendar's page. */
-  look?: boolean;
   /** Whether this is the demo's switcher, listing the demo's views alone. */
   demo?: boolean;
 }) {
@@ -84,7 +82,7 @@ export function ViewSwitcher({ current, crumb, navigate, names = false, look = f
           <svg width="12" height="12" viewBox="0 0 10 10" aria-hidden><path d="M2 3.5 L5 6.5 L8 3.5" fill="none" stroke="currentColor" strokeWidth="1.4" /></svg>
         </button>
       </h1>
-      {open && <ViewList id={menuId} current={current} navigate={navigate} names={names} look={look} demo={demo} onPick={() => setOpen(false)} />}
+      {open && <ViewList id={menuId} current={current} navigate={navigate} names={names} demo={demo} onPick={() => setOpen(false)} />}
     </div>
   );
 }
@@ -94,13 +92,12 @@ export function ViewSwitcher({ current, crumb, navigate, names = false, look = f
  * view's settings if it has any (with `names`, Name format first among them), then the Demo (the public demo, in a
  * new tab); in the demo (`demo`), its own views alone, none of them frozen, and the current one's settings.
  */
-export function ViewList({ id, current, navigate, onPick, names = false, look = false, demo = demoMode }: {
+export function ViewList({ id, current, navigate, onPick, names = false, demo = demoMode }: {
   id?: string;
   current: string;
   navigate?: Navigate;
   onPick: () => void;
   names?: boolean;
-  look?: boolean;
   demo?: boolean;
 }) {
   const offered = viewsFor(demo);
@@ -134,7 +131,7 @@ export function ViewList({ id, current, navigate, onPick, names = false, look = 
           {others.filter((view) => view.frozen).map((view) => link(view, navigate))}
         </>
       )}
-      {shown && <ViewSettings slug={shown.slug} title={shown.title} names={names} look={look} demo={demo} />}
+      {shown && <ViewSettings slug={shown.slug} title={shown.title} names={names} demo={demo} />}
       {!demo && (
         <>
           <span className="view-switcher__group">About the app</span>

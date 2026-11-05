@@ -9,11 +9,12 @@
 import { easeCubicInOut, easeCubicOut, max, scaleSqrt } from "d3";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { livesTogether } from "../archive.ts";
+import { isAspiring } from "../aspiring.ts";
 import type { Names } from "../names.ts";
 import { friendCircles, presence } from "./friendCircles.ts";
 import { standing, trendAt, type DemoModel, type DemoPerson } from "./model.ts";
 import {
-  centreOnIcons, directions, drawnSize, fitNames, glowOf, hearth, movesVisibly, namedIds, orbitRadius, placeBodies, READABLE, spread,
+  ASPIRING_CLEAR, aspiringPlaces, aspiringSize, byName, centreOnIcons, directions, drawnSize, fitNames, glowOf, hearth, movesVisibly, namedIds, orbitRadius, placeBodies, READABLE, spread,
   textUnits, TIERS, trailStartRank, wrap,
   type Box, type Drawn, type LabelSpot, type Placed, type RankScale,
 } from "./orbitsLayout.ts";
@@ -70,13 +71,34 @@ export function stageOf(width: number, height: number, top: number): { outer: nu
   return { outer, inner, cx: width / 2, cy: top + area / 2 + 6 };
 }
 
+/** Kept clear of the page's sides beside an aspiring friend's bubble, for the name under it. */
+const ASPIRING_SIDE = 64;
+/** Kept clear over and under an aspiring friend's bubble: a little over it, and under it for their name. */
+const ASPIRING_OVER = 8;
+const ASPIRING_UNDER = 26;
+/** How far under an aspiring friend's bubble the middle of their name sits. */
+export const ASPIRING_NAME_GAP = 12;
+
+/**
+ * The edge aspiring friends sit on (aspiringPlaces), relative to the sun at (`cx`, `cy`): as far out as a bubble of
+ * `size` and its name stay on a page `width` by `height`, under the header (`top` pixels of it).
+ */
+export function aspiringEdge(width: number, height: number, top: number, cx: number, cy: number, size: number): Box {
+  return {
+    left: ASPIRING_SIDE + size - cx,
+    right: width - ASPIRING_SIDE - size - cx,
+    top: top + ASPIRING_OVER + size - cy,
+    bottom: height - ASPIRING_UNDER - size - cy,
+  };
+}
+
 /** Where everyone is headed: each person's frame and place, and how far the system reaches from the sun. */
 export interface Targets {
   frames: Map<number, Frame>;
   placed: Map<number, Placed>;
   /** The box round the system, relative to the sun, unzoomed. */
   extent: Box;
-  /** How far from the sun the furthest edge is: the belt, or anyone nudged beyond it. */
+  /** How far from the sun the furthest edge is: the belt, or anyone nudged beyond it, aspiring friends aside. */
   reach: number;
 }
 
@@ -90,12 +112,18 @@ export interface Targets {
  * closest), their trend over the look-back window, and where their comet
  * trail starts (`trailFrom`), and how far from the sun a rank sits (`radius`):
  * on Orbits' own scale, or the Spider web's even one (`scale`, RankScale).
+ * Aspiring friends (`aspiring`) sit out on `edge` (aspiringEdge), away from
+ * everyone else, who are placed as if they were not there.
  */
-export function useOrbitBodies(model: DemoModel, at: number, inner: number, outer: number, order: OrbitOrder, scale: RankScale = "log") {
-  // Ranks run over everyone on the map.
-  const count = model.people.length;
+export function useOrbitBodies(model: DemoModel, at: number, inner: number, outer: number, order: OrbitOrder, edge: Box, scale: RankScale = "log") {
+  // Aspiring friends, A to Z; everyone else, who have the orbits to themselves.
+  const far = useMemo(() => model.people.filter(isAspiring).sort(byName), [model.people]);
+  const aspiring = useMemo(() => new Set(far.map((p) => p.id)), [far]);
+  const ringed = useMemo(() => (far.length > 0 ? model.people.filter((p) => !aspiring.has(p.id)) : model.people), [model.people, far, aspiring]);
+  // Ranks run over everyone on the orbits.
+  const count = ringed.length;
   // Whoever you live with: ranked first (closenessRanks), and set in the sun (hearth).
-  const together = useMemo(() => model.people.filter(livesTogether).map((p) => p.id), [model.people]);
+  const together = useMemo(() => ringed.filter(livesTogether).map((p) => p.id), [ringed]);
   // How far from the sun someone of a rank sits, unzoomed; a guide ring by its rank (rings) too.
   const radius = useCallback(
     (rank: number | null) => orbitRadius(rank, inner, outer, count, together.length, scale),
@@ -103,23 +131,23 @@ export function useOrbitBodies(model: DemoModel, at: number, inner: number, oute
   );
 
   const bySize = useMemo(() => {
-    const top = max(model.people, (p) => p.total) || 1;
+    const top = max(ringed, (p) => p.total) || 1;
     return scaleSqrt().domain([0, top]).range([2.8, Math.min(15, Math.max(8, outer * 0.04))]);
-  }, [model.people, outer]);
+  }, [ringed, outer]);
 
   const standings = useMemo(() => new Map(model.people.map((p) => [p.id, standing(p, at, model)])), [model, at]);
   // Everyone's place by closeness (1 for the closest), which sets how strongly they and their name are drawn (TIERS);
   // the belt, with no closeness yet, has none.
-  const closest = useMemo(() => new Map(namedIds(model.people, at, count).map((id, i) => [id, i + 1])), [model.people, at, count]);
+  const closest = useMemo(() => new Map(namedIds(ringed, at, count).map((id, i) => [id, i + 1])), [ringed, at, count]);
   // Friend circles, worked out only while chosen, and then once per change to who is on the map: each person takes
   // room round the ring by how much they show (presence, by their tier), so the circles near the sun get the most.
   const circles = useMemo(
-    () => (order === "circles" ? friendCircles(model.people, model.groups, new Map(model.people.map((p) => [p.id, presence(closest.get(p.id) ?? null)]))) : null),
-    [order, model.people, model.groups, closest],
+    () => (order === "circles" ? friendCircles(ringed, model.groups, new Map(ringed.map((p) => [p.id, presence(closest.get(p.id) ?? null)]))) : null),
+    [order, ringed, model.groups, closest],
   );
   const aim = useMemo(
-    () => (circles ? spread(circles.order, TOP_GAP, { weights: circles.weights, gaps: circles.gaps }) : directions(model.people, TOP_GAP)),
-    [circles, model.people],
+    () => (circles ? spread(circles.order, TOP_GAP, { weights: circles.weights, gaps: circles.gaps }) : directions(ringed, TOP_GAP)),
+    [circles, ringed],
   );
   const trends = useMemo(() => new Map(model.people.map((p) => [p.id, trendAt(p, at, model)])), [model, at]);
   // Where each person sat at the start of the look-back window before `at` (or their first month in it):
@@ -134,7 +162,7 @@ export function useOrbitBodies(model: DemoModel, at: number, inner: number, oute
 
   const targets = useMemo((): Targets => {
     const home = new Set(together);
-    const bodies = model.people.map((p) => {
+    const bodies = ringed.map((p) => {
       const s = standings.get(p.id)!;
       const silent = p.rank[at] === 0;
       return {
@@ -147,37 +175,40 @@ export function useOrbitBodies(model: DemoModel, at: number, inner: number, oute
     });
     // Nudged out rather than in: a crowd near the sun spreads to the orbits just beyond. Whoever you live
     // with sits in the sun, inside them all, and is never nudged.
+    const bubble = aspiringSize(outer);
     const placed = new Map([
       ...placeBodies(bodies.filter((b) => !home.has(b.id)), { giveIn: 4, giveOut: (outer - inner) * 0.12 + 8, minR: inner * 0.92 }),
       ...hearth(together, aim, inner),
+      ...aspiringPlaces(far.map((p) => p.id), edge, outer + BELT + ASPIRING_CLEAR + bubble),
     ]);
+    const sizes = new Map([...bodies.map((b): [number, number] => [b.id, b.size]), ...far.map((p): [number, number] => [p.id, bubble])]);
     const frames = new Map<number, Frame>();
     // How far the system reaches from the sun: the belt, and anyone nudged beyond it.
     const extent = { left: -(outer + BELT), right: outer + BELT, top: -(outer + BELT), bottom: outer + BELT };
     // How far from the sun the furthest edge is: the belt, or anyone nudged beyond it.
     let reach = outer + BELT;
-    model.people.forEach((person, i) => {
-      const body = bodies[i];
-      const p = placed.get(body.id)!;
+    model.people.forEach((person) => {
+      const size = sizes.get(person.id)!;
+      const p = placed.get(person.id)!;
       const silent = person.rank[at] === 0;
-      frames.set(body.id, {
+      frames.set(person.id, {
         angle: p.angle,
         r: p.r,
-        size: body.size,
+        size,
         glow: glowOf(person),
         opacity: 1,
         silent,
       });
-      extent.left = Math.min(extent.left, p.x - body.size);
-      extent.right = Math.max(extent.right, p.x + body.size);
-      extent.top = Math.min(extent.top, p.y - body.size);
-      extent.bottom = Math.max(extent.bottom, p.y + body.size);
-      reach = Math.max(reach, p.r + body.size);
+      extent.left = Math.min(extent.left, p.x - size);
+      extent.right = Math.max(extent.right, p.x + size);
+      extent.top = Math.min(extent.top, p.y - size);
+      extent.bottom = Math.max(extent.bottom, p.y + size);
+      if (!aspiring.has(person.id)) reach = Math.max(reach, p.r + size);
     });
     return { frames, placed, extent, reach };
-  }, [model.people, at, standings, aim, inner, outer, bySize, closest, together, radius]);
+  }, [model.people, ringed, far, aspiring, edge, at, standings, aim, inner, outer, bySize, closest, together, radius]);
 
-  return { count, together, radius, bySize, standings, closest, circles, aim, trends, trailFrom, targets };
+  return { count, together, aspiring, radius, bySize, standings, closest, circles, aim, trends, trailFrom, targets };
 }
 
 /** A map's names' type, as orbits.css draws them: sizes in pixels, at full size and smaller (MINOR_SCALE's), the family, the spacing between letters in ems, and an average letter's width (centreOnIcons' charWidth). */

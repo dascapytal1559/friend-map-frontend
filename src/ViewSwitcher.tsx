@@ -4,7 +4,8 @@
 // views: the main views first (Orbits, the Spider web and the City; Orbits 2D is hidden for now), then
 // Circles, the Table and the Calendar, then the frozen views, then the open view's settings, if it has any, in a section set apart
 // (ViewSettings.tsx, viewSettings.ts; on a page that shows names, Name format, which
-// names it shows, comes first in it), then, under About the app, the Demo,
+// names it shows, comes first in it), then whatever the page adds (`more`: Add an aspiring friend, on
+// Orbits and the Spider web), then, under About the app, the Demo,
 // which opens the public demo in a tab of its own (PUBLIC_DEMO in
 // src/views.ts); Esc, a click elsewhere or moving focus
 // out closes it. Links are real links, so a view can open in a new tab;
@@ -13,7 +14,7 @@
 // main views first as ever, and nothing else: no Demo, and no way into the
 // real map.
 
-import { useEffect, useId, useRef, useState } from "react";
+import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { demoMode } from "./demoMode.ts";
 import { ViewSettings } from "./ViewSettings.tsx";
 import { address } from "./mount.ts";
@@ -22,7 +23,7 @@ import "./viewSwitcher.css";
 
 export type Navigate = (to: string) => (event: React.MouseEvent) => void;
 
-export function ViewSwitcher({ current, crumb, navigate, names = false, demo = demoMode }: {
+export function ViewSwitcher({ current, crumb, navigate, names = false, demo = demoMode, more }: {
   /** The slug of the view shown, in VIEWS. */
   current: string;
   /** The small line over the title. */
@@ -32,6 +33,8 @@ export function ViewSwitcher({ current, crumb, navigate, names = false, demo = d
   names?: boolean;
   /** Whether this is the demo's switcher, listing the demo's views alone. */
   demo?: boolean;
+  /** What the page adds to the list, after the settings, given the way to close the list. */
+  more?: (close: () => void) => ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -82,7 +85,7 @@ export function ViewSwitcher({ current, crumb, navigate, names = false, demo = d
           <svg width="12" height="12" viewBox="0 0 10 10" aria-hidden><path d="M2 3.5 L5 6.5 L8 3.5" fill="none" stroke="currentColor" strokeWidth="1.4" /></svg>
         </button>
       </h1>
-      {open && <ViewList id={menuId} current={current} navigate={navigate} names={names} demo={demo} onPick={() => setOpen(false)} />}
+      {open && <ViewList id={menuId} current={current} navigate={navigate} names={names} demo={demo} more={more} onPick={() => setOpen(false)} />}
     </div>
   );
 }
@@ -92,13 +95,14 @@ export function ViewSwitcher({ current, crumb, navigate, names = false, demo = d
  * view's settings if it has any (with `names`, Name format first among them), then the Demo (the public demo, in a
  * new tab); in the demo (`demo`), its own views alone, none of them frozen, and the current one's settings.
  */
-export function ViewList({ id, current, navigate, onPick, names = false, demo = demoMode }: {
+export function ViewList({ id, current, navigate, onPick, names = false, demo = demoMode, more }: {
   id?: string;
   current: string;
   navigate?: Navigate;
   onPick: () => void;
   names?: boolean;
   demo?: boolean;
+  more?: (close: () => void) => ReactNode;
 }) {
   const offered = viewsFor(demo);
   // A hidden view is not listed, but opened by its address it keeps its settings here.
@@ -132,6 +136,7 @@ export function ViewList({ id, current, navigate, onPick, names = false, demo = 
         </>
       )}
       {shown && <ViewSettings slug={shown.slug} title={shown.title} names={names} demo={demo} />}
+      {more?.(onPick)}
       {!demo && (
         <>
           <span className="view-switcher__group">About the app</span>

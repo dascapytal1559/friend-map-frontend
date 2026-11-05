@@ -12,6 +12,7 @@
 // are changed in the file.
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { isAspiring } from "../aspiring.ts";
 import { catchUpWhen, groupShare, hoursLabel, PRIVATE_FROM, PRIVATE_TO, timeLabel, tripCountedHours, tripHours } from "../catchUps.ts";
 import { HANGOUT } from "../eventWords.ts";
 import { DEFAULT_SETTINGS, type Settings } from "../settings.ts";
@@ -50,7 +51,9 @@ export function Methodology({ model, onClose, demo = false, order = "name", name
   const tripDay = tripHours("2026-01-01", "00:00", { lastDay: "2026-01-02", endTime: "00:00", privateFrom: PRIVATE_FROM, privateTo: PRIVATE_TO });
   const full = settings.tripFullHours;
   const trip = (hours: number) => tripCountedHours(settings, hours) * settings.catchUpHourWorth;
-  const bands = rings(model.people.length).map((ring) => ring.label.replace("top ", ""));
+  // Aspiring friends sit outside the orbits, so the rings do not count them.
+  const onOrbits = model.people.filter((p) => !isAspiring(p)).length;
+  const bands = rings(onOrbits).map((ring) => ring.label.replace("top ", ""));
   const [open, setOpen] = useState<ReadonlySet<Part>>(() => new Set());
   const [shown, setShown] = useState<Part>();
   const toggle = (part: Part, isOpen: boolean) =>
@@ -290,9 +293,10 @@ export function Methodology({ model, onClose, demo = false, order = "name", name
         <Rows rows={[
           ["Distance", <>rank by closeness, outward on a log scale{bands.length > 0 && <>; rings at the top {listed(bands)}</>}; the outer belt has none yet</>],
         ]} />
-        <RankCurve count={model.people.length} />
+        <RankCurve count={onOrbits} />
         <Rows rows={[
           ["Live together", <>tagged <em>live-together</em>: infinitely close, ranked first whatever their score, in the sun itself, glowing like it</>],
+          ["Aspiring", <>tagged <em>aspiring</em>: someone you would like to know, far out at the edge of the page in a dashed thought bubble, big however little you have talked, never ranked, their note for what you would say to them</>],
           ["Strength", <>fainter ring by ring: {TIERS.map((t) => percent(t.opacity)).join(" → ")} → {percent(TIER_FLOOR)}</>],
           ["Size", "all your messages: direct both ways, and theirs in group chats"],
           ["Picture", "their identicon; their name is tinted its colour"],

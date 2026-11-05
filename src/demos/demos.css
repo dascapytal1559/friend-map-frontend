@@ -1578,6 +1578,17 @@
   background: none;
 }
 
+/* Add an aspiring friend, folded in the menu at the top left. */
+.add-aspiring {
+  padding: 4px 2px 0;
+}
+
+.add-aspiring label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 .add-person__form label span {
   color: var(--dim);
   font-size: 11px;

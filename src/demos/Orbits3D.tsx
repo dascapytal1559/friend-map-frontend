@@ -33,15 +33,15 @@ import { cameraBetween, squash, turnCamera, twistCamera, type Camera, type Finge
 import { scoreLabel } from "./closeness.ts";
 import { Compass } from "./Compass.tsx";
 import type { DemoPerson } from "./model.ts";
-import { drawnBox, focusLinksOf, focusOf, heldOnly, nameAt, nameStyle, PHONE, ringLabelBox } from "./Orbits.tsx";
+import { Bubble, drawnBox, focusLinksOf, focusOf, heldOnly, nameAt, nameStyle, PHONE, ringLabelBox, underBubble } from "./Orbits.tsx";
 import {
-  BACKGROUND, displacementTrail, drawnSize, glowColour, grown, hearthGlowRadius, orbitRadius, personOpacity, READABLE, rings,
+  aspiringSize, BACKGROUND, displacementTrail, drawnSize, glowColour, grown, hearthGlowRadius, orbitRadius, personOpacity, READABLE, rings,
 } from "./orbitsLayout.ts";
 import { drawnAt, heightOf, HOME_VIEW, inclinationOf, lightOn, nearness, paintOrder, ringAxes, sceneExtent, shadeAt } from "./orbits3dScene.ts";
 import { COLOUR_GLOW, HOLLOW, NAME, PHOTO, rgb, SkyGl, SPHERE, SUN_CORE, SUN_GLOW, type Sprite } from "./orbits3dGl.ts";
 import { NameAtlas, nameKey, namesInScene, type NameLook, type NameSlot } from "./orbits3dNames.ts";
 import { tourAt, tourOf } from "./orbits3dTour.ts";
-import { arrivedShare, NAME_FONT, nameOf, onPage, stageOf, useMedia, useNameFit, useOrbitBodies, useOrbitNames, useSettled, useTween, type XY } from "./orbitsSky.ts";
+import { arrivedShare, ASPIRING_NAME_GAP, aspiringEdge, NAME_FONT, nameOf, onPage, stageOf, useMedia, useNameFit, useOrbitBodies, useOrbitNames, useSettled, useTween, type XY } from "./orbitsSky.ts";
 import { DEFAULT_NAME_PADDING, useNamePadding } from "./namePadding.ts";
 import { useTopNames } from "./topNames.ts";
 import { nameStrengthOf, useNameFade } from "./nameFade.ts";
@@ -53,7 +53,7 @@ import { glowLook, glowShown, glowsOf, useReachGlow } from "./reachGlow.ts";
 import { ringColours } from "./ringColours.ts";
 import { PHOTO_SHARE, SUN_SHARE, SunControls, useMePhoto } from "./SunPhoto.tsx";
 import { trendSummary, windowLabel } from "./trend.ts";
-import { basicRows, fieldRows, number, tipAt, type ViewProps } from "./view.tsx";
+import { aspiringRows, basicRows, fieldRows, number, tipAt, type ViewProps } from "./view.tsx";
 
 /** How long people take to move to new places (new messages, a new query), in ms. */
 const MOVE_MS = 700;
@@ -113,13 +113,18 @@ export function Orbits3DMap({ model, width, height, inset: top, hover, open, hel
 
   // The same stage and the same places as Orbits (orbitsSky.ts), A to Z round the sun.
   const { outer, inner, cx, cy } = stageOf(width, height, top);
-  const { count, together, radius, standings, closest, trends, trailFrom, targets: spokes } = useOrbitBodies(model, at, inner, outer, "name");
+  const bubble = aspiringSize(outer);
+  const edge = useMemo(() => aspiringEdge(width, height, top, cx, cy, bubble), [width, height, top, cx, cy, bubble]);
+  const { count, together, aspiring, radius, standings, closest, trends, trailFrom, targets: spokes } = useOrbitBodies(model, at, inner, outer, "name", edge);
   const reachOut = useMemo(() => new Set(model.people.filter((p) => p.shouldReachOut).map((p) => p.id)), [model.people]);
+  // Aspiring friends stay where they are on the edge, and are named wherever they are, as on Orbits 2D.
+  const unturned = useMemo(() => [...together, ...aspiring], [together, aspiring]);
+  const alwaysNamed = useMemo(() => new Set([...reachOut, ...aspiring]), [reachOut, aspiring]);
   // Those named on the whole map are turned round their orbits until no name covers another or a ring label, `padding`
   // pixels clear (useNameFit), as on Orbits 2D, so from straight above it is that map; nobody's distance changes.
   const ringBoxes = useMemo(() => rings(count).map((ring) => grown(ringLabelBox(ring.label, -radius(ring.rank)), -DEFAULT_NAME_PADDING / 2)), [count, radius]);
   const targets = useNameFit(spokes, {
-    on: !phone && names.style !== "hide", model, at, closest, named, reachOut, together, label: names.mapLabel, font: NAME_FONT, around: ringBoxes, padding, fade,
+    on: !phone && names.style !== "hide", model, at, closest, named, reachOut, together: unturned, label: names.mapLabel, font: NAME_FONT, around: ringBoxes, padding, fade,
   });
   const frames = useTween(targets.frames, MOVE_MS, { from: inner * 0.3, stagger: 700, outer, inner }, `${inner}:${outer}`);
   const home = useMemo(() => new Set(together), [together]);
@@ -143,8 +148,9 @@ export function Orbits3DMap({ model, width, height, inset: top, hover, open, hel
   const glow = useMemo(() => glowLook(reachGlow), [reachGlow]);
   // How strongly someone is drawn: by their tier, someone to reach out to at least as the last tier; while someone is
   // picked out, they at full strength, those linked to them at 70%, and everyone else at one flat BACKGROUND.
+  const strengthPlace = (id: number) => (aspiring.has(id) ? 1 : closest.get(id) ?? null);
   const strength = (id: number) =>
-    focusId === null ? personOpacity(closest.get(id) ?? null, reachOut.has(id), { lift: glow.lift }) : focusId === id ? 1 : linked.has(id) ? 0.7 : BACKGROUND;
+    focusId === null ? personOpacity(strengthPlace(id), reachOut.has(id), { lift: glow.lift }) : focusId === id ? 1 : linked.has(id) ? 0.7 : BACKGROUND;
 
   // The camera (cityCamera.ts): turned and tilted by a drag, back to straight above by the compass.
   const [camera, setCamera] = useState(() => keptCamera.current);
@@ -157,7 +163,9 @@ export function Orbits3DMap({ model, width, height, inset: top, hover, open, hel
       above = Math.max(above, h);
       below = Math.min(below, h);
     }
-    return sceneExtent(targets.reach, above, below, camera);
+    // Aspiring friends out at the page's edge are past the disc, and may be panned to.
+    const { left, right, top, bottom } = targets.extent;
+    return sceneExtent(Math.max(targets.reach, -left, right, -top, bottom), above, below, camera);
   }, [targets, restHeights, camera]);
 
   // The zoom, as Orbits keeps it: what is asked for is kept as asked, and brought within bounds for the system as
@@ -192,13 +200,18 @@ export function Orbits3DMap({ model, width, height, inset: top, hover, open, hel
     const p = targets.placed.get(id)!;
     return drawnAt(settled.camera, p.x, p.y, restHeights.get(id)!, settled.zoom.k);
   }, [targets, restHeights, settled]);
-  const { labels } = useOrbitNames({
-    model, at, closest, named, reachOut, names, phone,
+  const { labels: placedLabels } = useOrbitNames({
+    model, at, closest, named, reachOut: alwaysNamed, names, phone,
     k: settled.zoom.k, sun: { x: cx + settled.zoom.x, y: cy + settled.zoom.y }, spot,
     width, height, top, focusId, held, linked, fade,
   });
-  // Whoever is named is drawn as their name alone, in place of their sphere and its glow.
-  const nameOnly = useMemo(() => new Set(labels.map((label) => label.id)), [labels]);
+  // An aspiring friend's name goes under their bubble.
+  const labels = useMemo(
+    () => (aspiring.size === 0 ? placedLabels : placedLabels.map((label) => (aspiring.has(label.id) ? underBubble(label, bubble) : label))),
+    [placedLabels, aspiring, bubble],
+  );
+  // Whoever is named is drawn as their name alone, in place of their sphere and its glow; an aspiring friend keeps their bubble.
+  const nameOnly = useMemo(() => new Set(labels.filter((label) => !aspiring.has(label.id)).map((label) => label.id)), [labels, aspiring]);
 
   // Drawing: the WebGL canvas (orbits3dGl.ts) for the sun, the glows, the spheres and, tilted, the names.
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -216,7 +229,7 @@ export function Orbits3DMap({ model, width, height, inset: top, hover, open, hel
   const arrived = (id: number) => arrivedShare(frames.get(id)!, targets.placed.get(id)!);
   // A name is drawn by how names fade (nameFade.ts); one shown only because they are linked to whoever is held, at the Faintest name.
   const labelOpacity = (label: { id: number; linkedOnly: boolean }) => frames.get(label.id)!.opacity * arrived(label.id)
-    * (label.linkedOnly ? fade.faintest : nameStrengthOf(label.id, closest.get(label.id) ?? null, focusId, linked, fade));
+    * (label.linkedOnly ? fade.faintest : nameStrengthOf(label.id, strengthPlace(label.id), focusId, linked, fade));
 
   // The names, tilted (orbits3dNames.ts): how far they are in the scene rather than Orbits' flat overlay, and how each
   // is drawn (Orbits' type, the person's colour, bold when picked out, glowing when to reach out to), each drawn once
@@ -281,7 +294,8 @@ export function Orbits3DMap({ model, width, height, inset: top, hover, open, hel
         const [r, g, b] = glowRgb.get(person.id)!;
         reachGlows.push({ x: p.x, y: p.y, r: size + (5 + 13 * f.glow) * glow.reach, alpha: f.opacity * f.glow * str * glow.gain, mode: COLOUR_GLOW, colour: [r, g, b, 1] });
       }
-      if (!alone) bodies.push({
+      // An aspiring friend's bubble is in the plane, on the SVG under this (`ground`).
+      if (!alone && !aspiring.has(person.id)) bodies.push({
         x: p.x, y: p.y, r: size, alpha: f.opacity * str,
         mode: f.silent ? HOLLOW : SPHERE,
         colour: lit ? STROKE.lit : f.silent ? STROKE.silent : STROKE.body,
@@ -299,7 +313,8 @@ export function Orbits3DMap({ model, width, height, inset: top, hover, open, hel
       const alpha = labelOpacity(label) * inScene;
       if (alpha <= 0.01) continue;
       const snap = (v: number, origin: number) => Math.round((origin + v) * dpr) / dpr - origin;
-      nameSprites.push({ x: snap(p.x, sun.x), y: snap(p.y, sun.y), r: 0, alpha, mode: NAME, uv: slot.uv, wide: slot.wide, tall: slot.tall, near });
+      const under = aspiring.has(person.id) ? size + ASPIRING_NAME_GAP : 0;
+      nameSprites.push({ x: snap(p.x, sun.x), y: snap(p.y + under, sun.y), r: 0, alpha, mode: NAME, uv: slot.uv, wide: slot.wide, tall: slot.tall, near });
     }
     gl.draw([...hearthGlows, ...reachGlows, ...paintOrder(bodies, (b) => b.near), ...paintOrder(nameSprites, (n) => n.near)], sun, width, height, dpr, camera);
   };
@@ -383,7 +398,7 @@ export function Orbits3DMap({ model, width, height, inset: top, hover, open, hel
     if (hoverId !== person.id) setHoverId(person.id);
     const s = standings.get(person.id)!;
     const rank = person.rank[at];
-    hover(tipAt(event, person, [
+    hover(tipAt(event, person, aspiring.has(person.id) ? aspiringRows(person) : [
       ["Closeness", rank === 0 ? "none yet" : `#${number(rank)} of ${number(count)} (score ${scoreLabel(person.closeness[at])})`],
       ...fieldRows(person),
       ...basicRows(person, s),
@@ -602,7 +617,7 @@ export function Orbits3DMap({ model, width, height, inset: top, hover, open, hel
           const { rx, ry } = ellipse(orbitRadius(ring.rank, inner, outer, count, together.length));
           return <ellipse key={ring.label} rx={rx} ry={ry} style={{ stroke: ringColours(ring.rank).line }} />;
         })}
-        {focusPerson && frames.get(focusPerson.id)!.opacity > 0 && (() => {
+        {focusPerson && !aspiring.has(focusPerson.id) && frames.get(focusPerson.id)!.opacity > 0 && (() => {
           const { rx, ry } = ellipse(frames.get(focusPerson.id)!.r);
           return <ellipse className="orbits__own-ring" rx={rx} ry={ry} />;
         })()}
@@ -645,6 +660,15 @@ export function Orbits3DMap({ model, width, height, inset: top, hover, open, hel
               <path d={`M${points.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join("L")}Z`} fill={`url(#${id})`} />
             </g>
           );
+        })}
+      </g>
+      {/* Aspiring friends, out in the plane: thought bubbles (Bubble), as on Orbits 2D. */}
+      <g>
+        {drawn.map((person) => {
+          const f = frames.get(person.id)!;
+          if (!aspiring.has(person.id) || f.opacity <= 0.01) return null;
+          const { x, y } = place(person.id);
+          return <Bubble key={person.id} person={person} x={x} y={y} r={sized(person.id)} colour={person.id === focusId ? COLORS.star : glowColours.get(person.id)!} opacity={f.opacity * strength(person.id)} />;
         })}
       </g>
     </g>

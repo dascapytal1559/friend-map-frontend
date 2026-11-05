@@ -33,6 +33,7 @@ import { EXAMPLES } from "../demo/examples.ts";
 import { DemoModeMark } from "../DemoMode.tsx";
 import { demoMode } from "../demoMode.ts";
 import { PeoplePanel } from "../PeoplePanel.tsx";
+import { useReadOnly } from "../readOnly.ts";
 import { useShownNames } from "../shownNames.ts";
 import { followArchive } from "../useArchive.ts";
 import { address, appPath } from "../mount.ts";
@@ -40,10 +41,12 @@ import { useUsage } from "../usage.ts";
 import { ViewSwitcher, type Navigate } from "../ViewSwitcher.tsx";
 import { DEFAULT_VIEW, VIEWS, viewAt, viewsFor } from "../views.ts";
 import "./demos.css";
+import { AddAspiring } from "./AddPerson.tsx";
 import { FindBox } from "./FindBox.tsx";
 import { Methodology } from "./Methodology.tsx";
 import type { DemoPerson } from "./model.ts";
-import { circles, orbits, web } from "./Orbits.tsx";
+import { circles, orbits, PHONE, web } from "./Orbits.tsx";
+import { useMedia } from "./orbitsSky.ts";
 import { city } from "./City.tsx";
 import { ChangeChip, Dock, ErrorNotice, useHideNamesKey, useSidePanel } from "./page.tsx";
 import { usePanelGlow } from "./panelGlow.ts";
@@ -185,6 +188,19 @@ function ViewPage({ demo, navigate }: { demo: Demo; navigate: Navigate }) {
     setFind((last) => ({ id: person.id, count: (last?.count ?? 0) + 1 }));
   }, [openPerson]);
 
+  // Add an aspiring friend, folded in the menu of Orbits, flat or not, and the Spider web, never on a phone or a page that takes no edits.
+  const readOnly = useReadOnly();
+  const phone = useMedia(PHONE);
+  const addsAspiring = !demoMode && !readOnly && !phone && (demo === orbits || demo === orbits3d || demo === web);
+  const addAspiring = (closeMenu: () => void) => (
+    <AddAspiring
+      onOpen={(person) => {
+        closeMenu();
+        setPanel({ person });
+      }}
+    />
+  );
+
   const peoplePanel = (at: { person: number | null }, className: string) => (
     <PeoplePanel
       className={className}
@@ -224,7 +240,7 @@ function ViewPage({ demo, navigate }: { demo: Demo; navigate: Navigate }) {
         </div>
         <header className="demos__header" ref={headerRef}>
           {/* Each view's own settings are in the switcher's menu (viewSettings.ts), in the app and the demo alike. */}
-          <ViewSwitcher current={demo.slug} crumb={demoMode ? "Friend map · demo" : frozen ? "Frozen view, kept as it is" : "Friend map"} navigate={navigate} names={live} />
+          <ViewSwitcher current={demo.slug} crumb={demoMode ? "Friend map · demo" : frozen ? "Frozen view, kept as it is" : "Friend map"} navigate={navigate} more={addsAspiring ? addAspiring : undefined} names={live} />
           <div className="demos__controls">
             {/* The live views say how many they show on the Query bar's line instead. */}
             {!live && model && (

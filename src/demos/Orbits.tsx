@@ -27,11 +27,11 @@ import { useNames } from "../names.ts";
 import { scoreLabel } from "./closeness.ts";
 import { type DemoModel, type DemoPerson, type Link } from "./model.ts";
 import {
-  displacementTrail, drawnSize, glowColour, hearthGlowRadius, nameGlow, READABLE, personOpacity, rings,
+  aspiringSize, displacementTrail, drawnSize, glowColour, hearthGlowRadius, nameGlow, READABLE, personOpacity, rings,
   BACKGROUND, circleLabelSpot, grown, type Box,
 } from "./orbitsLayout.ts";
 import {
-  arrivedShare, nameOf, onPage, PLAIN, screenOf, stageOf, useMedia, useNameFit, useOrbitBodies, useOrbitNames, useSettled, useTween, NAME_FONT, WEB_NAME_FONT, type Frame, type OrbitOrder, type PlacedName,
+  arrivedShare, ASPIRING_NAME_GAP, aspiringEdge, nameOf, onPage, PLAIN, screenOf, stageOf, useMedia, useNameFit, useOrbitBodies, useOrbitNames, useSettled, useTween, NAME_FONT, WEB_NAME_FONT, type Frame, type OrbitOrder, type PlacedName,
 } from "./orbitsSky.ts";
 import { boundsOf, clampZoom, HOME, panBy, panToShow, pinchZoom, wheelFactor, ZOOM_STEP, zoomAt, zoomBetween, zoomToShow, type Fingers, type Zoom } from "./orbitsZoom.ts";
 import "./orbits.css";
@@ -39,7 +39,7 @@ import { ORANGE, orbitsPalette, themeSun, useOrbitsTheme } from "./orbitsTheme.t
 import { ringColours } from "./ringColours.ts";
 import { PHOTO_SHARE, Sun, SunControls, useMePhoto } from "./SunPhoto.tsx";
 import { trendSummary, windowLabel } from "./trend.ts";
-import { basicRows, fieldRows, number, tipAt, type Demo, type ViewProps } from "./view.tsx";
+import { aspiringRows, basicRows, fieldRows, number, tipAt, type Demo, type ViewProps } from "./view.tsx";
 import { webBoot, type WebMotion } from "./webChoreography.ts";
 import { presetOf, useWebColour } from "./webColour.ts";
 import { glowLook, glowShown, glowsOf, SWELL, useReachGlow } from "./reachGlow.ts";
@@ -262,8 +262,10 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
   // The stage (orbitsSky.ts): the sun in the middle of the space under the header, everything placed relative to it,
   // unzoomed; the zoom spreads it out from there when it is drawn.
   const { outer, inner, cx, cy } = stageOf(width, height, top);
+  // The edge of the page, where aspiring friends sit: the furthest out they can be seen, unzoomed.
+  const edge = useMemo(() => aspiringEdge(width, height, top, cx, cy, aspiringSize(outer)), [width, height, top, cx, cy, outer]);
   // Where everyone sits round the sun, A to Z or in friend circles, and what else is known of each (orbitsSky.ts).
-  const { count, together, radius, standings, closest, circles, aim, trends, trailFrom, targets: spokes } = useOrbitBodies(model, at, inner, outer, order, scale);
+  const { count, together, aspiring, radius, standings, closest, circles, aim, trends, trailFrom, targets: spokes } = useOrbitBodies(model, at, inner, outer, order, edge, scale);
   // The guide rings, as the scale lays them out.
   const guides = useMemo(() => rings(count, scale), [count, scale]);
   // The web (webGeometry.ts), running out past every edge of the stage, its rings at the guide rings.
@@ -288,7 +290,9 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
   // with the padding, as names are of each other.
   const ringBoxes = useMemo(() => guides.map((ring) => grown(ringLabelBox(ring.label, -labelR(ring.rank)), -DEFAULT_NAME_PADDING / 2)), [guides, radius, shape]);
   const font = web ? WEB_NAME_FONT : NAME_FONT;
-  const targets = useNameFit(spokes, { on: fitting, model, at, closest, named, reachOut, together, label: names.mapLabel, font, around: ringBoxes, padding, fade });
+  // An aspiring friend stays where they are on the edge, one to reach out to too: only the orbits turn.
+  const unturned = useMemo(() => [...together, ...aspiring], [together, aspiring]);
+  const targets = useNameFit(spokes, { on: fitting, model, at, closest, named, reachOut, together: unturned, label: names.mapLabel, font, around: ringBoxes, padding, fade });
 
   // While friend circles are chosen, each circle of two or more: who is in it, its name, and its span round the
   // sun, from its first person's direction to its last's and a little beyond, for the arc that marks it.
@@ -345,8 +349,10 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
     const p = targets.placed.get(id)!;
     return { x: p.x * settled.k, y: p.y * settled.k };
   }, [targets, settled]);
+  // Aspiring friends are named wherever they are, as everyone to reach out to is.
+  const alwaysNamed = useMemo(() => new Set([...reachOut, ...aspiring]), [reachOut, aspiring]);
   const { labels: placedLabels } = useOrbitNames({
-    model, at, closest, named, reachOut, names, phone,
+    model, at, closest, named, reachOut: alwaysNamed, names, phone,
     k: settled.k, sun: { x: cx + settled.x, y: cy + settled.y }, spot,
     width, height, top, charWidth: font.charWidth, focusId, held, linked, fade,
   });
@@ -356,11 +362,16 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
   const holding = useMemo(() => heldOnly(held, focusId, linked), [held, focusId, linked]);
   const glowing = useMemo(() => glowsOf(holding, names.hidden), [holding, names.hidden]);
   const reachable = web ? holding : null;
-  // Their names stay where they were placed with everyone's, so holding someone moves no name.
-  const labels = useMemo(() => (reachable ? placedLabels.filter((label) => reachable.has(label.id)) : placedLabels), [placedLabels, reachable]);
+  // Their names stay where they were placed with everyone's, so holding someone moves no name. An aspiring friend's
+  // goes under their bubble.
+  const labels = useMemo(() => {
+    const kept = reachable ? placedLabels.filter((label) => reachable.has(label.id)) : placedLabels;
+    return aspiring.size === 0 ? kept : kept.map((label) => (aspiring.has(label.id) ? underBubble(label, aspiringSize(outer)) : label));
+  }, [placedLabels, reachable, aspiring, outer]);
   // Whoever is named is drawn as their name alone, in place of their icon and its glow; everyone else keeps theirs, so
-  // nobody leaves the map.
-  const nameOnly = useMemo(() => new Set(labels.map((label) => label.id)), [labels]);
+  // nobody leaves the map, and an aspiring friend keeps their bubble, named or not.
+  const standIns = useMemo(() => labels.filter((label) => !aspiring.has(label.id)), [labels, aspiring]);
+  const nameOnly = useMemo(() => new Set(standIns.map((label) => label.id)), [standIns]);
 
   // Where things are drawn. The sky is drawn relative to the sun, spread out
   // by the zoom, in one group moved to wherever the sun is: a pan moves that
@@ -525,7 +536,9 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
     glide((e) => zoomBetween(from, to, e));
   }, [find, targets, width, height, top, seen]);
   // Whoever's panel is opened (by a click, not the find box) is kept in view beside it as it docks over the map: the
-  // map pans just far enough, if need be, at the same zoom.
+  // map pans just far enough, if need be, at the same zoom. Someone just added opens before they reach the map, so
+  // this waits for them.
+  const heldPlaced = held !== null && targets.placed.has(held);
   useEffect(() => {
     const p = held === null || held === finding.current ? undefined : targets.placed.get(held);
     if (!p) return;
@@ -533,7 +546,7 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
     if (to === zoom) return;
     const from = zoom;
     glide((e) => zoomBetween(from, to, e));
-  }, [held, seen]);
+  }, [held, heldPlaced, seen]);
   // As the panel closes, the map glides back within the bounds of the whole map before they take hold.
   useEffect(() => {
     if (seen <= bound) return;
@@ -606,7 +619,7 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
     if (hoverId !== person.id) setHoverId(person.id);
     const s = standings.get(person.id)!;
     const rank = person.rank[at];
-    const tip = tipAt(event, person, [
+    const tip = tipAt(event, person, aspiring.has(person.id) ? aspiringRows(person) : [
       ["Closeness", rank === 0 ? "none yet" : `#${number(rank)} of ${number(count)} (score ${scoreLabel(person.closeness[at])})`],
       ...fieldRows(person),
       ...basicRows(person, s),
@@ -666,8 +679,10 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
   const drawn = useMemo(() => [...model.people].sort((a, b) => b.total - a.total), [model.people]);
   // Everyone glows in their own identicon colour (glowColour), and their name is drawn in it, so both are plainly theirs.
   const glowColours = useMemo(() => new Map(model.people.map((p) => [p.id, glowColour(p.identiconSeed, p.identiconHue)])), [model.people]);
+  // Where someone counts among the closest for how strongly they are drawn: an aspiring friend, far off as they are, as strongly as the closest.
+  const strengthPlace = useCallback((id: number) => (aspiring.has(id) ? 1 : closest.get(id) ?? null), [aspiring, closest]);
   // How strongly someone's marker, name, trail and glow are drawn (strengthOf).
-  const strength = useCallback((id: number) => strengthOf(id, closest.get(id) ?? null, reachOut.has(id), focusId, linked, glow.lift), [closest, reachOut, focusId, linked, glow]);
+  const strength = useCallback((id: number) => strengthOf(id, strengthPlace(id), reachOut.has(id), focusId, linked, glow.lift), [strengthPlace, reachOut, focusId, linked, glow]);
   // 1 once someone is within a few pixels of where they are headed, fading to 0 by ARRIVED pixels away:
   // names and trails belong to where people settle, so they wait while people rise out of the sun or move.
   const arrived = useCallback((id: number) => arrivedShare(frames.get(id)!, targets.placed.get(id)!), [frames, targets]);
@@ -675,8 +690,8 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
   // shown only because they are linked to whoever is held, at the Faintest name.
   const labelOpacity = useCallback(
     (label: { id: number; linkedOnly: boolean }) => frames.get(label.id)!.opacity * arrived(label.id)
-      * (label.linkedOnly ? fade.faintest : nameStrengthOf(label.id, closest.get(label.id) ?? null, focusId, linked, fade)),
-    [frames, arrived, closest, reachOut, focusId, linked, fade, glow],
+      * (label.linkedOnly ? fade.faintest : nameStrengthOf(label.id, strengthPlace(label.id), focusId, linked, fade)),
+    [frames, arrived, strengthPlace, reachOut, focusId, linked, fade, glow],
   );
   // Drawn again only when what is in it changes: not for a pan, which moves it whole.
   const sky = useMemo(() => {
@@ -690,7 +705,7 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
         {/* Guide rings: the closest 10, 25, 50 and so on; the web's own rings stand in for them. */}
         <g className="orbits__rings">
           {!web && guides.map((ring) => <circle key={ring.label} r={radius(ring.rank) * k} style={{ stroke: ringColours(ring.rank, sunColour).line }} />)}
-          {focusPerson && frames.get(focusPerson.id)!.opacity > 0 && (
+          {focusPerson && !aspiring.has(focusPerson.id) && frames.get(focusPerson.id)!.opacity > 0 && (
             <circle className="orbits__own-ring" r={frames.get(focusPerson.id)!.r * k} />
           )}
         </g>
@@ -813,7 +828,8 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
 
         {/*
           Everyone's marker, filled with their identicon (src/identicon.ts; the patterns are below), as strong as their tier.
-          The belt, with no closeness yet, are rings. Whoever is named has no marker: their name is it.
+          The belt, with no closeness yet, are rings. Whoever is named has no marker: their name is it. An aspiring friend
+          is a thought bubble (Bubble) on the page's edge.
         */}
         <g>
           {drawn.map((person) => {
@@ -821,6 +837,9 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
             if (f.opacity <= 0.01 || nameOnly.has(person.id)) return null;
             const { x, y } = place(person.id);
             if (!near(x, y)) return null;
+            if (aspiring.has(person.id)) {
+              return <Bubble key={person.id} person={person} x={x} y={y} r={sized(f)} colour={lit(person.id) ? palette.body.lit : glowColours.get(person.id)!} opacity={f.opacity * strength(person.id)} />;
+            }
             return (
               <circle
                 key={person.id}
@@ -846,7 +865,7 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
 
       </>
     );
-  }, [frames, k, cullX, cullY, width, height, beyond, focusId, focusLinks, linked, labels, targets, trailFrom, model, guides, radius, together, inner, outer, shape, drawn, closest, reachOut, glowColours, circleArcs, me.photo, palette, sunColour, strength, arrived, labelOpacity, nameOnly, glow, glowing]);
+  }, [frames, k, cullX, cullY, width, height, beyond, focusId, focusLinks, linked, labels, targets, trailFrom, model, guides, radius, together, aspiring, inner, outer, shape, drawn, closest, reachOut, glowColours, circleArcs, me.photo, palette, sunColour, strength, arrived, labelOpacity, nameOnly, glow, glowing]);
   // The names, over everything in the sky. They are an SVG of their own over the sky's (nameLayer below), so the sky
   // redrawn (a hover, the Spider web's flowing links) never repaints hundreds of names, nor the names the sky's markers.
   // Each name in its person's own colour, with the outline every name has and nothing behind it, its glow on the letters,
@@ -878,7 +897,7 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
     [closest, named, reachOut, fade],
   );
   // Each name drawn in place of its icon, as wide and tall as it was placed: the web fits round it.
-  const webNames = useMemo(() => new Map(labels.map((label) => [label.id, { wide: label.right - label.left, tall: label.bottom - label.top }])), [labels]);
+  const webNames = useMemo(() => new Map(standIns.map((label) => [label.id, { wide: label.right - label.left, tall: label.bottom - label.top }])), [standIns]);
   const scene: WebScene | null = web && shape ? {
     colour, webStrength, shadow, reachGlow, width, height, top, sun, k, inner, outer, shape, frames, people: webPeople, strength, arrived, lockIn, focusId, linked,
     glows: (id) => glowShown(id, glowing), hoverId, heldId: held !== null && targets.frames.has(held) ? held : null, reduced, names: webNames,
@@ -1028,6 +1047,40 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
     {scene ? <WebLayer scene={scene} motion={boot}>{svg}{nameLayer}</WebLayer> : <>{svg}{nameLayer}</>}
     {photoShown(look) && <SunControls x={sun.x} y={sun.y} inner={inner} photo={me.photo} shown={onSun} onPhoto={me.setPhoto} />}
     </>
+  );
+}
+
+/** A name placed on its person (`label`) moved under an aspiring friend's bubble of radius `size`, where it stays with them. */
+export function underBubble(label: PlacedName, size: number): PlacedName {
+  return { ...label, dy: label.dy + size + ASPIRING_NAME_GAP };
+}
+
+/**
+ * An aspiring friend's marker: a thought bubble, for the conversations you have with them in your head. Their identicon
+ * dim behind a dashed ring in their `colour`, as nobody on the orbits is, and two dots trailing back toward the sun.
+ */
+export function Bubble({ person, x, y, r, colour, opacity }: {
+  person: Pick<DemoPerson, "id" | "identiconSeed" | "identiconHue">;
+  /** Where it is, relative to the sun. */
+  x: number;
+  y: number;
+  r: number;
+  colour: string;
+  opacity: number;
+}) {
+  const out = Math.hypot(x, y) || 1;
+  const [ux, uy] = [x / out, y / out];
+  const face = `orbits-bubble-${person.id}`;
+  return (
+    <g className="orbits__bubble" opacity={opacity}>
+      <pattern id={face} width="1" height="1" viewBox={`0 0 ${IDENTICON_SIZE} ${IDENTICON_SIZE}`} shapeRendering="crispEdges">
+        <IdenticonCells seed={person.identiconSeed} hue={person.identiconHue} />
+      </pattern>
+      <circle cx={x - ux * (r + 7)} cy={y - uy * (r + 7)} r={r * 0.17} fill={colour} />
+      <circle cx={x - ux * (r + 15)} cy={y - uy * (r + 15)} r={r * 0.1} fill={colour} />
+      <circle cx={x} cy={y} r={r} fill={`url(#${face})`} opacity={0.55} />
+      <circle cx={x} cy={y} r={r} fill="none" stroke={colour} strokeWidth={1.4} strokeDasharray={`${r * 0.34} ${r * 0.2}`} />
+    </g>
   );
 }
 

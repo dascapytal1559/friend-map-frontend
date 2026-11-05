@@ -99,6 +99,44 @@ export function hearth(ids: readonly number[], aim: ReadonlyMap<number, Directio
   }));
 }
 
+/** How far past the belt, at the least, an aspiring friend's bubble keeps: never mistaken for someone on it. */
+export const ASPIRING_CLEAR = 16;
+
+/** An aspiring friend's bubble's radius on a map reaching `outer` from the sun: plainly bigger than the most talked-to's (at most 15). */
+export function aspiringSize(outer: number): number {
+  return Math.min(30, Math.max(14, outer * 0.07));
+}
+
+/** How far from the sun, along `angle`, the box `edge` round it ends. */
+export function edgeReach(angle: number, edge: Box): number {
+  const [ux, uy] = [Math.cos(angle), Math.sin(angle)];
+  const across = ux > 0 ? edge.right / ux : ux < 0 ? edge.left / ux : Infinity;
+  const down = uy > 0 ? edge.bottom / uy : uy < 0 ? edge.top / uy : Infinity;
+  return Math.min(across, down);
+}
+
+/** How finely the edge is walked for aspiring friends' places. */
+const EDGE_STEPS = 720;
+
+/**
+ * Where aspiring friends (`ids`, in their order) sit: on `edge`, the furthest box round the sun they can be seen in
+ * (relative to the sun), so as far out as the page goes. They go round it clockwise from its top right corner,
+ * evenly over the stretches at least `clear` from the sun, which leaves out any of the edge the map itself reaches:
+ * one sits in that corner, two in opposite ones. Nothing they do moves anyone else. An edge all too near has only
+ * its corners left, and they are spread round it anyway.
+ */
+export function aspiringPlaces(ids: readonly number[], edge: Box, clear: number): Map<number, Placed> {
+  const corner = Math.atan2(edge.top, edge.right);
+  const turns = Array.from({ length: EDGE_STEPS }, (_, i) => corner + (2 * Math.PI * i) / EDGE_STEPS);
+  const far = turns.filter((angle) => edgeReach(angle, edge) >= clear);
+  const room = far.length > 0 ? far : turns;
+  return new Map(ids.map((id, i) => {
+    const angle = wrap(room[Math.floor((i * room.length) / ids.length)]);
+    const r = edgeReach(angle, edge);
+    return [id, { id, angle, r, x: Math.cos(angle) * r, y: Math.sin(angle) * r }];
+  }));
+}
+
 /**
  * Where someone ranked at the start of the `months` months before month `at`
  * (`rank` per month, 0 with no score): where their comet trail starts. For

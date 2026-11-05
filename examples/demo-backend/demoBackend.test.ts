@@ -9,6 +9,7 @@ import type { AddressInfo } from "node:net";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { ArchiveUnavailable } from "../../src/archiveApi.ts";
 import { httpArchive } from "../../src/archiveHttp.ts";
+import { ASPIRING_TAG } from "../../src/aspiring.ts";
 import { checkBackend } from "../../src/contract/check.ts";
 import { contract, shakeHands, takesEdits } from "../../src/contract/handshake.ts";
 import { SMALL_CROWD } from "../../src/demo/generate.ts";
@@ -144,6 +145,14 @@ describe("the demo backend", () => {
     const tagged = await httpArchive.setTags(person.id, ["allotment club"]);
     expect([tagged.person.tags, tagged.created]).toEqual([["allotment-club"], ["allotment-club"]]);
     expect((await httpArchive.tags()).map((t) => t.name)).toContain("allotment-club");
+  });
+
+  it("keeps someone added by hand with no chats on the map, with a note written for them: an aspiring friend", async () => {
+    const { person } = await httpArchive.addPerson({ name: "Ada Sample", tags: [ASPIRING_TAG], anyway: true });
+    const saved = await httpArchive.setNote(person!.id, "What I would say to them");
+    expect([saved.note, saved.tags, saved.archived, saved.accounts]).toEqual(["What I would say to them", [ASPIRING_TAG], null, []]);
+    const onMap = (await httpArchive.relationships()).people.find((p) => p.id === person!.id)!;
+    expect([onMap.tags, onMap.note, onMap.months]).toEqual([[ASPIRING_TAG], "What I would say to them", []]);
   });
 
   it("refuses a change another site's page sent, and says what is not there", async () => {

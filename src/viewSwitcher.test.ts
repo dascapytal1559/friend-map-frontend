@@ -60,6 +60,21 @@ describe("the view switcher", () => {
     expect(groups(html)).toContain("Orbits 2D settings");
   });
 
+  it("adds what the page gives it after the settings, before About the app, and hands it the way to close", () => {
+    const closes: Array<() => void> = [];
+    const onPick = () => {};
+    const html = renderToStaticMarkup(createElement(ViewList, {
+      current: "web", onPick, demo: false,
+      more: (close) => {
+        closes.push(close);
+        return createElement("section", null, "Added by the page");
+      },
+    }));
+    expect(html.indexOf("Spider web settings")).toBeLessThan(html.indexOf("Added by the page"));
+    expect(html.indexOf("Added by the page")).toBeLessThan(html.indexOf(">About the app<"));
+    expect(closes).toEqual([onPick]);
+  });
+
   it("titles the solar system Orbits, in the demo and the app alike", () => {
     for (const demo of [true, false]) expect(renderToStaticMarkup(createElement(ViewSwitcher, { current: "orbits-3d", crumb: "Friend map", demo }))).toMatch(/<h1><button[^>]*>Orbits<svg/);
   });

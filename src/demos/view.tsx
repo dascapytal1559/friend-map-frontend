@@ -278,6 +278,11 @@ export function basicRows(person: DemoPerson, at: Standing): Tip["rows"] {
   ];
 }
 
+/** An aspiring friend's hover card says what they are: the usual rows would be zeros. */
+export function aspiringRows(person: PersonLocation): Tip["rows"] {
+  return [["Aspiring friend", "someone you would like to know"], ...fieldRows(person)];
+}
+
 /** Where they are, as far as you last knew, only when said (the hover card's rows). */
 export function fieldRows(person: PersonLocation): Tip["rows"] {
   return person.location ? [["Location", person.location]] : [];

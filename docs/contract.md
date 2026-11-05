@@ -37,7 +37,7 @@ The contract's words, as a backend holds them:
 - **Chat**: one-to-one (`direct`) or a **group chat**. friend-map never needs your messages to draw the map: it needs them **counted**, per person and per month, split by who sent them.
 - **Hangout** (a "catch-up" in the code): time you spent with people, on a day, for some hours.
 - **Call**: an answered call, counted by day and length.
-- **Tag**: a lowercase word with dashes for spaces. Four are built in (`BUILT_IN_TAGS` in `src/archive.ts`): `archive` takes someone off the map, `keep` keeps them out of any automatic archiving, `live-together` puts them next to the sun, and `show-name` picks them for the "No name except…" name choice.
+- **Tag**: a lowercase word with dashes for spaces. Four are built in (`BUILT_IN_TAGS` in `src/archive.ts`): `archive` takes someone off the map, `keep` keeps them out of any automatic archiving, `live-together` puts them next to the sun, and `show-name` picks them for the "No name except…" name choice. One more means something to the map without being built in, so a backend need do nothing for it: `aspiring` sets someone far out at the edge in a big bubble ([Aspiring friends](views.md#aspiring-friends)). They need no messages, so keep them on the map: leave anyone added by hand out of any automatic archiving.
 - **Archived**: someone off the map. Your backend decides who; the map leaves them out of `/relationships`.
 - **Days and months** are local: `YYYY-MM-DD` and `YYYY-MM`, in the time zone your handshake names. Moments are numbers: milliseconds since the epoch.
 

@@ -3,6 +3,7 @@
 // these read structure only; message text is left to Timeline.tsx.
 
 import { Fragment, useEffect, useRef, useState } from "react";
+import { isAspiring } from "./aspiring.ts";
 import { ARCHIVE_REASONS, ARCHIVE_TAG, archivedByRule, KEEP_TAG, type PersonCall, type PersonSummary, tagsWithRule, writtenTag } from "./archive.ts";
 import { archiveApi } from "./archiveApi.ts";
 import { callDuration, callTotals } from "./calls.ts";
@@ -63,21 +64,26 @@ export function TagChips({ tags }: { tags: string[] }) {
  * hidden and locked while names are hidden, since it can say who they are.
  */
 export function NoteEditor({ person }: { person: PersonSummary }) {
+  // An aspiring friend's note is where what you would say to them gathers: it asks for that, with room to.
+  const aspiring = isAspiring(person);
   return (
     <TextEditor
       label="Note"
-      placeholder="Anything to remember about them"
+      placeholder={aspiring ? "What you would say to them" : "Anything to remember about them"}
       value={person.note}
+      rows={aspiring ? { least: 6, most: 16 } : undefined}
       save={(note) => archiveApi.setNote(person.id, note)}
     />
   );
 }
 
 /** Free text saved when the box loses focus (Escape puts it back); hidden and locked while names are hidden, and text alone on a read-only page. */
-function TextEditor({ label, placeholder, value, save }: {
+function TextEditor({ label, placeholder, value, rows = { least: 2, most: 8 }, save }: {
   label: string;
   placeholder: string;
   value: string;
+  /** How tall the box is at the least and the most, in lines. */
+  rows?: { least: number; most: number };
   save: (text: string) => Promise<unknown>;
 }) {
   const [draft, setDraft] = useState(value);
@@ -90,7 +96,7 @@ function TextEditor({ label, placeholder, value, save }: {
       aria-label={label}
       className="note-editor"
       placeholder={placeholder}
-      rows={Math.min(8, Math.max(2, draft.split("\n").length))}
+      rows={Math.min(rows.most, Math.max(rows.least, draft.split("\n").length))}
       value={draft}
       onChange={(e) => setDraft(e.target.value)}
       onBlur={() => {

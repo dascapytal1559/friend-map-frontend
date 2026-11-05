@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { LIVE_TOGETHER_TAG, type CallDay, type GroupMembership, type ScoredCatchUp } from "../archive.ts";
+import { ASPIRING_TAG } from "../aspiring.ts";
 import { DEFAULT_SETTINGS } from "../settings.ts";
 import { callCatchUps, catchUpAt, closenessNow, closenessRanks, closenessScores, decay, directWeight, MONTH_DAYS, monthLengths, personMonthPoints, reportMonths, reportScores, runningShares, scoreLabel } from "./closeness.ts";
 
@@ -478,6 +479,15 @@ describe("closenessRanks", () => {
     expect(ranks.get(2)).toEqual([2, 2, 2]);
     expect(ranks.get(1)).toEqual([3, 3, 3]);
     expect(ranks.get(3)).toEqual([4, 4, 4]);
+  });
+
+  it("never ranks an aspiring friend, whatever their score, and they take nobody's place", () => {
+    const people = [
+      { id: 1, closeness: [9], tags: [] as string[] },
+      { id: 2, closeness: [50], tags: [ASPIRING_TAG] },
+      { id: 3, closeness: [4], tags: [] as string[] },
+    ];
+    expect([...closenessRanks(people, 1)]).toEqual([[1, [1]], [2, [0]], [3, [2]]]);
   });
 
   it("ranks someone by their score again once the tag is taken off", () => {

@@ -86,6 +86,7 @@
 // (closenessRanks), and Orbits sets them right next to the sun.
 
 import { livesTogether, type ClosenessSettings, type MessageCounts, type MonthPoints, type RelationshipsReport, type ScoreReport } from "../archive.ts";
+import { isAspiring } from "../aspiring.ts";
 import { callDaySeconds, callHours, catchUpCountedDayHours, catchUpWorth, groupShare } from "../catchUps.ts";
 import { dayKey, monthKey, monthRange } from "../time.ts";
 
@@ -394,14 +395,17 @@ export function monthLengths(months: string[], now: number): number[] {
  * Rank by closeness in every month, 1 for the closest; 0 for anyone with no
  * score that month. Whoever you live with (livesTogether) is
  * infinitely close: ranked first every month, ahead of any score, even with
- * none, by their own score among themselves. Ties go to the lower id, so the
+ * none, by their own score among themselves. An aspiring friend (isAspiring)
+ * is never ranked, whatever their score: they sit out at the edge until the tag
+ * comes off, and take nobody's place. Ties go to the lower id, so the
  * order is the same every time.
  */
 export function closenessRanks(people: Array<{ id: number; closeness: number[]; tags: readonly string[] }>, monthCount: number): Map<number, number[]> {
   const ranks = new Map(people.map((p) => [p.id, new Array<number>(monthCount).fill(0)]));
   const together = new Set(people.filter(livesTogether).map((p) => p.id));
+  const ranked = people.filter((p) => !isAspiring(p));
   for (let i = 0; i < monthCount; i++) {
-    people
+    ranked
       .filter((p) => together.has(p.id) || p.closeness[i] > 0)
       .sort((a, b) => byCloseness(together.has(a.id), a.closeness[i], a.id, together.has(b.id), b.closeness[i], b.id))
       .forEach((p, k) => {

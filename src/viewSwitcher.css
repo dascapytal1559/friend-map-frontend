@@ -207,6 +207,12 @@
   background: rgba(141, 151, 173, 0.05);
 }
 
+/* A section straight after another shares its line. */
+.view-switcher__settings + .view-switcher__settings {
+  margin-top: -6px;
+  border-top: 0;
+}
+
 /* Its heading folds it: a caret that points right when closed and down when open. */
 .view-switcher__fold {
   display: flex;

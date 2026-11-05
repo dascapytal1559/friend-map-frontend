@@ -8,7 +8,7 @@ import { Methodology, PARTS, SETTING_ROWS } from "./Methodology.tsx";
 import type { DemoModel } from "./model.ts";
 
 function page(settings: Settings = DEFAULT_SETTINGS, demo = false, shown = 0): string {
-  const model = { settings, people: Array.from({ length: shown }, (_, id) => ({ id })), archivedCount: 0, hiddenCount: 0 } as unknown as DemoModel;
+  const model = { settings, people: Array.from({ length: shown }, (_, id) => ({ id, tags: [] })), archivedCount: 0, hiddenCount: 0 } as unknown as DemoModel;
   return renderToStaticMarkup(createElement(Methodology, { model, onClose: () => {}, demo }));
 }
 
@@ -165,6 +165,10 @@ describe("Methodology", () => {
 
   it("says on the map that whoever you live with is ranked first, in the sun", () => {
     expect(text(part(page(), "map"))).toContain("Live togethertagged live-together: infinitely close, ranked first whatever their score, in the sun itself");
+  });
+
+  it("says on the map that an aspiring friend sits out at the edge in a bubble, never ranked", () => {
+    expect(text(part(page(), "map"))).toContain("Aspiringtagged aspiring: someone you would like to know, far out at the edge of the page");
   });
 
   it("lays every part out in tables, formulas or steps, with no paragraph longer than two short lines", () => {

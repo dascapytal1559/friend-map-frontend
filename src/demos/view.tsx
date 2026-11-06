@@ -8,6 +8,7 @@
 // the person panel. See Placeholder.tsx for the smallest working view.
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ComponentType, type ReactNode } from "react";
+import { flushSync } from "react-dom";
 import type { PersonLocation } from "../archive.ts";
 import { appApi } from "../appApi.ts";
 import { archiveApi } from "../archiveApi.ts";
@@ -233,14 +234,25 @@ function crosses(box: Box, pad: number, a: XY, b: XY): boolean {
  * With `identicon` (Orbits; the frozen views are not extended), the person's identicon beside their name.
  */
 export function HoverCard({ tip, bounds, identicon = false }: { tip: Tip; bounds: { width: number; height: number }; identicon?: boolean }) {
-  // Placed by an estimate of its size until it is drawn, then by its size as drawn, before it is first painted.
+  // Placed by an estimate of its size until it is drawn, then by its size as drawn, before it is first painted. Its size
+  // is told by a ResizeObserver, once the browser has laid the page out and only when it changes, so a hover never makes
+  // the browser lay out what the hover changed ahead of the frame, as reading the card's size would; the card is moved
+  // in that same frame (flushSync), before it is painted.
   const ref = useRef<HTMLDivElement>(null);
   const [drawn, setDrawn] = useState<{ width: number; height: number } | undefined>(undefined);
   useLayoutEffect(() => {
     const card = ref.current;
-    if (!card?.offsetWidth || (card.offsetWidth === drawn?.width && card.offsetHeight === drawn.height)) return;
-    setDrawn({ width: card.offsetWidth, height: card.offsetHeight });
-  });
+    if (!card) return;
+    const observer = new ResizeObserver(([entry]) => {
+      const box = entry.borderBoxSize?.[0];
+      const width = Math.round(box ? box.inlineSize : card.offsetWidth);
+      const height = Math.round(box ? box.blockSize : card.offsetHeight);
+      if (!width) return;
+      flushSync(() => setDrawn((was) => (was?.width === width && was.height === height ? was : { width, height })));
+    });
+    observer.observe(card);
+    return () => observer.disconnect();
+  }, []);
   const { left, top } = tipPlace(tip, bounds, drawn);
   const { primary, secondary } = useNames().label(tip.person);
   return (

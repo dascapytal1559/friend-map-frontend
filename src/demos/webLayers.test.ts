@@ -19,28 +19,47 @@ import { wrapAngle } from "./webRig.ts";
 
 type XY = { x: number; y: number };
 
-// Path2D and a canvas that keep only what is stroked: each stroked path's points.
+// Path2D and a canvas that keep only what is stroked, filled and drawn: each stroked path's points, each filled path's
+// circles, and each image's place.
 class FakePath {
   points: XY[] = [];
+  arcs: number[][] = [];
   moveTo(x: number, y: number) { this.points.push({ x, y }); }
   lineTo(x: number, y: number) { this.points.push({ x, y }); }
   quadraticCurveTo(_cx: number, _cy: number, x: number, y: number) { this.points.push({ x, y }); }
   bezierCurveTo(_a: number, _b: number, _c: number, _d: number, x: number, y: number) { this.points.push({ x, y }); }
-  arc() {}
+  arc(...circle: number[]) { this.arcs.push(circle); }
   ellipse() {}
   rect() {}
   closePath() {}
 }
 
+type Fake = ReturnType<typeof fakeCanvas>;
+
 function fakeCanvas() {
   const strokes: XY[][] = [];
+  // Every circle filled (the holes under the markers are), as arc's arguments.
+  const fills: number[][] = [];
   // Every image drawn (a halo is one): its centre and width.
   const images: Array<XY & { w: number }> = [];
   const thing: object = new Proxy(() => thing, { get: (_t, key) => (key === "then" ? undefined : thing), apply: () => thing });
   const ctx = new Proxy({} as Record<string | symbol, unknown>, {
     get: (target, key) => {
       if (key === "stroke") return (path?: FakePath) => void (path && strokes.push(path.points));
-      if (key === "drawImage") return (_image: unknown, x: number, y: number, w: number, h: number) => void images.push({ x: x + w / 2, y: y + h / 2, w });
+      if (key === "fill") return (path?: FakePath) => void (path && fills.push(...path.arcs));
+      // A canvas drawn in (the still web, stillWeb) brings what was drawn on it.
+      if (key === "drawImage") {
+        return (image: { fake?: Fake }, x: number, y: number, w: number, h: number) => {
+          if (image.fake) {
+            strokes.push(...image.fake.strokes);
+            fills.push(...image.fake.fills);
+            images.push(...image.fake.images);
+          }
+          images.push({ x: x + w / 2, y: y + h / 2, w });
+        };
+      }
+      // Cleared, it holds nothing.
+      if (key === "clearRect") return () => { strokes.length = 0; fills.length = 0; images.length = 0; };
       if (key in target) return target[key];
       return () => thing;
     },
@@ -49,13 +68,16 @@ function fakeCanvas() {
       return true;
     },
   });
-  return { ctx: ctx as unknown as CanvasRenderingContext2D, strokes, images };
+  return { ctx: ctx as unknown as CanvasRenderingContext2D, strokes, fills, images };
 }
 
-// The drawing's patterns are painted once on a canvas of their own.
+// The drawing's patterns and halos are painted once on a canvas of their own, and what of the web holds still on another.
 beforeAll(() => {
   vi.stubGlobal("Path2D", FakePath);
-  vi.stubGlobal("document", { createElement: () => ({ getContext: () => fakeCanvas().ctx }) });
+  vi.stubGlobal("document", { createElement: () => {
+    const fake = fakeCanvas();
+    return { fake, width: 0, height: 0, getContext: () => fake.ctx };
+  } });
 });
 afterAll(() => vi.unstubAllGlobals());
 
@@ -280,12 +302,11 @@ describe("the Spider web with a name in place of an icon (Name only)", () => {
   it("leaves the web under the name, with no card cut out of it, and cuts it away under everyone else's icon as ever", () => {
     const under = fakeCanvas();
     const rects: number[][] = [];
-    const arcs: number[][] = [];
-    Object.assign(under.ctx, { rect: (...box: number[]) => rects.push(box), arc: (...circle: number[]) => arcs.push(circle) });
+    Object.assign(under.ctx, { rect: (...box: number[]) => rects.push(box) });
     drawWeb(under.ctx, scene({ names }), still, 10_000, newLookState());
     expect(rects.some(([x, y]) => Math.abs(x - 300) < 40 && Math.abs(y) < 10)).toBe(false);
-    expect(arcs.some(([x, y]) => near({ x, y }, { x: 300, y: 0 }))).toBe(false);
-    expect(arcs.some(([x, y]) => near({ x, y }, { x: 150, y: 0 }))).toBe(true);
+    expect(under.fills.some(([x, y]) => near({ x, y }, { x: 300, y: 0 }))).toBe(false);
+    expect(under.fills.some(([x, y]) => near({ x, y }, { x: 150, y: 0 }))).toBe(true);
   });
 
   it("is untouched for everyone else: a line to them ends at their middle", () => {
@@ -396,6 +417,68 @@ describe("which way the spider first faces", () => {
 
   it("is up unless said, as the tests above draw it", () => {
     expect(newLookState().heading).toBe(UP);
+  });
+});
+
+describe("what of the web holds still", () => {
+  type Layer = { fake: Fake; width: number; height: number };
+  const layerOf = (state: ReturnType<typeof newLookState>) => state.still.canvas as unknown as Layer;
+  const at = (images: Array<XY & { w: number }>, p: XY) => images.filter((image) => near(image, p));
+
+  it("is drawn once for a scene, however many frames, and again only for a new one or a new pixel ratio", () => {
+    const state = newLookState();
+    const one = scene({ reduced: false });
+    for (let now = 10_000; now < 10_500; now += 16) drawWeb(fakeCanvas().ctx, one, still, now, state);
+    expect(state.still.made).toBe(1);
+    // A hover is a new scene from Orbits.
+    drawWeb(fakeCanvas().ctx, scene({ reduced: false, hoverId: 1, focusId: 1 }), still, 10_600, state);
+    expect(state.still.made).toBe(2);
+    const hovered = state.still.scene!;
+    drawWeb(fakeCanvas().ctx, hovered, still, 10_616, state, 2);
+    expect(state.still.made).toBe(3);
+    expect([layerOf(state).width, layerOf(state).height]).toEqual([2400, 1600]);
+  });
+
+  it("is drawn afresh each frame while the web boots, and kept once it has", () => {
+    const state = newLookState();
+    const one = scene({ reduced: false });
+    for (let now = 0; now < BOOT_MS; now += 100) drawWeb(fakeCanvas().ctx, one, { bootStart: 0 }, now, state);
+    expect(state.still.made).toBe(0);
+    drawWeb(fakeCanvas().ctx, one, { bootStart: 0 }, BOOT_MS + 16, state);
+    drawWeb(fakeCanvas().ctx, one, { bootStart: 0 }, BOOT_MS + 32, state);
+    expect(state.still.made).toBe(1);
+  });
+
+  it("holds the strands and the halos, and copies them in under the spider each frame", () => {
+    const state = newLookState();
+    const one = scene({ reduced: false });
+    drawWeb(fakeCanvas().ctx, one, still, 10_000, state);
+    const later = fakeCanvas();
+    drawWeb(later.ctx, one, still, 10_016, state);
+    const layer = layerOf(state).fake;
+    expect(layer.strokes.length).toBeGreaterThan(0);
+    expect(at(layer.images, { x: 150, y: 0 })).toHaveLength(1);
+    // The frame drawn from it has its strands and halos, and the holes cut over them, though nothing of it was drawn again.
+    expect(state.still.made).toBe(1);
+    for (const points of layer.strokes) expect(later.strokes).toContain(points);
+    expect(at(later.images, { x: 150, y: 0 }).length).toBeGreaterThan(0);
+    expect(later.fills.some(([x, y]) => near({ x, y }, { x: 150, y: 0 }))).toBe(true);
+  });
+
+  it("leaves out a reach-out glow that swells, which is drawn each frame at its size then", () => {
+    // Person A is to reach out to, with the Reach-out glow full, so theirs swells; B and C keep their plain halos still.
+    const frames = new Map([[1, { ...frame(150), glow: 1 }], [2, frame(300)], [3, frame(200, Math.PI / 2)]]);
+    const one = scene({ frames, reachGlow: 1, reduced: false });
+    const state = newLookState();
+    const widths = [10_000, 10_300, 10_600, 10_900].map((now) => {
+      const under = fakeCanvas();
+      drawWeb(under.ctx, one, still, now, state);
+      return Math.max(...at(under.images, { x: 150, y: 0 }).map((image) => image.w));
+    });
+    expect(state.still.made).toBe(1);
+    expect(at(layerOf(state).fake.images, { x: 150, y: 0 })).toHaveLength(0);
+    expect(at(layerOf(state).fake.images, { x: 300, y: 0 })).toHaveLength(1);
+    expect(new Set(widths).size).toBeGreaterThan(1);
   });
 });
 

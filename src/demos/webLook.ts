@@ -42,6 +42,9 @@
 // place), so the web ends at each
 // icon's rim and never shows through it (Orbits
 // draws the fainter tiers' icons translucent), and a fade under the header.
+// Once booted, what of that holds still (the strands, their fade, the halos
+// that do not swell, the holes) is drawn once for each scene Orbits gives and
+// copied in each frame (stillWeb), so a frame draws only what moves.
 // Over the SVG (drawWebOver): the beam to whoever is hovered and the reticle
 // on them, and over those the hold on whoever is selected, above everything,
 // other people's icons included, as you asked. The colours, the canvas's and those of Orbits' own SVG
@@ -128,13 +131,16 @@ export interface LookState {
   /** Where the beams come from this frame, on the spider's head: the hold from the mouth, the hover's beam from the eyes. */
   origin: Record<BeamFrom, XY>;
   patterns: Map<string, CanvasPattern | null>;
+  /** What of the web holds still, drawn once for each scene (stillWeb). */
+  still: StillWeb;
 }
 
 /** The spider facing up, as tests and a still capture draw it unless they ask for another way. */
 export const UP = -Math.PI / 2;
 
-export function newLookState(heading = UP): LookState {
-  return { heading, rig: null, lastFrame: 0, eyes: newEyeState(performance.now()), hold: newHoldState(), leaving: [], reeling: [], unmarking: [], origin: { mouth: { x: 0, y: 0 }, eyes: { x: 0, y: 0 } }, patterns: new Map() };
+/** A drawing's state from its first frame; `still` may be one kept from an earlier drawing, so a still drawn each change (reduced motion) makes no new canvas each time. */
+export function newLookState(heading = UP, still = newStillWeb()): LookState {
+  return { heading, rig: null, lastFrame: 0, eyes: newEyeState(performance.now()), hold: newHoldState(), leaving: [], reeling: [], unmarking: [], origin: { mouth: { x: 0, y: 0 }, eyes: { x: 0, y: 0 } }, patterns: new Map(), still };
 }
 
 /** Where a person is now, in pixels relative to the sun at the scene's zoom; null if they are not on the map. */
@@ -471,42 +477,193 @@ export function labelBoxes(shape: WebShape, k: number): Array<{ x: number; y: nu
   });
 }
 
+/** The web's strands as paths, relative to the sun: its spokes, its rank rings, its thinner rings within the people and beyond them, and the clip that breaks them where a rank ring's label sits. */
+interface Strands {
+  spokes: Path2D;
+  ranks: Path2D;
+  within: Path2D;
+  beyond: Path2D;
+  /** The stage less the labels' boxes, to clip to with "evenodd". */
+  clip: Path2D;
+}
+
+function strandsOf(scene: WebScene): Strands {
+  const { shape, k } = scene;
+  const clip = new Path2D();
+  clip.rect(-scene.sun.x, -scene.sun.y, scene.width, scene.height);
+  for (const box of labelBoxes(shape, k)) clip.rect(box.x, box.y, box.width, box.height);
+  return {
+    spokes: spokesPath(shape, k),
+    ranks: ringsPath(shape, k, (ring) => ring.label !== null),
+    within: ringsPath(shape, k, (ring) => ring.label === null && ring.r < shape.belt),
+    beyond: ringsPath(shape, k, (ring) => ring.label === null && ring.r >= shape.belt),
+    clip,
+  };
+}
+
 /**
- * The web's strands, relative to the sun: over a chromatic split `split` px
- * wide, as strong as the Web strength says (1 is as strong as the web is drawn at
- * all): its spokes, its thinner rings (fainter past the people) and its rank
- * rings, the strongest, never fainter than RANK_FLOOR, every strand broken
- * where a rank ring's label sits.
+ * The web's chromatic split, relative to the sun: its spokes, rank rings and thinner rings within the people again,
+ * faintly, in the split's two colours, `split` px to either side; each broken where a rank ring's label sits, which
+ * stays put as they shift. As strong as the Web strength says, under the strands themselves (mainStrands).
  */
-function webStrands(ctx: Ctx, scene: WebScene, ink: Ink, split: number): void {
-  const { shape, k, webStrength: strength } = scene;
-  const spokes = spokesPath(shape, k);
+function splitStrands(ctx: Ctx, strands: Strands, ink: Ink, strength: number, split: number): void {
   ctx.save();
-  ctx.beginPath();
-  ctx.rect(-scene.sun.x, -scene.sun.y, scene.width, scene.height);
-  for (const box of labelBoxes(shape, k)) ctx.rect(box.x, box.y, box.width, box.height);
-  ctx.clip("evenodd");
-  const ranks = ringsPath(shape, k, (ring) => ring.label !== null);
-  const within = ringsPath(shape, k, (ring) => ring.label === null && ring.r < shape.belt);
-  const beyond = ringsPath(shape, k, (ring) => ring.label === null && ring.r >= shape.belt);
+  ctx.clip(strands.clip, "evenodd");
   for (const [dx, colour] of [[-split, ink.split[0]], [split, ink.split[1]]] as const) {
     ctx.save();
     ctx.translate(dx, 0);
-    glowStroke(ctx, spokes, colour, 0.8, 0, 0.12 * strength);
-    glowStroke(ctx, ranks, colour, 0.8, 0, 0.12 * strength);
-    glowStroke(ctx, within, colour, 0.5, 0, 0.06 * strength);
+    glowStroke(ctx, strands.spokes, colour, 0.8, 0, 0.12 * strength);
+    glowStroke(ctx, strands.ranks, colour, 0.8, 0, 0.12 * strength);
+    glowStroke(ctx, strands.within, colour, 0.5, 0, 0.06 * strength);
     ctx.restore();
   }
-  glowStroke(ctx, spokes, ink.strand, 0.8, 0, 0.46 * strength);
-  glowStroke(ctx, within, ink.rings, 0.5, 0, 0.26 * strength);
-  glowStroke(ctx, beyond, ink.rings, 0.5, 0, 0.2 * strength);
-  glowStroke(ctx, ranks, ink.rings, 1, 4, Math.max(RANK_FLOOR, 0.62 * strength), 0.08 * strength);
   ctx.restore();
 }
 
-/** The Spider web, drawn: see the file's head. */
-export function drawWeb(ctx: Ctx, scene: WebScene, motion: WebMotion, now: number, state: LookState): void {
+/**
+ * The web's strands, relative to the sun, as strong as the Web strength says (1 is as strong as the web is drawn at
+ * all): its spokes, its thinner rings (fainter past the people) and its rank rings, the strongest, never fainter than
+ * RANK_FLOOR, every strand broken where a rank ring's label sits.
+ */
+function mainStrands(ctx: Ctx, strands: Strands, ink: Ink, strength: number): void {
+  ctx.save();
+  ctx.clip(strands.clip, "evenodd");
+  glowStroke(ctx, strands.spokes, ink.strand, 0.8, 0, 0.46 * strength);
+  glowStroke(ctx, strands.within, ink.rings, 0.5, 0, 0.26 * strength);
+  glowStroke(ctx, strands.beyond, ink.rings, 0.5, 0, 0.2 * strength);
+  glowStroke(ctx, strands.ranks, ink.rings, 1, 4, Math.max(RANK_FLOOR, 0.62 * strength), 0.08 * strength);
+  ctx.restore();
+}
+
+/** The strands' fade toward the edges, relative to the sun, so the people's part of the web stays the clearest. */
+function edgeFade(ctx: Ctx, scene: WebScene, ink: Ink): void {
   const { width, height, sun, k, shape } = scene;
+  const fade = ctx.createRadialGradient(0, 0, shape.belt * k * 1.05, 0, 0, Math.max(width, height) * 1.1);
+  fade.addColorStop(0, rgba(ink.background, 0));
+  fade.addColorStop(1, rgba(ink.background, 0.42));
+  ctx.fillStyle = fade;
+  ctx.fillRect(-sun.x, -sun.y, width, height);
+}
+
+/** Which halos `halos` draws: all of them, only those that hold still, or only those that swell each frame. */
+type HaloPick = "all" | "still" | "swelling";
+
+/**
+ * Halos under everyone drawn strongly, relative to the sun, someone to reach out to's in their colour, as far and as
+ * bright as the Reach-out glow says, swelling past its halfway; while the Spider web boots (`t` ms in), everyone it
+ * names locks in with a bracket as the scan reaches them, gone again within LOCK_FLASH_MS, well before the boot ends.
+ * No bracket stays on anyone: the only lasting one is the hover's (hoverReticle).
+ */
+function halos(ctx: Ctx, scene: WebScene, ink: Ink, now: number, t: number, pick: HaloPick): void {
+  const { sun, height, shape } = scene;
+  const booted = t >= BOOT_MS;
+  const reach = glowLook(scene.reachGlow);
+  const swells = !scene.reduced && reach.pulse > 0;
+  if (pick === "swelling" && !swells) return;
+  const swell = swells ? 1 + SWELL.reach * reach.pulse * pulseAt(now) : 1;
+  for (const person of scene.people) {
+    const f = scene.frames.get(person.id);
+    if (!f || f.opacity <= 0.01 || f.silent) continue;
+    const strength = scene.strength(person.id);
+    const p = spot(scene, person.id)!;
+    const r = sized(scene, f);
+    const mark = markOf(scene, person.id);
+    if (!booted && scene.lockIn(person.id)) {
+      const appear = appearAt({ angle: f.angle, r: f.r }, { cy: sun.y, height }, shape.belt);
+      const since = t - appear.delay;
+      if (since >= 0 && since < LOCK_FLASH_MS) {
+        const q = clamp01(since / 280);
+        const e = easeOutBack(q);
+        glowStroke(ctx, bracketPath(p, lerp(40, mark.wide + 8, e), 5, (1 - q) * Math.PI / 2, lerp(40, mark.tall + 8, e)), ink.accent, 1.2, 0, 1 - clamp01((since - 280) / 240));
+      }
+    }
+    // A name in place of an icon has no halo: it would only cloud the name.
+    if (mark.name) continue;
+    // Their reach-out glow, but while someone is held only if the hold is about them (glowShown); else the plain halo everyone has.
+    const shine = scene.glows(person.id) ? f.glow : 0;
+    if (strength < 0.35 && shine < 0.05 && person.id !== scene.focusId) continue;
+    const swelling = swells && shine > 0.5;
+    if ((pick === "still" && swelling) || (pick === "swelling" && !swelling)) continue;
+    const a = f.opacity * scene.arrived(person.id);
+    const glowing = shine * reach.reach * (shine > 0.5 ? swell : 1);
+    drawHalo(ctx, p.x, p.y, r * 2.2 + 3 + 9 * glowing, shine > 0.5 ? person.colour : ink.beam, (0.22 + 0.3 * shine * reach.bright) * strength * a);
+  }
+}
+
+/**
+ * The holes under every marker, relative to the sun, as one path: a disc of the ground's colour under each, so nothing
+ * drawn under the SVG shows through an icon; none under a name in place of one, which the web runs behind, the name's
+ * own dark outline keeping it readable (the user's ask: names have no card).
+ */
+function holesOf(scene: WebScene): Path2D {
+  const path = new Path2D();
+  for (const person of scene.people) {
+    const f = scene.frames.get(person.id);
+    if (!f || f.opacity <= 0.01) continue;
+    if (scene.names?.has(person.id)) continue;
+    const p = spot(scene, person.id)!;
+    const r = sized(scene, f) + 0.6;
+    path.moveTo(p.x + r, p.y);
+    path.arc(p.x, p.y, r, 0, Math.PI * 2);
+  }
+  return path;
+}
+
+/**
+ * What of the drawing under the SVG holds still once the Spider web has booted, made once for each scene Orbits gives
+ * (it gives a new one whenever it draws: a hover, a zoom, a pan, a resize, people moving, a setting) and kept between
+ * frames: the strands, their fade and every halo that does not swell, drawn on a canvas of the stage's size; the
+ * strands as paths, for the chromatic split, which shifts each frame; and the holes under the markers, as a path.
+ */
+export interface StillWeb {
+  scene: WebScene | null;
+  dpr: number;
+  canvas: HTMLCanvasElement | null;
+  strands: Strands | null;
+  holes: Path2D | null;
+  /** How many times it has been made: for the tests, which check it is made again only when it must be. */
+  made: number;
+}
+
+export function newStillWeb(): StillWeb {
+  return { scene: null, dpr: 0, canvas: null, strands: null, holes: null, made: 0 };
+}
+
+/** The still web for `scene` at `dpr` device pixels a CSS pixel: as kept, or made again on a new scene. */
+function stillWeb(still: StillWeb, scene: WebScene, ink: Ink, now: number, dpr: number): StillWeb & { canvas: HTMLCanvasElement; strands: Strands; holes: Path2D } {
+  if (still.scene !== scene || still.dpr !== dpr || !still.canvas || !still.strands || !still.holes) {
+    const canvas = still.canvas ?? document.createElement("canvas");
+    const [w, h] = [Math.round(scene.width * dpr), Math.round(scene.height * dpr)];
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width = w;
+      canvas.height = h;
+    }
+    const strands = strandsOf(scene);
+    const layer = canvas.getContext("2d");
+    if (layer) {
+      layer.setTransform(dpr, 0, 0, dpr, 0, 0);
+      layer.clearRect(0, 0, scene.width, scene.height);
+      layer.translate(scene.sun.x, scene.sun.y);
+      layer.lineCap = "round";
+      layer.lineJoin = "round";
+      mainStrands(layer, strands, ink, scene.webStrength);
+      edgeFade(layer, scene, ink);
+      halos(layer, scene, ink, now, Infinity, "still");
+    }
+    Object.assign(still, { scene, dpr, canvas, strands, holes: holesOf(scene), made: still.made + 1 });
+  }
+  return still as StillWeb & { canvas: HTMLCanvasElement; strands: Strands; holes: Path2D };
+}
+
+/**
+ * The Spider web, drawn: see the file's head. `dpr` is how many device pixels the canvas has to a CSS pixel, which the
+ * still web is drawn at. While the Spider web boots, everything is drawn afresh each frame; once it has booted, what
+ * holds still is drawn once for each scene (stillWeb) and copied in, and the rest is drawn each frame: the ground under
+ * it all, whose scanlines drift (a few fills of the whole stage), the chromatic split, any halo that swells, the spider
+ * and, over it, the holes and the fade under the header.
+ */
+export function drawWeb(ctx: Ctx, scene: WebScene, motion: WebMotion, now: number, state: LookState, dpr = 1): void {
+  const { width, height, sun, k } = scene;
   const ink = webTheme(scene.colour).ink;
   const t = motion.bootStart === null ? Infinity : now - motion.bootStart;
   const booted = t >= BOOT_MS;
@@ -558,22 +715,27 @@ export function drawWeb(ctx: Ctx, scene: WebScene, motion: WebMotion, now: numbe
   ctx.translate(sun.x, sun.y);
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
-  if (!booted) {
+  // The web: a chromatic split under it (wide while it boots), then the strands, fading toward the edges, and the halos.
+  const split = booted ? (scene.reduced ? 0 : 0.6 + 0.4 * Math.sin(now / 900)) : 3 + 6 * random();
+  let holes: Path2D | null = null;
+  if (booted) {
+    // Booted: the strands, their fade and the halos that hold still are copied in as drawn for this scene.
+    const still = stillWeb(state.still, scene, ink, now, dpr);
+    splitStrands(ctx, still.strands, ink, scene.webStrength, split);
+    // (A canvas with no width or height, a stage not yet measured, cannot be drawn in.)
+    if (still.canvas.width > 0 && still.canvas.height > 0) ctx.drawImage(still.canvas, -sun.x, -sun.y, width, height);
+    halos(ctx, scene, ink, now, t, "swelling");
+    holes = still.holes;
+  } else {
+    // Booting: the web as far as the scan has reached.
     ctx.save();
     ctx.beginPath();
     ctx.rect(-sun.x, -sun.y, width, Math.max(0, scanY + sun.y));
     ctx.clip();
-  }
-  // The web: a chromatic split under it (wide while it boots), then the strands (webStrands).
-  const split = booted ? (scene.reduced ? 0 : 0.6 + 0.4 * Math.sin(now / 900)) : 3 + 6 * random();
-  webStrands(ctx, scene, ink, split);
-  // The strands fade toward the edges, so the people's part of the web stays the clearest.
-  const fade = ctx.createRadialGradient(0, 0, shape.belt * k * 1.05, 0, 0, Math.max(width, height) * 1.1);
-  fade.addColorStop(0, rgba(ink.background, 0));
-  fade.addColorStop(1, rgba(ink.background, 0.42));
-  ctx.fillStyle = fade;
-  ctx.fillRect(-sun.x, -sun.y, width, height);
-  if (!booted) {
+    const strands = strandsOf(scene);
+    splitStrands(ctx, strands, ink, scene.webStrength, split);
+    mainStrands(ctx, strands, ink, scene.webStrength);
+    edgeFade(ctx, scene, ink);
     ctx.restore();
     // The scan line, with static under it.
     if (scanShare > 0 && scanShare < 1) {
@@ -584,6 +746,7 @@ export function drawWeb(ctx: Ctx, scene: WebScene, motion: WebMotion, now: numbe
         glowStroke(ctx, strandPath({ x, y }, { x: x + 10 + random() * 60, y }), ink.scan, 1, 0, 0.5 * random());
       }
     }
+    halos(ctx, scene, ink, now, t, "all");
   }
   // The hold on whoever is selected, and the beam to and reticle on whoever is hovered, moved on (webHold.ts), and whoever is looked at:
   // selected, else hovered.
@@ -592,37 +755,6 @@ export function drawWeb(ctx: Ctx, scene: WebScene, motion: WebMotion, now: numbe
   const gone = stepHold(state.hold, now, { ...looks, reduced: scene.reduced });
   const looked = lookedAt(looks);
   const focus = looked === null ? null : spot(scene, looked);
-  const reach = glowLook(scene.reachGlow);
-  const swell = scene.reduced ? 1 : 1 + SWELL.reach * reach.pulse * pulseAt(now);
-  // Halos under everyone drawn strongly, someone to reach out to's in their colour, as far and as bright as the Reach-out
-  // glow says, breathing past its halfway; while the Spider web boots, everyone it names locks in with a bracket as the scan
-  // reaches them, gone again within LOCK_FLASH_MS, well before the boot ends. No bracket stays on anyone: the only
-  // lasting one is the hover's (hoverReticle).
-  for (const person of scene.people) {
-    const f = scene.frames.get(person.id);
-    if (!f || f.opacity <= 0.01 || f.silent) continue;
-    const strength = scene.strength(person.id);
-    const p = spot(scene, person.id)!;
-    const r = sized(scene, f);
-    const mark = markOf(scene, person.id);
-    if (!booted && scene.lockIn(person.id)) {
-      const appear = appearAt({ angle: f.angle, r: f.r }, { cy: sun.y, height }, shape.belt);
-      const since = t - appear.delay;
-      if (since >= 0 && since < LOCK_FLASH_MS) {
-        const q = clamp01(since / 280);
-        const e = easeOutBack(q);
-        glowStroke(ctx, bracketPath(p, lerp(40, mark.wide + 8, e), 5, (1 - q) * Math.PI / 2, lerp(40, mark.tall + 8, e)), ink.accent, 1.2, 0, 1 - clamp01((since - 280) / 240));
-      }
-    }
-    // A name in place of an icon has no halo: it would only cloud the name.
-    if (mark.name) continue;
-    // Their reach-out glow, but while someone is held only if the hold is about them (glowShown); else the plain halo everyone has.
-    const shine = scene.glows(person.id) ? f.glow : 0;
-    if (strength < 0.35 && shine < 0.05 && person.id !== scene.focusId) continue;
-    const a = f.opacity * scene.arrived(person.id);
-    const glowing = shine * reach.reach * (shine > 0.5 ? swell : 1);
-    drawHalo(ctx, p.x, p.y, r * 2.2 + 3 + 9 * glowing, shine > 0.5 ? person.colour : ink.beam, (0.22 + 0.3 * shine * reach.bright) * strength * a);
-  }
   // The spider at the hub, fading in as the Spider web boots: a small body on legs standing wide, a little past the closest orbit, unzoomed,
   // and growing with the zoom, slower than the people spread, so it can be looked at closely and never reaches them.
   const size = scene.inner * 0.7;
@@ -641,21 +773,9 @@ export function drawWeb(ctx: Ctx, scene: WebScene, motion: WebMotion, now: numbe
   };
   state.origin = { mouth: from("mouth"), eyes: from("eyes") };
   letGo(scene, state, now, gone);
-  // A hole of the ground's colour under every marker, so nothing drawn here shows through an icon; none under a name in
-  // place of one, which the web runs behind, the name's own dark outline keeping it readable (the user's ask: names
-  // have no card).
+  // A hole of the ground's colour under every marker, over the spider too (holesOf).
   ctx.fillStyle = ink.background;
-  ctx.beginPath();
-  for (const person of scene.people) {
-    const f = scene.frames.get(person.id);
-    if (!f || f.opacity <= 0.01) continue;
-    if (scene.names?.has(person.id)) continue;
-    const p = spot(scene, person.id)!;
-    const r = sized(scene, f) + 0.6;
-    ctx.moveTo(p.x + r, p.y);
-    ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
-  }
-  ctx.fill();
+  ctx.fill(holes ?? holesOf(scene));
   ctx.restore();
   headerFade(ctx, scene, ink.background);
 }

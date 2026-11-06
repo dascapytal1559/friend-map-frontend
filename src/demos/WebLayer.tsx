@@ -3,7 +3,9 @@
 // with the beam and reticle of whoever is looked at, hovered or selected,
 // above everything (webLook.ts draws both, every animation frame,
 // from the latest scene Orbits gave it and from what is in motion: the
-// throws and the boot, webChoreography.ts). The SVG goes between them, as
+// throws and the boot, webChoreography.ts; what of the web holds still it
+// draws once for each scene, on a third canvas kept off the page, and copies
+// in). The SVG goes between them, as
 // this component's child. Canvas 2D, not SVG, so a thousand strands and a few
 // dozen moving threads cost one path stroke each a frame, with nothing in the
 // DOM to re-lay-out: the SVG keeps the people, their identicons, names and
@@ -14,7 +16,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { presetOf } from "./webColour.ts";
-import { drawWeb, drawWebOver, newLookState, startHeading, type LookState, type WebMotion, type WebScene } from "./webLook.ts";
+import { drawWeb, drawWebOver, newLookState, newStillWeb, startHeading, type LookState, type WebMotion, type WebScene } from "./webLook.ts";
 
 /** The most pixels per CSS pixel the canvases are drawn at: sharp on a Retina screen, no more work than that. */
 const MAX_DPR = 2;
@@ -26,18 +28,20 @@ export function WebLayer({ scene, motion, children }: { scene: WebScene; motion:
   latest.current = scene;
   const { width, height, colour, reduced } = scene;
   const [heading] = useState(() => startHeading(globalThis.location?.search ?? "", Math.random));
+  // What of the web holds still, drawn once for each scene and kept between frames (webLook.ts).
+  const [still] = useState(newStillWeb);
 
   // Still: drawn once for each change.
   useEffect(() => {
     if (!reduced || !under.current || !over.current) return;
-    draw(under.current, over.current, latest.current, motion.current, performance.now(), newLookState(heading));
+    draw(under.current, over.current, latest.current, motion.current, performance.now(), newLookState(heading, still));
   });
 
   // In motion: a loop while the page is visible.
   useEffect(() => {
     if (reduced || !under.current || !over.current) return;
     const [a, b] = [under.current, over.current];
-    const state = newLookState(heading);
+    const state = newLookState(heading, still);
     let raf = 0;
     const tick = (now: number) => {
       draw(a, b, latest.current, motion.current, now, state);
@@ -53,7 +57,7 @@ export function WebLayer({ scene, motion, children }: { scene: WebScene; motion:
       cancelAnimationFrame(raf);
       document.removeEventListener("visibilitychange", visibility);
     };
-  }, [reduced, motion, heading]);
+  }, [reduced, motion, heading, still]);
 
   return (
     <>
@@ -64,8 +68,7 @@ export function WebLayer({ scene, motion, children }: { scene: WebScene; motion:
   );
 }
 
-function fit(canvas: HTMLCanvasElement, scene: WebScene): CanvasRenderingContext2D | null {
-  const dpr = Math.min(MAX_DPR, window.devicePixelRatio || 1);
+function fit(canvas: HTMLCanvasElement, scene: WebScene, dpr: number): CanvasRenderingContext2D | null {
   const w = Math.round(scene.width * dpr);
   const h = Math.round(scene.height * dpr);
   if (canvas.width !== w || canvas.height !== h) {
@@ -78,9 +81,10 @@ function fit(canvas: HTMLCanvasElement, scene: WebScene): CanvasRenderingContext
 }
 
 function draw(under: HTMLCanvasElement, over: HTMLCanvasElement, scene: WebScene, motion: WebMotion, now: number, state: LookState): void {
-  const a = fit(under, scene);
-  const b = fit(over, scene);
+  const dpr = Math.min(MAX_DPR, window.devicePixelRatio || 1);
+  const a = fit(under, scene, dpr);
+  const b = fit(over, scene, dpr);
   if (!a || !b) return;
-  drawWeb(a, scene, motion, now, state);
+  drawWeb(a, scene, motion, now, state, dpr);
   drawWebOver(b, scene, now, state);
 }

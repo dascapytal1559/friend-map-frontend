@@ -26,6 +26,18 @@
   will-change: transform;
 }
 
+/* The people's marks, an SVG of their own between the sky's and the names' (Orbits.tsx), and whoever is picked out
+   over them: the pointer goes through both. As a layer of its own (will-change), the people's is dimmed while someone
+   is picked out (its opacity, set where it is drawn) without being painted again. */
+.demos__stage > svg.orbits__people {
+  pointer-events: none;
+  will-change: opacity;
+}
+
+.demos__stage > svg.orbits__lit {
+  pointer-events: none;
+}
+
 .orbits__rings circle,
 .orbits__rings ellipse {
   fill: none;

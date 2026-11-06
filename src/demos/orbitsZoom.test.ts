@@ -11,7 +11,7 @@ import { resetSaved } from "../savedStore.ts";
 import type { PersonRelationship } from "../archive.ts";
 import { buildModel } from "./model.ts";
 import { keptZoom, OrbitMap } from "./Orbits.tsx";
-import { BACKGROUND, glowColour, READABLE } from "./orbitsLayout.ts";
+import { BACKGROUND, DIM, glowColour, READABLE } from "./orbitsLayout.ts";
 import { boundsOf, chooseNamed, clampZoom, HOME, MAX_ZOOM, panBy, panToShow, pinchZoom, wheelFactor, zoomAt, zoomBetween, zoomToShow, type Zoom } from "./orbitsZoom.ts";
 
 // The system reaches 300 pixels from the sun every way, a little more to the right.
@@ -358,14 +358,18 @@ describe("the map zoomed", () => {
     for (const id of markers.keys()) expect(markup).toContain(`<pattern id="orbits-face-${id}"`);
     const strength = (n: number) => names.get(n) ?? markers.get(n);
     expect([1, 10, 11, 25, 26, 50, 51, 100, 101, 160].map(strength)).toEqual([1, 1, 0.8, 0.8, 0.6, 0.6, 0.4, 0.4, 0.2, 0.2]);
-    // With the 150th closest picked out, they are at full strength, and everyone else at one flat BACKGROUND, names and identicons alike.
+    // With the 150th closest picked out, they are named at full strength, and everyone else's name at one flat
+    // BACKGROUND. The identicons keep their own strengths in the people's layer, which is dimmed as a whole (DIM); 150,
+    // named by the pick, has no marker over it (their own in the layer is hidden in the page: hoverLayer.test.ts).
     const held = draw(HOME, crowd, 150);
-    const heldMarkers = new Map([...held.matchAll(/<circle[^>]*fill="url\(#orbits-face-(\d+)\)"[^>]* opacity="([\d.]+)"/g)].map((m) => [Number(m[1]), Number(m[2])]));
+    const layer = (name: string) => held.match(new RegExp(`<svg class="[^"]*${name}"[^>]*>(.*?)</svg>`))!;
+    const markersIn = (part: string) => new Map([...part.matchAll(/<circle[^>]*fill="url\(#orbits-face-(\d+)\)"[^>]* opacity="([\d.]+)"/g)].map((m) => [Number(m[1]), Number(m[2])]));
     const heldNames = new Map([...held.matchAll(/<text class="orbits__name[^"]*"[^>]* opacity="([\d.]+)"[^>]*>Person (\d+)</g)].map((m) => [Number(m[2]), Number(m[1])]));
     expect(heldNames.get(150)).toBe(1);
-    expect(heldMarkers.has(150)).toBe(false);
+    expect(markersIn(layer("orbits__lit")[1]).has(150)).toBe(false);
     for (const n of [1, 30, 100]) expect(heldNames.get(n)).toBe(BACKGROUND);
-    for (const n of [101, 160]) expect(heldMarkers.get(n)).toBe(BACKGROUND);
+    expect(layer("orbits__people")[0]).toMatch(new RegExp(`style="[^"]*opacity:${DIM}"`));
+    for (const n of [101, 160]) expect(markersIn(layer("orbits__people")[1]).get(n)).toBe(0.2);
   });
 
   it("writes each name in its person's own icon colour in place of their icon, picked out or not", () => {

@@ -398,9 +398,11 @@ export interface NamesInput {
  * person's icon would be (centreOnIcons), standing in for it: the views leave
  * out the icons under them. On Orbits and the Spider web they have been turned
  * round their orbits so they cover no other (useNameFit); elsewhere names pile
- * up as they will, whoever is picked out drawn last, over the rest.
+ * up as they will, whoever is picked out drawn last, over the rest. `named`
+ * is who is named before anyone is picked out, so a view can draw the rest of
+ * the map once for any pick.
  */
-export function useOrbitNames(input: NamesInput): { labels: PlacedName[]; large: ReadonlySet<number> } {
+export function useOrbitNames(input: NamesInput): { labels: PlacedName[]; large: ReadonlySet<number>; named: ReadonlySet<number> } {
   const { model, at, closest, named, reachOut, names, phone, k, sun, spot, width, height, top, charWidth, focusId, held, linked, fade = DEFAULT_NAME_FADE } = input;
   const unnamed = names.style === "hide";
   const onlyFocus = unnamed || phone;
@@ -445,7 +447,9 @@ export function useOrbitNames(input: NamesInput): { labels: PlacedName[]; large:
       return { ...s, dx: s.x - p.x, dy: s.y - p.y, linkedOnly: faint.has(s.id) };
     });
   }, [namedLabels, focusId, held, linked, everyone, unnamed, phone, labelRoom, large, model.people, names.mapLabel, fade.faintest]);
-  return { labels, large };
+  // Who is named whoever is picked out: everyone in `labels` but the names a pick adds.
+  const namedIds = useMemo(() => new Set(namedLabels.map((l) => l.id)), [namedLabels]);
+  return { labels, large, named: namedIds };
 }
 
 /** Whether a name is there to draw: not an empty label (someone No name except… leaves out). */

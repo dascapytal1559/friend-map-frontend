@@ -573,6 +573,16 @@ export const TIER_FLOOR = 0.2;
 export const BACKGROUND = 0.2;
 
 /**
+ * How far Orbits and the Spider web dim their people's marks (markers, trails
+ * and glows; not names) while someone is picked out: one opacity on the
+ * layer holding them all, each kept at its own strength within it, so a
+ * hover changes one property, not every mark (Orbits.tsx). It stands in for
+ * BACKGROUND there: the closest come out stronger than that, and the faintest
+ * fainter.
+ */
+export const DIM = 0.4;
+
+/**
  * Tiers like TIERS for a fade from full strength for the closest `top` down
  * to `floor` past the closest `bottom`: a step at every guide ring between
  * (RING_STOPS) and at `bottom`, each the same step fainter, so the closest

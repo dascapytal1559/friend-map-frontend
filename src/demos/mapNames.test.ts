@@ -163,8 +163,11 @@ describe("the map's names", () => {
       expect(names.at(-1)!.id).toBe(held);
       expect(names.at(-1)!.className).toContain("orbits__name--focus");
       expect(names.filter((n) => n.id === held)).toHaveLength(1);
-      expect(onAMarker(names.at(-1)!, markers(markup))).toBe(false);
-      expect(markers(markup)).toHaveLength(held === 150 ? 59 : 60);
+      // No marker under their name over the people's layer; in it, the rest keep their icons as with nobody picked out,
+      // and the 150th's own, named only by the pick, is hidden in the page (hoverLayer.test.ts).
+      const layer = (name: string) => markup.match(new RegExp(`<svg class="[^"]*${name}"[^>]*>(.*?)</svg>`))![1];
+      expect(onAMarker(names.at(-1)!, markers(layer("orbits__lit")))).toBe(false);
+      expect(markers(layer("orbits__people"))).toHaveLength(60);
     }
   });
 

@@ -28,8 +28,9 @@ import { scoreLabel } from "./closeness.ts";
 import { type DemoModel, type DemoPerson, type Link } from "./model.ts";
 import {
   aspiringSize, displacementTrail, drawnSize, glowColour, hearthGlowRadius, nameGlow, READABLE, personOpacity, rings,
-  BACKGROUND, circleLabelSpot, grown, type Box,
+  BACKGROUND, circleLabelSpot, DIM, grown, type Box,
 } from "./orbitsLayout.ts";
+import { useHiddenMarks } from "./hiddenMarks.ts";
 import {
   arrivedShare, ASPIRING_NAME_GAP, aspiringEdge, nameOf, onPage, PLAIN, screenOf, stageOf, useMedia, useNameFit, useOrbitBodies, useOrbitNames, useSettled, useTween, NAME_FONT, WEB_NAME_FONT, type Frame, type OrbitOrder, type PlacedName,
 } from "./orbitsSky.ts";
@@ -75,6 +76,8 @@ const SETTLE_MS = 140;
 const GLIDE_MS = 240;
 /** How far in from the edges of what is in view, in pixels, someone found with the find box, or whose panel is open, counts as in view. */
 const VIEW_MARGIN = 60;
+/** Nobody: the links of nobody picked out. */
+const NOBODY: ReadonlySet<number> = new Set();
 /** How far, in pixels, a mouse or a finger moves before a press is a drag (a finger wobbles more in a tap). */
 const DRAG_START = { mouse: 3, touch: 10 };
 /** How long a finger held on someone takes to show their hover card, in ms; letting go then opens nothing. */
@@ -351,7 +354,7 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
   }, [targets, settled]);
   // Aspiring friends are named wherever they are, as everyone to reach out to is.
   const alwaysNamed = useMemo(() => new Set([...reachOut, ...aspiring]), [reachOut, aspiring]);
-  const { labels: placedLabels } = useOrbitNames({
+  const { labels: placedLabels, named: placedNamed } = useOrbitNames({
     model, at, closest, named, reachOut: alwaysNamed, names, phone,
     k: settled.k, sun: { x: cx + settled.x, y: cy + settled.y }, spot,
     width, height, top, charWidth: font.charWidth, focusId, held, linked, fade,
@@ -372,6 +375,11 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
   // nobody leaves the map, and an aspiring friend keeps their bubble, named or not.
   const standIns = useMemo(() => labels.filter((label) => !aspiring.has(label.id)), [labels, aspiring]);
   const nameOnly = useMemo(() => new Set(standIns.map((label) => label.id)), [standIns]);
+  // Of them, who is named whoever is picked out, which is how the people's layer (below) is drawn, once for any pick.
+  const restNameOnly = useMemo(
+    () => new Set([...placedNamed].filter((id) => (!reachable || reachable.has(id)) && !aspiring.has(id))),
+    [placedNamed, reachable, aspiring],
+  );
 
   // Where things are drawn. The sky is drawn relative to the sun, spread out
   // by the zoom, in one group moved to wherever the sun is: a pan moves that
@@ -683,6 +691,8 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
   const strengthPlace = useCallback((id: number) => (aspiring.has(id) ? 1 : closest.get(id) ?? null), [aspiring, closest]);
   // How strongly someone's marker, name, trail and glow are drawn (strengthOf).
   const strength = useCallback((id: number) => strengthOf(id, strengthPlace(id), reachOut.has(id), focusId, linked, glow.lift), [strengthPlace, reachOut, focusId, linked, glow]);
+  // How strongly with nobody picked out, as the people's layer draws everyone (sky, below).
+  const restStrength = useCallback((id: number) => strengthOf(id, strengthPlace(id), reachOut.has(id), null, NOBODY, glow.lift), [strengthPlace, reachOut, glow]);
   // 1 once someone is within a few pixels of where they are headed, fading to 0 by ARRIVED pixels away:
   // names and trails belong to where people settle, so they wait while people rise out of the sun or move.
   const arrived = useCallback((id: number) => arrivedShare(frames.get(id)!, targets.placed.get(id)!), [frames, targets]);
@@ -693,57 +703,30 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
       * (label.linkedOnly ? fade.faintest : nameStrengthOf(label.id, strengthPlace(label.id), focusId, linked, fade)),
     [frames, arrived, strengthPlace, reachOut, focusId, linked, fade, glow],
   );
-  // Drawn again only when what is in it changes: not for a pan, which moves it whole.
-  const sky = useMemo(() => {
-    const focusPerson = focusId === null ? null : model.people.find((p) => p.id === focusId) ?? null;
+  // Whoever you live with, who glow like the sun.
+  const home = useMemo(() => new Set(together), [together]);
+  /**
+   * The marks of `people` (in `drawn` order), in four kinds, each over the last: comet trails, the glow round whoever
+   * you live with, the reach-out glow and markers. Each is as strong as `s` says, with whoever is `focus` lit; anyone in
+   * `named` is drawn as their name (in the names' layer) and has neither glow nor marker. `layer` keeps a layer's
+   * gradients its own, and `tag` marks each mark with whose it is (data-p), for useHiddenMarks.
+   */
+  const marksFor = ({ people, s, focus, named, layer, tag }: {
+    people: DemoPerson[];
+    s: (id: number) => number;
+    focus: number | null;
+    named: ReadonlySet<number>;
+    layer: string;
+    tag: boolean;
+  }) => {
     // What is picked out: the person and, a little less, the people they share group chats with.
-    const lit = (id: number) => focusId === id;
-    // Whoever you live with, who glow like the sun.
-    const home = new Set(together);
+    const lit = (id: number) => focus === id;
+    const p = (id: number) => (tag ? id : undefined);
     return (
       <>
-        {/* Guide rings: the closest 10, 25, 50 and so on; the web's own rings stand in for them. */}
-        <g className="orbits__rings">
-          {!web && guides.map((ring) => <circle key={ring.label} r={radius(ring.rank) * k} style={{ stroke: ringColours(ring.rank, sunColour).line }} />)}
-          {focusPerson && !aspiring.has(focusPerson.id) && frames.get(focusPerson.id)!.opacity > 0 && (
-            <circle className="orbits__own-ring" r={frames.get(focusPerson.id)!.r * k} />
-          )}
-        </g>
-
-        {/* Friend circles, while chosen: an arc round the outside of each, brighter for whoever's is picked out, and its name. */}
-        {circleArcs.length > 0 && (
-          <g className="orbits__circles">
-            {circleArcs.map((arc) => {
-              const r = arcR * k;
-              const [x1, y1, x2, y2] = [Math.cos(arc.from) * r, Math.sin(arc.from) * r, Math.cos(arc.to) * r, Math.sin(arc.to) * r];
-              return (
-                <path
-                  key={arc.from}
-                  className={focusId !== null && arc.ids.has(focusId) ? "orbits__circle orbits__circle--lit" : "orbits__circle"}
-                  d={`M${x1.toFixed(1)},${y1.toFixed(1)}A${r.toFixed(1)},${r.toFixed(1)} 0 ${arc.to - arc.from > Math.PI ? 1 : 0} 1 ${x2.toFixed(1)},${y2.toFixed(1)}`}
-                />
-              );
-            })}
-          </g>
-        )}
-
-        {/* The sun keeps its size: zooming in spreads the orbits out from it. */}
-        <Sun inner={inner} photo={me.photo} onBroken={me.broken} />
-
-        {/* Who shares group chats with the person picked out. */}
-        <g className="orbits__links">
-          {focusLinks.map((link) => {
-            const other = link.source === focusPerson!.id ? link.target : link.source;
-            if (!frames.has(other) || frames.get(other)!.opacity === 0) return null;
-            const a = place(focusPerson!.id);
-            const b = place(other);
-            return <line key={other} x1={a.x} y1={a.y} x2={b.x} y2={b.y} strokeWidth={Math.min(2.2, 0.5 + link.weight * 2.5)} />;
-          })}
-        </g>
-
         {/* Comet trails: from where people sat at the start of the look-back window to now, for those who moved a long way, and whoever is picked out. */}
         <g className="orbits__trails">
-          {drawn.map((person) => {
+          {people.map((person) => {
             const f = frames.get(person.id)!;
             if (f.opacity <= 0.01 || f.silent) return null;
             const from = trailFrom.get(person.id);
@@ -756,10 +739,10 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
             const { x, y } = place(person.id);
             const [tx, ty] = trail.tail;
             if (!near(x, y) && !near(tx, ty) && !near((x + tx) / 2, (y + ty) / 2)) return null;
-            const id = `orbits-trail-${person.id}`;
+            const id = `orbits-${layer}trail-${person.id}`;
             const color = from > f.r ? palette.trail.warm : palette.trail.cool;
             return (
-              <g key={person.id} opacity={f.opacity * arrived(person.id) * (lit(person.id) ? 0.95 : 0.32 * strength(person.id))}>
+              <g key={person.id} opacity={f.opacity * arrived(person.id) * (lit(person.id) ? 0.95 : 0.32 * s(person.id))} data-p={p(person.id)}>
                 <linearGradient id={id} gradientUnits="userSpaceOnUse" x1={x} y1={y} x2={tx} y2={ty}>
                   <stop offset="0" stopColor={color} stopOpacity="0.9" />
                   <stop offset="1" stopColor={color} stopOpacity="0" />
@@ -775,9 +758,9 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
           It stands in for their reach-out glow, which would only muddy it; their name keeps its reach-out halo.
         */}
         <g>
-          {drawn.map((person) => {
+          {people.map((person) => {
             const f = frames.get(person.id)!;
-            if (!home.has(person.id) || f.opacity <= 0.01 || nameOnly.has(person.id)) return null;
+            if (!home.has(person.id) || f.opacity <= 0.01 || named.has(person.id)) return null;
             const { x, y } = place(person.id);
             if (!near(x, y)) return null;
             return (
@@ -787,8 +770,9 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
                 cy={y}
                 r={hearthGlowRadius(sized(f), inner)}
                 fill="url(#orbits-sun)"
-                opacity={f.opacity * strength(person.id)}
+                opacity={f.opacity * s(person.id)}
                 className="orbits__glow"
+                data-p={p(person.id)}
               />
             );
           })}
@@ -799,15 +783,15 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
           glowing, as far and as bright as the Reach-out glow says, breathing past its halfway (orbits.css).
         */}
         <g>
-          {drawn.map((person) => {
+          {people.map((person) => {
             const f = frames.get(person.id)!;
-            if (f.opacity <= 0.01 || f.glow < 0.02 || !glowShown(person.id, glowing) || home.has(person.id) || nameOnly.has(person.id)) return null;
+            if (f.opacity <= 0.01 || f.glow < 0.02 || !glowShown(person.id, glowing) || home.has(person.id) || named.has(person.id)) return null;
             const { x, y } = place(person.id);
             if (!near(x, y)) return null;
             const colour = glowColours.get(person.id);
             return (
-              <g key={person.id}>
-                <radialGradient id={glowId(person.id)}>
+              <g key={person.id} data-p={p(person.id)}>
+                <radialGradient id={glowId(person.id, layer)}>
                   <stop offset="0.25" stopColor={colour} stopOpacity={glow.core} />
                   <stop offset="0.6" stopColor={colour} stopOpacity={glow.mid} />
                   <stop offset="1" stopColor={colour} stopOpacity="0" />
@@ -816,8 +800,8 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
                   cx={x}
                   cy={y}
                   r={sized(f) + (5 + 13 * f.glow) * glow.reach}
-                  fill={`url(#${glowId(person.id)})`}
-                  opacity={f.opacity * f.glow * strength(person.id)}
+                  fill={`url(#${glowId(person.id, layer)})`}
+                  opacity={f.opacity * f.glow * s(person.id)}
                   className={glow.pulse > 0 ? "orbits__glow orbits__glow--pulse" : "orbits__glow"}
                   style={glow.pulse > 0 ? ({ "--swell": 1 + SWELL.reach * glow.pulse } as CSSProperties) : undefined}
                 />
@@ -832,13 +816,25 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
           is a thought bubble (Bubble) on the page's edge.
         */}
         <g>
-          {drawn.map((person) => {
+          {people.map((person) => {
             const f = frames.get(person.id)!;
-            if (f.opacity <= 0.01 || nameOnly.has(person.id)) return null;
+            if (f.opacity <= 0.01 || named.has(person.id)) return null;
             const { x, y } = place(person.id);
             if (!near(x, y)) return null;
             if (aspiring.has(person.id)) {
-              return <Bubble key={person.id} person={person} x={x} y={y} r={sized(f)} colour={lit(person.id) ? palette.body.lit : glowColours.get(person.id)!} opacity={f.opacity * strength(person.id)} />;
+              return (
+                <Bubble
+                  key={person.id}
+                  person={person}
+                  x={x}
+                  y={y}
+                  r={sized(f)}
+                  colour={lit(person.id) ? palette.body.lit : glowColours.get(person.id)!}
+                  opacity={f.opacity * s(person.id)}
+                  layer={layer}
+                  tag={p(person.id)}
+                />
+              );
             }
             return (
               <circle
@@ -850,24 +846,54 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
                 fill={f.silent ? "none" : `url(#${faceId(person.id)})`}
                 stroke={lit(person.id) ? palette.body.lit : f.silent ? palette.body.silent : palette.body.plain(glowColours.get(person.id)!)}
                 strokeWidth={lit(person.id) ? palette.body.width.lit : f.silent ? palette.body.width.silent : palette.body.width.plain}
-                opacity={f.opacity * strength(person.id)}
+                opacity={f.opacity * s(person.id)}
+                data-p={p(person.id)}
               />
             );
           })}
         </g>
-
-        {/* The rings' labels, over the people so a big one near the top can't hide "top 10". */}
-        <g className="orbits__rings">
-          {guides.map((ring) => (
-            <text key={ring.label} y={-labelR(ring.rank) * k + 3.5} textAnchor="middle" style={{ fill: ringColours(ring.rank, sunColour).label }}>{ring.label}</text>
-          ))}
-        </g>
-
       </>
     );
-  }, [frames, k, cullX, cullY, width, height, beyond, focusId, focusLinks, linked, labels, targets, trailFrom, model, guides, radius, together, aspiring, inner, outer, shape, drawn, closest, reachOut, glowColours, circleArcs, me.photo, palette, sunColour, strength, arrived, labelOpacity, nameOnly, glow, glowing]);
+  };
+  // The people's layer: everyone's marks, each as strong as with nobody picked out, in an SVG of its own (peopleLayer
+  // below). Drawn again only when what is in it changes: not for a pan, which moves it whole, and not for a hover. While
+  // someone is picked out the whole layer is dimmed at once (DIM), and they and whoever shares group chats with them are
+  // drawn again over it (lit), their own marks here hidden meanwhile (useHiddenMarks), as is the marker of anyone the
+  // pick names; so a hover changes one opacity and a few marks, not every mark on the map.
+  const sky = useMemo(
+    () => marksFor({ people: drawn, s: restStrength, focus: null, named: restNameOnly, layer: "", tag: true }),
+    [frames, k, cullX, cullY, width, height, beyond, trailFrom, together, home, aspiring, inner, outer, drawn, glowColours, palette, restStrength, arrived, restNameOnly, glow, glowing],
+  );
+  // Who is drawn over the dimmed layer: whoever is picked out and whoever shares group chats with them.
+  const picked = useMemo(
+    () => (focusId === null ? [] : drawn.filter((p) => (p.id === focusId || linked.has(p.id)) && frames.has(p.id))),
+    [drawn, focusId, linked, frames],
+  );
+  // Whose marks the people's layer hides: theirs, and whoever the pick names, whose name stands in for their marker.
+  const hiddenMarks = useMemo(
+    () => new Set([...picked.map((p) => p.id), ...[...nameOnly].filter((id) => !restNameOnly.has(id))]),
+    [picked, nameOnly, restNameOnly],
+  );
+  const peopleRef = useRef<SVGSVGElement>(null);
+  useHiddenMarks(peopleRef, hiddenMarks, sky);
+  // The picked out, at their full strengths (strengthOf), over the dimmed layer.
+  const lit = useMemo(
+    () => (picked.length === 0 ? null : marksFor({ people: picked, s: strength, focus: focusId, named: nameOnly, layer: "lit-", tag: false })),
+    [picked, strength, focusId, nameOnly, k, cullX, cullY, width, height, beyond, trailFrom, home, aspiring, inner, outer, glowColours, palette, arrived, glow, glowing],
+  );
+  // The rings' labels, over the people so a big one near the top can't hide "top 10".
+  const ringLabels = useMemo(() => (
+    <g className="orbits__rings">
+      {guides.map((ring) => (
+        <text key={ring.label} y={-labelR(ring.rank) * k + 3.5} textAnchor="middle" style={{ fill: ringColours(ring.rank, sunColour).label }}>{ring.label}</text>
+      ))}
+    </g>
+  ), [guides, radius, shape, k, sunColour]);
+  // The sun keeps its size: zooming in spreads the orbits out from it.
+  const sunMark = useMemo(() => <Sun inner={inner} photo={me.photo} onBroken={me.broken} />, [inner, me.photo]);
   // The names, over everything in the sky. They are an SVG of their own over the sky's (nameLayer below), so the sky
-  // redrawn (a hover, the Spider web's flowing links) never repaints hundreds of names, nor the names the sky's markers.
+  // redrawn (the Spider web's flowing links, the people's layer dimmed) never repaints hundreds of names, nor the names
+  // the sky's markers.
   // Each name in its person's own colour, with the outline every name has and nothing behind it, its glow on the letters,
   // as strong as the Reach-out glow says, breathing past its halfway (orbits.css) between that and a swell more.
   const nameMarks = useMemo(() => labels.map((label) => {
@@ -1021,10 +1047,62 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
         <radialGradient id="orbits-sun">
           {palette.sun.map(([offset, colour, opacity]) => <stop key={offset} offset={offset} stopColor={colour} stopOpacity={opacity} />)}
         </radialGradient>
-        {faces}
       </defs>
       <g transform={`translate(${sun.x} ${sun.y})`}>
-        {sky}
+        {/* Guide rings: the closest 10, 25, 50 and so on; the web's own rings stand in for them. */}
+        <g className="orbits__rings">
+          {!web && guides.map((ring) => <circle key={ring.label} r={radius(ring.rank) * k} style={{ stroke: ringColours(ring.rank, sunColour).line }} />)}
+          {focusId !== null && !aspiring.has(focusId) && frames.get(focusId)!.opacity > 0 && (
+            <circle className="orbits__own-ring" r={frames.get(focusId)!.r * k} />
+          )}
+        </g>
+
+        {/* Friend circles, while chosen: an arc round the outside of each, brighter for whoever's is picked out, and its name. */}
+        {circleArcs.length > 0 && (
+          <g className="orbits__circles">
+            {circleArcs.map((arc) => {
+              const r = arcR * k;
+              const [x1, y1, x2, y2] = [Math.cos(arc.from) * r, Math.sin(arc.from) * r, Math.cos(arc.to) * r, Math.sin(arc.to) * r];
+              return (
+                <path
+                  key={arc.from}
+                  className={focusId !== null && arc.ids.has(focusId) ? "orbits__circle orbits__circle--lit" : "orbits__circle"}
+                  d={`M${x1.toFixed(1)},${y1.toFixed(1)}A${r.toFixed(1)},${r.toFixed(1)} 0 ${arc.to - arc.from > Math.PI ? 1 : 0} 1 ${x2.toFixed(1)},${y2.toFixed(1)}`}
+                />
+              );
+            })}
+          </g>
+        )}
+
+        {sunMark}
+
+        {/* Who shares group chats with the person picked out. */}
+        <g className="orbits__links">
+          {focusLinks.map((link) => {
+            const other = link.source === focusId ? link.target : link.source;
+            if (!frames.has(other) || frames.get(other)!.opacity === 0) return null;
+            const a = place(focusId!);
+            const b = place(other);
+            return <line key={other} x1={a.x} y1={a.y} x2={b.x} y2={b.y} strokeWidth={Math.min(2.2, 0.5 + link.weight * 2.5)} />;
+          })}
+        </g>
+      </g>
+    </svg>
+  );
+  // The people's layer (sky), with everyone's identicon that the markers here and over it are filled with, dimmed as a
+  // whole while someone is picked out; and over it whoever is (lit), the rings' labels and the friend circles' names.
+  // Like the names' layer, the pointer goes through both to the sky beneath.
+  const peopleLayer = (
+    <svg ref={peopleRef} className={`${svgClass} orbits__people`} width={width} height={height} style={{ ...svgColours, opacity: focusId === null ? undefined : DIM }}>
+      <defs>{faces}</defs>
+      <g transform={`translate(${sun.x} ${sun.y})`}>{sky}</g>
+    </svg>
+  );
+  const litLayer = (
+    <svg className={`${svgClass} orbits__lit`} width={width} height={height} style={svgColours}>
+      <g transform={`translate(${sun.x} ${sun.y})`}>
+        {lit}
+        {ringLabels}
         {/* The friend circles' names, kept on the page as it pans, so drawn apart from the sky, which a pan moves whole. */}
         <g className="orbits__circles">
           {circleNames(zoom).map(({ arc, x, y, anchor }) => (
@@ -1042,9 +1120,10 @@ export function OrbitMap({ model, width, height, inset: top, seen = width, hover
       <g transform={`translate(${sun.x} ${sun.y})`}>{nameMarks}</g>
     </svg>
   );
+  const layers = <>{svg}{peopleLayer}{litLayer}{nameLayer}</>;
   return (
     <>
-    {scene ? <WebLayer scene={scene} motion={boot}>{svg}{nameLayer}</WebLayer> : <>{svg}{nameLayer}</>}
+    {scene ? <WebLayer scene={scene} motion={boot}>{layers}</WebLayer> : layers}
     {photoShown(look) && <SunControls x={sun.x} y={sun.y} inner={inner} photo={me.photo} shown={onSun} onPhoto={me.setPhoto} />}
     </>
   );
@@ -1059,7 +1138,7 @@ export function underBubble(label: PlacedName, size: number): PlacedName {
  * An aspiring friend's marker: a thought bubble, for the conversations you have with them in your head. Their identicon
  * dim behind a dashed ring in their `colour`, as nobody on the orbits is, and two dots trailing back toward the sun.
  */
-export function Bubble({ person, x, y, r, colour, opacity }: {
+export function Bubble({ person, x, y, r, colour, opacity, layer = "", tag }: {
   person: Pick<DemoPerson, "id" | "identiconSeed" | "identiconHue">;
   /** Where it is, relative to the sun. */
   x: number;
@@ -1067,12 +1146,16 @@ export function Bubble({ person, x, y, r, colour, opacity }: {
   r: number;
   colour: string;
   opacity: number;
+  /** What keeps its identicon's pattern id its layer's own, as Orbits' marks have (marksFor). */
+  layer?: string;
+  /** Whose it is, as its layer tags its marks (data-p), if it does. */
+  tag?: number;
 }) {
   const out = Math.hypot(x, y) || 1;
   const [ux, uy] = [x / out, y / out];
-  const face = `orbits-bubble-${person.id}`;
+  const face = `orbits-${layer}bubble-${person.id}`;
   return (
-    <g className="orbits__bubble" opacity={opacity}>
+    <g className="orbits__bubble" opacity={opacity} data-p={tag}>
       <pattern id={face} width="1" height="1" viewBox={`0 0 ${IDENTICON_SIZE} ${IDENTICON_SIZE}`} shapeRendering="crispEdges">
         <IdenticonCells seed={person.identiconSeed} hue={person.identiconHue} />
       </pattern>
@@ -1095,9 +1178,9 @@ export function ringLabelBox(label: string, y: number): Box {
   return { left: -half, right: half, top: y - 8, bottom: y + 6 };
 }
 
-/** The id of the gradient a person glows with when you should reach out to them. */
-function glowId(personId: number): string {
-  return `orbits-glow-${personId}`;
+/** The id of the gradient a person glows with when you should reach out to them, in a layer (`layer`, marksFor's). */
+function glowId(personId: number, layer: string): string {
+  return `orbits-${layer}glow-${personId}`;
 }
 
 /** The id of the pattern holding a person's identicon. */

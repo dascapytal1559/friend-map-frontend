@@ -1,5 +1,7 @@
 # friend-map
 
+> **No longer maintained:** friend-map now lives on as a module of a larger personal archive, to be published later. This repository is archived and read-only; the demo below stays up as it is.
+
 A map of your friendships, drawn from your message history. Everyone you talk to sits closer or further out by how much you talk, call and meet, and how recently.
 
 It opens on the **Spider web**; **Orbits** draws the same map as a 3D solar system, and there are others: a cyberspace city, a table, a calendar and a time river. friend-map is a front end with no database of its own: it draws from any backend that serves its [data contract](docs/contract.md).
